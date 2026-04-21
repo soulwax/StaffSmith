@@ -1,0 +1,28 @@
+.section-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 22px;
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(14px);
+}
+
+.section-card__header {
+  padding: 18px 20px 0;
+}
+
+.section-card__header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.section-card__content {
+  padding: 16px 20px 20px;
+}
+
+.section-card--success {
+  border-color: rgba(45, 122, 83, 0.25);
+}
+
+.section-card--danger {
+  border-color: rgba(162, 63, 51, 0.28);
+}

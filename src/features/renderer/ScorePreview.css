@@ -1,0 +1,19 @@
+.preview-placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  border: 1px dashed rgba(111, 94, 75, 0.22);
+  border-radius: 18px;
+  color: #6b6359;
+  background: rgba(255, 253, 249, 0.76);
+}
+
+.preview-surface {
+  overflow: auto;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.preview-error {
+  color: var(--danger);
+}

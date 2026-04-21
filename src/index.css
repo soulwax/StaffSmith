@@ -1,0 +1,45 @@
+:root {
+  font-family:
+    "Segoe UI", "Aptos", system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #1b1a18;
+  background:
+    radial-gradient(circle at top left, rgba(242, 205, 162, 0.55), transparent 34%),
+    linear-gradient(180deg, #fcf7f0 0%, #f5efe6 100%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --panel-bg: rgba(255, 252, 247, 0.86);
+  --panel-border: rgba(111, 94, 75, 0.18);
+  --panel-shadow: 0 18px 45px rgba(68, 48, 20, 0.12);
+  --accent: #ad5d27;
+  --success: #2d7a53;
+  --danger: #a23f33;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-width: 320px;
+}
+
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}

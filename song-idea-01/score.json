@@ -1,0 +1,15 @@
+{
+  "title": "Wind on Black Glass",
+  "instrument": "flute",
+  "key": "Dm",
+  "timeSignature": "4/4",
+  "tempo": 112,
+  "measures": [
+    [
+      { "type": "note", "pitch": "D4", "duration": "q" },
+      { "type": "note", "pitch": "F4", "duration": "q" },
+      { "type": "note", "pitch": "A4", "duration": "q" },
+      { "type": "note", "pitch": "B4", "duration": "q" }
+    ]
+  ]
+}

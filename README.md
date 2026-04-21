@@ -1,0 +1,111 @@
+# StaffSmith
+
+StaffSmith is a local-first MVP web app that turns raw note text or chord symbols into readable sheet music / lead-sheet notation in the browser. It uses a pure TypeScript parsing pipeline, normalizes input into an internal score model, converts that model into MusicXML, and renders the result with OpenSheetMusicDisplay.
+
+## Setup
+
+```bash
+npm install
+npm run dev
+```
+
+For a production build:
+
+```bash
+npm run build
+```
+
+## Architecture
+
+Core structure:
+
+```text
+src/
+  components/
+  features/editor/
+  features/renderer/
+  music/model/
+  music/musicxml/
+  music/parser/
+  music/theory/
+  lib/
+```
+
+Data flow:
+
+1. UI collects raw text plus a mode toggle.
+2. A pure parser converts input into a normalized `Score`.
+3. The MusicXML generator turns `Score` into canonical MusicXML.
+4. OpenSheetMusicDisplay renders the MusicXML in the preview pane.
+
+Key design decisions:
+
+- MusicXML is the canonical rendering/export format.
+- Parsers are renderer-agnostic and testable.
+- Chord rendering uses lead-sheet style harmony symbols plus helper root notes for the MVP.
+- Incomplete note measures are padded with rests during MusicXML generation rather than hidden inside parsing.
+
+## Supported Syntax
+
+### Notes mode
+
+Accepted syntax:
+
+- `C4 q, D4 q, E4 h`
+- `C4 E4 G4 | F4 A4 C5`
+- bar separators with `|`
+- durations: `w`, `h`, `q`, `8`
+
+Rules:
+
+- Note names require octave numbers.
+- Durations are optional and default to quarter notes.
+- Measures currently assume 4/4.
+
+### Chords mode
+
+Accepted syntax:
+
+- `C`
+- `Cm`
+- `Cmaj7`
+- `Am7`
+- `D7`
+- `F#dim`
+- `Bbmaj7`
+- `Cmaj7 | Am7 | Dm7 G7 | Cmaj7`
+
+Rules:
+
+- Up to four chord symbols per measure are supported in the MVP.
+- Chord durations are distributed per measure using simple lead-sheet timing.
+
+## Working Examples
+
+- `C4 q, E4 q, G4 h`
+- `C4 E4 G4 | F4 A4 C5`
+- `Cmaj7 | Am7 | Dm7 G7 | Cmaj7`
+- `Bbmaj7 | Gm7 | C7 | F#dim`
+
+## Validation Behavior
+
+StaffSmith reports:
+
+- unexpected tokens in the active mode
+- durations without a preceding note
+- unsupported chord symbols
+- note measures that exceed 4/4
+- chord measures with more than four symbols
+
+## Short Architecture Summary
+
+The parser layer is intentionally independent from OpenSheetMusicDisplay. `music/parser` produces typed `Score`, `Measure`, `NoteEvent`, and `ChordEvent` data. `music/musicxml` owns MusicXML generation, while `features/renderer` only handles browser rendering concerns.
+
+## Next Improvements
+
+- MIDI import
+- better rhythm parsing
+- ABC import/export
+- direct note editing on staff
+- audio playback
+- transposition tools

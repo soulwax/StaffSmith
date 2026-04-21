@@ -1,0 +1,73 @@
+.app-shell {
+  min-height: 100vh;
+  padding: 32px;
+  color: #1b1a18;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr);
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.78rem;
+  color: #8b4f2d;
+  font-weight: 700;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 3.2vw, 4rem);
+  line-height: 1.02;
+  max-width: 12ch;
+}
+
+.hero-copy {
+  max-width: 64ch;
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: #534d45;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 520px) minmax(0, 1fr);
+  gap: 24px;
+}
+
+.right-column {
+  display: grid;
+  gap: 24px;
+}
+
+.compact-list,
+.error-list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+}
+
+.compact-list li,
+.error-list li {
+  margin-bottom: 8px;
+}
+
+.muted {
+  color: #666157;
+}
+
+@media (max-width: 980px) {
+  .app-shell {
+    padding: 18px;
+  }
+
+  .hero,
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
