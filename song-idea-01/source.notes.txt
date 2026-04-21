@@ -1,0 +1,10 @@
+title: Wind on Black Glass
+instrument: flute
+key: Dm
+time: 4/4
+tempo: 112
+
+| D4 q F4 q A4 q B4 q |
+| A4 q G4 q F4 q E4 q |
+| D4 h A4 q B4 q |
+| C5 q A4 q G4 h |

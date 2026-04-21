@@ -1,0 +1,10 @@
+{
+  "projectName": "song-idea-01",
+  "createdAt": "2026-04-21T18:45:00+02:00",
+  "updatedAt": "2026-04-21T18:45:00+02:00",
+  "parserVersion": "0.1.0",
+  "appVersion": "0.1.0",
+  "tags": ["flute", "folk-rock", "draft"],
+  "sourceFormat": "notes-text-v1",
+  "canonicalFormat": "score.json"
+}

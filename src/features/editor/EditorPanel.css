@@ -7,7 +7,7 @@
   width: 100%;
   max-width: 260px;
   border-radius: 16px;
-  background: rgba(173, 93, 39, 0.08);
+  background: linear-gradient(135deg, rgba(214, 92, 47, 0.08), rgba(199, 234, 58, 0.18));
 }
 
 .mode-toggle__button,
@@ -25,14 +25,14 @@
 .mode-toggle__button {
   padding: 10px 12px;
   background: transparent;
-  color: #6d604f;
+  color: #59634d;
   font-weight: 600;
 }
 
 .mode-toggle__button.is-active {
-  background: #fff8f0;
-  color: #201a13;
-  box-shadow: 0 6px 14px rgba(76, 51, 16, 0.1);
+  background: rgba(251, 255, 246, 0.96);
+  color: #171b13;
+  box-shadow: 0 10px 24px rgba(83, 110, 38, 0.12);
 }
 
 .examples {
@@ -44,9 +44,10 @@
 
 .example-chip {
   padding: 9px 14px;
-  background: rgba(255, 248, 240, 0.94);
-  color: #3d3329;
-  border: 1px solid rgba(111, 94, 75, 0.15);
+  background: rgba(248, 252, 241, 0.98);
+  color: #2b3124;
+  border: 1px solid rgba(91, 113, 67, 0.14);
+  box-shadow: 0 10px 24px rgba(87, 115, 45, 0.06);
 }
 
 .editor-label {
@@ -61,10 +62,18 @@
   resize: vertical;
   padding: 16px;
   border-radius: 18px;
-  border: 1px solid rgba(111, 94, 75, 0.18);
-  background: rgba(255, 251, 246, 0.94);
-  color: #221b14;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(96, 118, 71, 0.16);
+  background:
+    linear-gradient(180deg, rgba(253, 255, 250, 0.98), rgba(246, 251, 238, 0.96));
+  color: #1f2419;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.02),
+    0 12px 28px rgba(90, 114, 52, 0.05);
+}
+
+.editor-textarea:focus {
+  outline: 2px solid rgba(214, 92, 47, 0.22);
+  outline-offset: 2px;
 }
 
 .editor-actions {
@@ -77,9 +86,10 @@
 
 .render-button {
   padding: 12px 18px;
-  background: linear-gradient(135deg, #2f7f58 0%, #21563c 100%);
-  color: white;
+  background: linear-gradient(135deg, #dd6030 0%, #cbe53f 100%);
+  color: #18200f;
   font-weight: 700;
+  box-shadow: 0 14px 30px rgba(175, 210, 63, 0.26);
 }
 
 .mode-toggle__button:hover,
@@ -90,7 +100,7 @@
 
 .helper-text {
   margin: 0;
-  color: #5f5a52;
+  color: #5f6858;
 }
 
 .helper-text--error {

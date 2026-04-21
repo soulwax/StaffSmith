@@ -10,6 +10,12 @@
       { "type": "note", "pitch": "F4", "duration": "q" },
       { "type": "note", "pitch": "A4", "duration": "q" },
       { "type": "note", "pitch": "B4", "duration": "q" }
+    ],
+    [
+      { "type": "note", "pitch": "A4", "duration": "q" },
+      { "type": "note", "pitch": "G4", "duration": "q" },
+      { "type": "note", "pitch": "F4", "duration": "q" },
+      { "type": "note", "pitch": "E4", "duration": "q" }
     ]
   ]
 }

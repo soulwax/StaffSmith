@@ -67,50 +67,53 @@ export function App() {
 
   return (
     <div className="app-shell">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">StaffSmith</p>
-          <h1>Turn note text and chord sketches into browser-rendered notation.</h1>
-          <p className="hero-copy">
-            Paste simple note sequences or chord progressions, normalize them into a score model,
-            and preview MusicXML engraving locally in the browser.
-          </p>
+      <header className="workspace-header">
+        <div className="brand-lockup">
+          <svg
+            className="brand-mark"
+            viewBox="0 0 32 32"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <rect x="2" y="2" width="28" height="28" rx="9" />
+            <path d="M10 22V10h2.4v12H10Zm4.8-6.8V10h2.4v5.2h4V10h2.4v12h-2.4v-4.8h-4V22h-2.4v-6.8Z" />
+          </svg>
+          <h1>Staffsmith</h1>
         </div>
-        <SectionCard title="Status" tone={errors.length > 0 ? 'danger' : 'success'}>
-          <p>{summarizeErrors(errors)}</p>
-          <p className="muted">Last render attempt: {state.lastUpdated}</p>
-          {activeScore ? (
-            <ul className="compact-list">
-              <li>{activeScore.measures.length} measure(s)</li>
-              <li>{activeScore.metadata.mode === 'notes' ? 'Notes mode' : 'Chords mode'}</li>
-              <li>{activeScore.metadata.totalEvents} event(s)</li>
-            </ul>
-          ) : null}
-          {warnings.length > 0 ? (
-            <>
-              <h3>Warnings</h3>
-              <ul className="compact-list">
-                {warnings.map((warning) => (
-                  <li key={warning}>{warning}</li>
-                ))}
-              </ul>
-            </>
-          ) : null}
-        </SectionCard>
       </header>
 
       <main className="layout">
-        <EditorPanel
-          examples={EXAMPLES}
-          initialInput={state.input}
-          initialMode={state.mode}
-          errors={errors}
-          onRender={handleRender}
-          onSelectExample={handleSelectExample}
-        />
+        <div className="left-column">
+          <EditorPanel
+            examples={EXAMPLES}
+            initialInput={state.input}
+            initialMode={state.mode}
+            errors={errors}
+            onRender={handleRender}
+            onSelectExample={handleSelectExample}
+          />
 
-        <div className="right-column">
-          <ScorePreview musicXml={state.musicXml} />
+          <SectionCard title="Status" tone={errors.length > 0 ? 'danger' : 'success'}>
+            <p>{summarizeErrors(errors)}</p>
+            <p className="muted">Last render attempt: {state.lastUpdated}</p>
+            {activeScore ? (
+              <ul className="compact-list">
+                <li>{activeScore.measures.length} measure(s)</li>
+                <li>{activeScore.metadata.mode === 'notes' ? 'Notes mode' : 'Chords mode'}</li>
+                <li>{activeScore.metadata.totalEvents} event(s)</li>
+              </ul>
+            ) : null}
+            {warnings.length > 0 ? (
+              <>
+                <h3>Warnings</h3>
+                <ul className="compact-list">
+                  {warnings.map((warning) => (
+                    <li key={warning}>{warning}</li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+          </SectionCard>
 
           <SectionCard title="Parse Details">
             {errors.length > 0 ? (
@@ -132,6 +135,10 @@ export function App() {
               </p>
             )}
           </SectionCard>
+        </div>
+
+        <div className="right-column">
+          <ScorePreview musicXml={state.musicXml} />
         </div>
       </main>
     </div>
