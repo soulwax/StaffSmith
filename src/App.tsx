@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './app.css'
 import { SectionCard } from './components/SectionCard'
 import { EditorPanel } from './features/editor/EditorPanel'
@@ -11,6 +11,8 @@ import type {
   SavedProject,
   SaveProjectRequest,
 } from './lib/apiTypes'
+import { copyText, downloadTextFile, toSafeFilename } from './lib/fileActions'
+import { getScoreInsights } from './music/analysis/scoreInsights'
 import type { InputMode, ParseError, ParseResult, Score } from './music/model/types'
 import { scoreToMusicXml } from './music/musicxml/scoreToMusicXml'
 import { parseScoreInput } from './music/parser'
@@ -22,6 +24,17 @@ type RenderState = {
   musicXml: string | null
   lastUpdated: string
 }
+
+type LocalDraft = {
+  projectId: string | null
+  projectTitle: string
+  mode: InputMode
+  input: string
+  assistantPrompt: string
+  analysis: ComposerAssistResult | null
+}
+
+const AUTOSAVE_KEY = 'staffsmith:draft:v2'
 
 function renderInput(mode: InputMode, input: string): RenderState {
   const parseResult = parseScoreInput(mode, input)
@@ -52,12 +65,42 @@ const initialExample = EXAMPLES[0] ?? {
   input: 'C4 q, E4 q, G4 h',
 }
 
+function loadLocalDraft(): LocalDraft | null {
+  try {
+    const rawDraft = window.localStorage.getItem(AUTOSAVE_KEY)
+    if (!rawDraft) {
+      return null
+    }
+
+    const draft = JSON.parse(rawDraft) as Partial<LocalDraft>
+    if ((draft.mode !== 'notes' && draft.mode !== 'chords') || typeof draft.input !== 'string') {
+      return null
+    }
+
+    return {
+      projectId: typeof draft.projectId === 'string' ? draft.projectId : null,
+      projectTitle: typeof draft.projectTitle === 'string' ? draft.projectTitle : 'Untitled sketch',
+      mode: draft.mode,
+      input: draft.input,
+      assistantPrompt: typeof draft.assistantPrompt === 'string' ? draft.assistantPrompt : '',
+      analysis: draft.analysis ?? null,
+    }
+  } catch {
+    return null
+  }
+}
+
 export function App() {
-  const [state, setState] = useState<RenderState>(() => renderInput(initialExample.mode, initialExample.input))
-  const [projectId, setProjectId] = useState<string | null>(null)
+  const [initialDraft] = useState<LocalDraft | null>(() => loadLocalDraft())
+  const [state, setState] = useState<RenderState>(() => renderInput(
+    initialDraft?.mode ?? initialExample.mode,
+    initialDraft?.input ?? initialExample.input,
+  ))
+  const [projectId, setProjectId] = useState<string | null>(initialDraft?.projectId ?? null)
+  const [projectTitle, setProjectTitle] = useState(initialDraft?.projectTitle ?? 'Untitled sketch')
   const [projects, setProjects] = useState<SavedProject[]>([])
-  const [assistantPrompt, setAssistantPrompt] = useState('')
-  const [analysis, setAnalysis] = useState<ComposerAssistResult | null>(null)
+  const [assistantPrompt, setAssistantPrompt] = useState(initialDraft?.assistantPrompt ?? '')
+  const [analysis, setAnalysis] = useState<ComposerAssistResult | null>(initialDraft?.analysis ?? null)
   const [isAssisting, setIsAssisting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [serverMessage, setServerMessage] = useState<string | null>(null)
@@ -65,6 +108,20 @@ export function App() {
   const activeScore = state.parseResult.ok ? state.parseResult.value : null
   const warnings = state.parseResult.warnings
   const errors = state.parseResult.errors
+  const insights = useMemo(() => getScoreInsights(activeScore), [activeScore])
+
+  useEffect(() => {
+    const draft: LocalDraft = {
+      projectId,
+      projectTitle,
+      mode: state.mode,
+      input: state.input,
+      assistantPrompt,
+      analysis,
+    }
+
+    window.localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(draft))
+  }, [analysis, assistantPrompt, projectId, projectTitle, state.input, state.mode])
 
   const updateDraft = (mode: InputMode, input: string) => {
     setState(renderInput(mode, input))
@@ -122,6 +179,7 @@ export function App() {
 
     try {
       const payload: SaveProjectRequest = {
+        title: projectTitle,
         mode: state.mode,
         input: state.input,
         score: activeScore,
@@ -130,9 +188,6 @@ export function App() {
       }
       if (projectId) {
         payload.id = projectId
-      }
-      if (activeScore?.metadata.title) {
-        payload.title = activeScore.metadata.title
       }
 
       const response = await fetch('/api/projects', {
@@ -147,6 +202,7 @@ export function App() {
       }
 
       setProjectId(body.project.id)
+      setProjectTitle(body.project.title)
       setProjects((current) => [body.project!, ...current.filter((project) => project.id !== body.project!.id)])
       setServerMessage('Project saved.')
     } catch (error) {
@@ -175,9 +231,65 @@ export function App() {
 
   const loadProject = (project: SavedProject) => {
     setProjectId(project.id)
+    setProjectTitle(project.title)
     setAnalysis(project.analysis)
     updateDraft(project.mode, project.input)
     setServerMessage(`Loaded ${project.title}.`)
+  }
+
+  const newSketch = () => {
+    setProjectId(null)
+    setProjectTitle('Untitled sketch')
+    setAssistantPrompt('')
+    setAnalysis(null)
+    updateDraft(initialExample.mode, initialExample.input)
+    setServerMessage('New sketch ready.')
+  }
+
+  const exportProject = () => {
+    downloadTextFile(
+      `${toSafeFilename(projectTitle)}.staffsmith.json`,
+      JSON.stringify({
+        schemaVersion: 1,
+        exportedAt: new Date().toISOString(),
+        projectId,
+        title: projectTitle,
+        mode: state.mode,
+        input: state.input,
+        score: activeScore,
+        musicXml: state.musicXml,
+        analysis,
+      }, null, 2),
+      'application/json;charset=utf-8',
+    )
+    setServerMessage('Project export created.')
+  }
+
+  const copySource = async () => {
+    await copyText(state.input)
+    setServerMessage('Source copied.')
+  }
+
+  const copyMusicXml = async () => {
+    if (!state.musicXml) {
+      return
+    }
+
+    await copyText(state.musicXml)
+    setServerMessage('MusicXML copied.')
+  }
+
+  const downloadMusicXml = () => {
+    if (!state.musicXml) {
+      return
+    }
+
+    downloadTextFile(`${toSafeFilename(projectTitle)}.musicxml`, state.musicXml, 'application/vnd.recordare.musicxml+xml;charset=utf-8')
+    setServerMessage('MusicXML export created.')
+  }
+
+  const printScore = () => {
+    window.print()
   }
 
   return (
@@ -197,13 +309,38 @@ export function App() {
         </div>
         <div className="workspace-metrics" aria-label="Current score summary">
           <span>{state.mode === 'notes' ? 'Notes' : 'Chords'}</span>
-          <span>{activeScore ? `${activeScore.measures.length} measures` : 'No score'}</span>
-          <span>{activeScore ? `${activeScore.metadata.totalEvents} events` : summarizeErrors(errors)}</span>
+          <span>{activeScore ? `${insights.measureCount} measures` : 'No score'}</span>
+          <span>{activeScore ? insights.pitchRange : summarizeErrors(errors)}</span>
         </div>
       </header>
 
       <main className="layout">
         <div className="workbench-column">
+          <SectionCard title="Project Console">
+            <label className="editor-label" htmlFor="project-title">
+              Title
+            </label>
+            <input
+              id="project-title"
+              className="project-title-input"
+              value={projectTitle}
+              onChange={(event) => setProjectTitle(event.target.value)}
+              placeholder="Untitled sketch"
+            />
+            <div className="studio-actions">
+              <button type="button" className="secondary-button" onClick={newSketch}>
+                New
+              </button>
+              <button type="button" className="secondary-button" onClick={copySource}>
+                Copy Source
+              </button>
+              <button type="button" className="secondary-button" onClick={exportProject}>
+                Export Project
+              </button>
+            </div>
+            <p className="muted">Autosaves locally while Neon handles deliberate project saves.</p>
+          </SectionCard>
+
           <EditorPanel
             examples={EXAMPLES}
             input={state.input}
@@ -298,6 +435,27 @@ export function App() {
               ) : null}
             </SectionCard>
 
+            <SectionCard title="Score Intelligence">
+              <dl className="score-stats score-stats--stacked">
+                <div>
+                  <dt>Range</dt>
+                  <dd>{insights.pitchRange}</dd>
+                </div>
+                <div>
+                  <dt>Density</dt>
+                  <dd>{insights.density}</dd>
+                </div>
+                <div>
+                  <dt>Durations</dt>
+                  <dd>{insights.topDurations}</dd>
+                </div>
+                <div>
+                  <dt>Harmony</dt>
+                  <dd>{insights.chordPalette}</dd>
+                </div>
+              </dl>
+            </SectionCard>
+
             <SectionCard title="Parse Details">
               {errors.length > 0 ? (
                 <ul className="error-list">
@@ -322,7 +480,12 @@ export function App() {
         </div>
 
         <div className="preview-column">
-          <ScorePreview musicXml={state.musicXml} />
+          <ScorePreview
+            musicXml={state.musicXml}
+            onCopyMusicXml={copyMusicXml}
+            onDownloadMusicXml={downloadMusicXml}
+            onPrintScore={printScore}
+          />
         </div>
       </main>
     </div>

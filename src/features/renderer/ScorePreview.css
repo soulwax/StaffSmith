@@ -4,8 +4,32 @@
 
 .score-preview-card .section-card__content {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   min-height: calc(100vh - 142px);
+}
+
+.preview-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.preview-toolbar button {
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid rgba(42, 64, 54, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 252, 0.78);
+  color: #344234;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.preview-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
 }
 
 .preview-placeholder {
@@ -16,6 +40,27 @@
   border-radius: 8px;
   color: #6b6359;
   background: rgba(255, 253, 249, 0.76);
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .score-preview-card,
+  .score-preview-card * {
+    visibility: visible;
+  }
+
+  .score-preview-card {
+    position: absolute;
+    inset: 0;
+    box-shadow: none;
+  }
+
+  .preview-toolbar {
+    display: none;
+  }
 }
 
 .preview-surface {

@@ -4,6 +4,9 @@ import './ScorePreview.css'
 
 type ScorePreviewProps = {
   musicXml: string | null
+  onCopyMusicXml: () => void
+  onDownloadMusicXml: () => void
+  onPrintScore: () => void
 }
 
 type RenderError = {
@@ -17,8 +20,9 @@ type ZoomableDisplay = {
   zoom?: number
 }
 
-export function ScorePreview({ musicXml }: ScorePreviewProps) {
+export function ScorePreview({ musicXml, onCopyMusicXml, onDownloadMusicXml, onPrintScore }: ScorePreviewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const renderIdRef = useRef(0)
   const [renderError, setRenderError] = useState<RenderError | null>(null)
 
   useEffect(() => {
@@ -28,17 +32,28 @@ export function ScorePreview({ musicXml }: ScorePreviewProps) {
     }
 
     if (!musicXml) {
+      renderIdRef.current += 1
       container.replaceChildren()
       return
     }
 
     let cancelled = false
+    const renderId = renderIdRef.current + 1
+    renderIdRef.current = renderId
     container.replaceChildren()
 
     const renderScore = async () => {
       try {
         const { OpenSheetMusicDisplay } = await import('opensheetmusicdisplay')
-        const osmd = new OpenSheetMusicDisplay(container, {
+        if (cancelled || renderId !== renderIdRef.current) {
+          return
+        }
+
+        const renderTarget = document.createElement('div')
+        renderTarget.className = 'preview-render-target'
+        container.replaceChildren(renderTarget)
+
+        const osmd = new OpenSheetMusicDisplay(renderTarget, {
           autoResize: true,
           drawTitle: false,
           backend: 'svg',
@@ -46,7 +61,12 @@ export function ScorePreview({ musicXml }: ScorePreviewProps) {
 
         await osmd.load(musicXml)
         if (cancelled) {
-          container.replaceChildren()
+          renderTarget.remove()
+          return
+        }
+
+        if (renderId !== renderIdRef.current) {
+          renderTarget.remove()
           return
         }
 
@@ -72,12 +92,25 @@ export function ScorePreview({ musicXml }: ScorePreviewProps) {
 
     return () => {
       cancelled = true
-      container.replaceChildren()
+      if (renderId === renderIdRef.current) {
+        container.replaceChildren()
+      }
     }
   }, [musicXml])
 
   return (
     <SectionCard title="Score Preview" className="score-preview-card">
+      <div className="preview-toolbar" aria-label="Score preview actions">
+        <button type="button" onClick={onCopyMusicXml} disabled={!musicXml}>
+          Copy XML
+        </button>
+        <button type="button" onClick={onDownloadMusicXml} disabled={!musicXml}>
+          Download XML
+        </button>
+        <button type="button" onClick={onPrintScore} disabled={!musicXml}>
+          Print
+        </button>
+      </div>
       {renderError && renderError.musicXml === musicXml ? (
         <p className="preview-error">Renderer error: {renderError.message}</p>
       ) : null}
