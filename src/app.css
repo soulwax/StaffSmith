@@ -107,6 +107,116 @@
   font-weight: 700;
 }
 
+.assistant-textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 84px;
+  padding: 12px;
+  border: 1px solid rgba(96, 118, 71, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 252, 0.94);
+  color: #1f2419;
+}
+
+.assistant-textarea:focus {
+  outline: 2px solid rgba(25, 155, 140, 0.22);
+  outline-offset: 2px;
+}
+
+.studio-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.secondary-button,
+.ghost-button {
+  min-height: 36px;
+  padding: 8px 11px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  transition:
+    transform 120ms ease,
+    background-color 120ms ease;
+}
+
+.secondary-button {
+  border: 1px solid rgba(25, 155, 140, 0.26);
+  background: linear-gradient(135deg, rgba(25, 155, 140, 0.15), rgba(217, 85, 47, 0.1));
+  color: #182820;
+}
+
+.ghost-button {
+  border: 1px solid rgba(42, 64, 54, 0.14);
+  background: rgba(255, 255, 252, 0.68);
+  color: #425041;
+}
+
+.secondary-button:hover,
+.ghost-button:hover {
+  transform: translateY(-1px);
+}
+
+.secondary-button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+  transform: none;
+}
+
+.server-message {
+  margin: 12px 0 0;
+  color: #4f5d51;
+  font-weight: 650;
+}
+
+.analysis-panel {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(25, 155, 140, 0.18);
+  border-radius: 8px;
+  background: rgba(241, 252, 246, 0.76);
+}
+
+.analysis-panel p {
+  margin: 0;
+}
+
+.project-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.project-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid rgba(54, 76, 62, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 252, 0.78);
+  color: #273226;
+  cursor: pointer;
+  text-align: left;
+}
+
+.project-row span:first-child {
+  overflow: hidden;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-row span:last-child {
+  color: #697468;
+  font-size: 0.78rem;
+}
+
 .score-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -161,6 +271,10 @@
 @media (max-width: 700px) {
   .inspector-grid,
   .score-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .project-row {
     grid-template-columns: 1fr;
   }
 }

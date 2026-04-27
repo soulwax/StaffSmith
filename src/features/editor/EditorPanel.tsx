@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { SectionCard } from '../../components/SectionCard'
 import type { InputMode, ParseError } from '../../music/model/types'
 import type { ExamplePreset } from './examples'
@@ -6,32 +5,38 @@ import './EditorPanel.css'
 
 type EditorPanelProps = {
   examples: ExamplePreset[]
-  initialInput: string
-  initialMode: InputMode
+  input: string
+  mode: InputMode
   errors: ParseError[]
+  onDraftChange: (mode: InputMode, input: string) => void
   onRender: (mode: InputMode, input: string) => void
   onSelectExample: (exampleId: string) => void
 }
 
 export function EditorPanel({
   examples,
-  initialInput,
-  initialMode,
+  input,
+  mode,
   errors,
+  onDraftChange,
   onRender,
   onSelectExample,
 }: EditorPanelProps) {
-  const [mode, setMode] = useState<InputMode>(initialMode)
-  const [input, setInput] = useState(initialInput)
-
   const handleSelectExample = (exampleId: string) => {
     const example = examples.find((entry) => entry.id === exampleId)
     if (example) {
-      setMode(example.mode)
-      setInput(example.input)
+      onDraftChange(example.mode, example.input)
     }
 
     onSelectExample(exampleId)
+  }
+
+  const handleModeChange = (nextMode: InputMode) => {
+    onDraftChange(nextMode, input)
+  }
+
+  const handleInputChange = (nextInput: string) => {
+    onDraftChange(mode, nextInput)
   }
 
   return (
@@ -42,7 +47,7 @@ export function EditorPanel({
             key={entry}
             type="button"
             className={entry === mode ? 'mode-toggle__button is-active' : 'mode-toggle__button'}
-            onClick={() => setMode(entry)}
+            onClick={() => handleModeChange(entry)}
           >
             {entry === 'notes' ? 'Notes' : 'Chords'}
           </button>
@@ -71,7 +76,7 @@ export function EditorPanel({
         className="editor-textarea"
         rows={12}
         value={input}
-        onChange={(event) => setInput(event.target.value)}
+        onChange={(event) => handleInputChange(event.target.value)}
         placeholder={
           mode === 'notes'
             ? 'C4 q, D4 q, E4 h'

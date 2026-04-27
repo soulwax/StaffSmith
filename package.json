@@ -9,11 +9,13 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:full": "pnpm dlx vercel@latest dev",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "opensheetmusicdisplay": "^1.9.2",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
@@ -24,6 +26,7 @@
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@vercel/node": "^5.7.13",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.1.1",

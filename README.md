@@ -9,6 +9,8 @@ pnpm install
 pnpm dev
 ```
 
+Use `pnpm dev` for the browser-only Vite surface. Use `pnpm dev:full` when you need the Vercel API routes for persistence or Gemini assistance.
+
 For a production build:
 
 ```bash
@@ -23,6 +25,20 @@ This repo is configured for Vercel as a Vite static app:
 - build command: `pnpm build`
 - output directory: `dist`
 - Node.js runtime: Vercel maps the `>=22.0.0 <26.0.0` engine range to its current 24.x runtime
+
+Required server environment variables:
+
+- `GEMINI_API_KEY`: used only by `/api/composer-assist`
+- `DATABASE_URL`: pooled Neon Postgres URL for runtime queries
+- `DATABASE_URL_UNPOOLED`: direct Neon Postgres URL for schema setup
+
+Do not expose these with a `VITE_` prefix. Add them to the Vercel project as encrypted environment variables:
+
+```bash
+pnpm dlx vercel@latest env add GEMINI_API_KEY
+pnpm dlx vercel@latest env add DATABASE_URL
+pnpm dlx vercel@latest env add DATABASE_URL_UNPOOLED
+```
 
 With Git integration, import the repository in Vercel and keep the project root set to the repository root. With the Vercel CLI:
 

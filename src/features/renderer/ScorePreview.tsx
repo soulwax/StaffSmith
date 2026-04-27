@@ -46,6 +46,7 @@ export function ScorePreview({ musicXml }: ScorePreviewProps) {
 
         await osmd.load(musicXml)
         if (cancelled) {
+          container.replaceChildren()
           return
         }
 
