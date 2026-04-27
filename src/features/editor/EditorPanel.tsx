@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { SectionCard } from '../../components/SectionCard'
 import type { InputMode, ParseError } from '../../music/model/types'
 import type { ExamplePreset } from './examples'
@@ -24,10 +24,15 @@ export function EditorPanel({
   const [mode, setMode] = useState<InputMode>(initialMode)
   const [input, setInput] = useState(initialInput)
 
-  useEffect(() => {
-    setMode(initialMode)
-    setInput(initialInput)
-  }, [initialInput, initialMode])
+  const handleSelectExample = (exampleId: string) => {
+    const example = examples.find((entry) => entry.id === exampleId)
+    if (example) {
+      setMode(example.mode)
+      setInput(example.input)
+    }
+
+    onSelectExample(exampleId)
+  }
 
   return (
     <SectionCard title="Composer Input">
@@ -50,7 +55,7 @@ export function EditorPanel({
             key={example.id}
             type="button"
             className="example-chip"
-            onClick={() => onSelectExample(example.id)}
+            onClick={() => handleSelectExample(example.id)}
             title={example.description}
           >
             {example.label}

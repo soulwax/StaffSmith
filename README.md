@@ -5,14 +5,32 @@ StaffSmith is a local-first MVP web app that turns raw note text or chord symbol
 ## Setup
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 For a production build:
 
 ```bash
-npm run build
+pnpm build
+```
+
+## Deploying to Vercel
+
+This repo is configured for Vercel as a Vite static app:
+
+- install command: `pnpm install --frozen-lockfile`
+- build command: `pnpm build`
+- output directory: `dist`
+- Node.js runtime: Vercel maps the `>=22.0.0 <26.0.0` engine range to its current 24.x runtime
+
+With Git integration, import the repository in Vercel and keep the project root set to the repository root. With the Vercel CLI:
+
+```bash
+pnpm dlx vercel@latest link
+pnpm dlx vercel@latest build --yes
+pnpm dlx vercel
+pnpm dlx vercel --prod
 ```
 
 ## Architecture

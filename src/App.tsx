@@ -80,10 +80,15 @@ export function App() {
           </svg>
           <h1>Staffsmith</h1>
         </div>
+        <div className="workspace-metrics" aria-label="Current score summary">
+          <span>{state.mode === 'notes' ? 'Notes' : 'Chords'}</span>
+          <span>{activeScore ? `${activeScore.measures.length} measures` : 'No score'}</span>
+          <span>{activeScore ? `${activeScore.metadata.totalEvents} events` : summarizeErrors(errors)}</span>
+        </div>
       </header>
 
       <main className="layout">
-        <div className="left-column">
+        <div className="workbench-column">
           <EditorPanel
             examples={EXAMPLES}
             initialInput={state.input}
@@ -93,51 +98,61 @@ export function App() {
             onSelectExample={handleSelectExample}
           />
 
-          <SectionCard title="Status" tone={errors.length > 0 ? 'danger' : 'success'}>
-            <p>{summarizeErrors(errors)}</p>
-            <p className="muted">Last render attempt: {state.lastUpdated}</p>
-            {activeScore ? (
-              <ul className="compact-list">
-                <li>{activeScore.measures.length} measure(s)</li>
-                <li>{activeScore.metadata.mode === 'notes' ? 'Notes mode' : 'Chords mode'}</li>
-                <li>{activeScore.metadata.totalEvents} event(s)</li>
-              </ul>
-            ) : null}
-            {warnings.length > 0 ? (
-              <>
-                <h3>Warnings</h3>
+          <div className="inspector-grid">
+            <SectionCard title="Status" tone={errors.length > 0 ? 'danger' : 'success'}>
+              <p className="status-line">{summarizeErrors(errors)}</p>
+              <p className="muted">Last render: {state.lastUpdated}</p>
+              {activeScore ? (
+                <dl className="score-stats">
+                  <div>
+                    <dt>Measures</dt>
+                    <dd>{activeScore.measures.length}</dd>
+                  </div>
+                  <div>
+                    <dt>Events</dt>
+                    <dd>{activeScore.metadata.totalEvents}</dd>
+                  </div>
+                  <div>
+                    <dt>Time</dt>
+                    <dd>
+                      {activeScore.metadata.beats}/{activeScore.metadata.beatType}
+                    </dd>
+                  </div>
+                </dl>
+              ) : null}
+              {warnings.length > 0 ? (
                 <ul className="compact-list">
                   {warnings.map((warning) => (
                     <li key={warning}>{warning}</li>
                   ))}
                 </ul>
-              </>
-            ) : null}
-          </SectionCard>
+              ) : null}
+            </SectionCard>
 
-          <SectionCard title="Parse Details">
-            {errors.length > 0 ? (
-              <ul className="error-list">
-                {errors.map((error) => (
-                  <li key={`${error.index}-${error.message}`}>
-                    <strong>
-                      Line {error.line}, Col {error.column}
-                    </strong>{' '}
-                    {error.message}
-                    {error.token ? <span className="muted"> Token: {error.token}</span> : null}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="muted">
-                Parsed successfully. StaffSmith generated canonical MusicXML ready for preview or
-                future export features.
-              </p>
-            )}
-          </SectionCard>
+            <SectionCard title="Parse Details">
+              {errors.length > 0 ? (
+                <ul className="error-list">
+                  {errors.map((error) => (
+                    <li key={`${error.index}-${error.message}`}>
+                      <strong>
+                        Line {error.line}, Col {error.column}
+                      </strong>{' '}
+                      {error.message}
+                      {error.token ? <span className="muted"> Token: {error.token}</span> : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted">
+                  Parsed successfully. StaffSmith generated canonical MusicXML ready for preview or
+                  future export features.
+                </p>
+              )}
+            </SectionCard>
+          </div>
         </div>
 
-        <div className="right-column">
+        <div className="preview-column">
           <ScorePreview musicXml={state.musicXml} />
         </div>
       </main>

@@ -1,15 +1,17 @@
 .app-shell {
   min-height: 100vh;
-  padding: 20px;
+  padding: 18px;
   color: #161914;
 }
 
 .workspace-header {
   display: flex;
   align-items: center;
-  height: 50px;
-  max-height: 50px;
-  margin-bottom: 18px;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 52px;
+  margin-bottom: 16px;
+  padding: 0 2px;
 }
 
 .brand-lockup {
@@ -26,8 +28,8 @@
 }
 
 .brand-mark rect {
-  fill: rgba(247, 251, 241, 0.98);
-  stroke: rgba(76, 96, 58, 0.16);
+  fill: rgba(255, 255, 252, 0.98);
+  stroke: rgba(27, 52, 44, 0.18);
 }
 
 .brand-mark path {
@@ -38,26 +40,56 @@
   margin: 0;
   font-size: 1.35rem;
   line-height: 1;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
+}
+
+.workspace-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.workspace-metrics span {
+  min-height: 32px;
+  padding: 7px 10px;
+  border: 1px solid rgba(42, 64, 54, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 252, 0.74);
+  color: #344234;
+  font-size: 0.88rem;
+  font-weight: 650;
+  box-shadow: 0 10px 24px rgba(27, 52, 44, 0.06);
 }
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(320px, 1fr) minmax(0, 1.5fr);
-  gap: 24px;
-  min-height: calc(100vh - 108px);
+  grid-template-columns: minmax(360px, 0.66fr) minmax(0, 1.34fr);
+  gap: 18px;
+  min-height: calc(100vh - 88px);
 }
 
-.left-column,
-.right-column {
+.workbench-column,
+.preview-column {
   display: grid;
-  gap: 24px;
+  gap: 14px;
   align-content: start;
+}
+
+.preview-column {
+  min-width: 0;
+}
+
+.inspector-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .compact-list,
 .error-list {
-  margin: 12px 0 0;
+  margin: 10px 0 0;
   padding-left: 18px;
 }
 
@@ -70,13 +102,65 @@
   color: #687363;
 }
 
+.status-line {
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+
+.score-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.score-stats div {
+  min-width: 0;
+  padding: 10px;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 252, 0.88), rgba(240, 248, 236, 0.84));
+  border: 1px solid rgba(54, 76, 62, 0.12);
+}
+
+.score-stats dt {
+  color: #6a7466;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.score-stats dd {
+  margin: 2px 0 0;
+  color: #172019;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
 @media (max-width: 980px) {
   .app-shell {
-    padding: 18px;
+    padding: 14px;
+  }
+
+  .workspace-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .workspace-metrics {
+    justify-content: flex-start;
   }
 
   .layout {
     grid-template-columns: 1fr;
     min-height: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .inspector-grid,
+  .score-stats {
+    grid-template-columns: 1fr;
   }
 }

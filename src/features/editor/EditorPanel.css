@@ -1,20 +1,20 @@
 .mode-toggle {
   display: inline-grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 16px;
-  padding: 6px;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 4px;
   width: 100%;
-  max-width: 260px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, rgba(214, 92, 47, 0.08), rgba(199, 234, 58, 0.18));
+  max-width: 240px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(217, 85, 47, 0.1), rgba(25, 155, 140, 0.13));
 }
 
 .mode-toggle__button,
 .example-chip,
 .render-button {
   border: 0;
-  border-radius: 14px;
+  border-radius: 8px;
   cursor: pointer;
   transition:
     transform 120ms ease,
@@ -23,7 +23,8 @@
 }
 
 .mode-toggle__button {
-  padding: 10px 12px;
+  min-height: 36px;
+  padding: 8px 10px;
   background: transparent;
   color: #59634d;
   font-weight: 600;
@@ -32,22 +33,23 @@
 .mode-toggle__button.is-active {
   background: rgba(251, 255, 246, 0.96);
   color: #171b13;
-  box-shadow: 0 10px 24px rgba(83, 110, 38, 0.12);
+  box-shadow: 0 8px 18px rgba(27, 52, 44, 0.12);
 }
 
 .examples {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .example-chip {
-  padding: 9px 14px;
+  min-height: 34px;
+  padding: 7px 10px;
   background: rgba(248, 252, 241, 0.98);
   color: #2b3124;
   border: 1px solid rgba(91, 113, 67, 0.14);
-  box-shadow: 0 10px 24px rgba(87, 115, 45, 0.06);
+  box-shadow: 0 8px 18px rgba(87, 115, 45, 0.05);
 }
 
 .editor-label {
@@ -58,13 +60,13 @@
 
 .editor-textarea {
   width: 100%;
-  min-height: 280px;
+  min-height: clamp(330px, 42vh, 560px);
   resize: vertical;
   padding: 16px;
-  border-radius: 18px;
+  border-radius: 8px;
   border: 1px solid rgba(96, 118, 71, 0.16);
   background:
-    linear-gradient(180deg, rgba(253, 255, 250, 0.98), rgba(246, 251, 238, 0.96));
+    linear-gradient(180deg, rgba(255, 255, 252, 0.98), rgba(247, 252, 243, 0.96));
   color: #1f2419;
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.02),
@@ -79,17 +81,18 @@
 .editor-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 12px;
   align-items: center;
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .render-button {
-  padding: 12px 18px;
-  background: linear-gradient(135deg, #dd6030 0%, #cbe53f 100%);
-  color: #18200f;
+  min-height: 42px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #d9552f 0%, #f2b64b 52%, #b7df36 100%);
+  color: #161b10;
   font-weight: 700;
-  box-shadow: 0 14px 30px rgba(175, 210, 63, 0.26);
+  box-shadow: 0 12px 26px rgba(162, 129, 36, 0.2);
 }
 
 .mode-toggle__button:hover,
@@ -101,6 +104,7 @@
 .helper-text {
   margin: 0;
   color: #5f6858;
+  flex: 1 1 220px;
 }
 
 .helper-text--error {

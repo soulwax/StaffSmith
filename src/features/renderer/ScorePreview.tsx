@@ -6,9 +6,20 @@ type ScorePreviewProps = {
   musicXml: string | null
 }
 
+type RenderError = {
+  musicXml: string
+  message: string
+}
+
+type ZoomableDisplay = {
+  setZoom?: (zoom: number) => void
+  Zoom?: number
+  zoom?: number
+}
+
 export function ScorePreview({ musicXml }: ScorePreviewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const [renderError, setRenderError] = useState<string | null>(null)
+  const [renderError, setRenderError] = useState<RenderError | null>(null)
 
   useEffect(() => {
     const container = containerRef.current
@@ -18,11 +29,11 @@ export function ScorePreview({ musicXml }: ScorePreviewProps) {
 
     if (!musicXml) {
       container.replaceChildren()
-      setRenderError(null)
       return
     }
 
     let cancelled = false
+    container.replaceChildren()
 
     const renderScore = async () => {
       try {
@@ -38,11 +49,20 @@ export function ScorePreview({ musicXml }: ScorePreviewProps) {
           return
         }
 
+        const zoomableDisplay = osmd as ZoomableDisplay
+        if (zoomableDisplay.setZoom) {
+          zoomableDisplay.setZoom(1.3)
+        } else if ('Zoom' in zoomableDisplay) {
+          zoomableDisplay.Zoom = 1.3
+        } else {
+          zoomableDisplay.zoom = 1.3
+        }
+
         osmd.render()
         setRenderError(null)
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown renderer error.'
-        setRenderError(message)
+        setRenderError({ musicXml, message })
         container.replaceChildren()
       }
     }
@@ -51,12 +71,15 @@ export function ScorePreview({ musicXml }: ScorePreviewProps) {
 
     return () => {
       cancelled = true
+      container.replaceChildren()
     }
   }, [musicXml])
 
   return (
-    <SectionCard title="Score Preview">
-      {renderError ? <p className="preview-error">Renderer error: {renderError}</p> : null}
+    <SectionCard title="Score Preview" className="score-preview-card">
+      {renderError && renderError.musicXml === musicXml ? (
+        <p className="preview-error">Renderer error: {renderError.message}</p>
+      ) : null}
       {!musicXml ? (
         <div className="preview-placeholder">
           <p>Render a valid input to preview staff notation.</p>
