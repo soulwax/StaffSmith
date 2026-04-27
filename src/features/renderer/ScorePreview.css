@@ -42,42 +42,40 @@
   background: rgba(255, 253, 249, 0.76);
 }
 
-@media print {
-  body * {
-    visibility: hidden;
-  }
-
-  .score-preview-card,
-  .score-preview-card * {
-    visibility: visible;
-  }
-
-  .score-preview-card {
-    position: absolute;
-    inset: 0;
-    box-shadow: none;
-  }
-
-  .preview-toolbar {
-    display: none;
-  }
-}
-
 .preview-surface {
   overflow: auto;
   min-height: clamp(560px, calc(100vh - 168px), 920px);
+  padding: 24px;
   border-radius: 8px;
   background:
-    linear-gradient(90deg, rgba(31, 44, 38, 0.035) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(31, 44, 38, 0.03) 1px, transparent 1px),
-    rgba(255, 255, 255, 0.94);
+    linear-gradient(90deg, rgba(31, 44, 38, 0.05) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(31, 44, 38, 0.045) 1px, transparent 1px),
+    rgba(238, 244, 239, 0.82);
   background-size: 28px 28px;
   border: 1px solid rgba(45, 63, 55, 0.1);
 }
 
-.preview-surface svg {
+.a4-page {
+  width: min(100%, 794px);
+  aspect-ratio: 210 / 297;
+  min-height: 1123px;
+  margin: 0 auto;
+  padding: 54px 46px;
+  border: 1px solid rgba(31, 44, 38, 0.12);
+  border-radius: 4px;
+  background: #fffef9;
+  box-shadow:
+    0 22px 48px rgba(27, 52, 44, 0.16),
+    0 2px 8px rgba(27, 52, 44, 0.08);
+}
+
+.a4-page .preview-render-target {
+  min-height: 100%;
+}
+
+.a4-page svg {
   display: block;
-  width: min(100%, 980px);
+  width: 100%;
   height: auto;
 }
 
@@ -90,5 +88,84 @@
   .score-preview-card .section-card__content,
   .preview-surface {
     min-height: 520px;
+  }
+
+  .preview-surface {
+    padding: 12px;
+  }
+
+  .a4-page {
+    min-height: auto;
+    padding: 24px 18px;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 12mm;
+}
+
+@media print {
+  html,
+  body,
+  #root {
+    width: 210mm;
+    min-height: 297mm;
+    background: #fff;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .score-preview-card,
+  .score-preview-card * {
+    visibility: visible;
+  }
+
+  .score-preview-card {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    min-height: auto;
+    border: 0;
+    box-shadow: none;
+    background: #fff;
+  }
+
+  .score-preview-card::before,
+  .score-preview-card .section-card__header,
+  .preview-toolbar {
+    display: none;
+  }
+
+  .score-preview-card .section-card__content {
+    display: block;
+    min-height: auto;
+    padding: 0;
+  }
+
+  .preview-surface {
+    overflow: visible;
+    min-height: auto;
+    padding: 0;
+    border: 0;
+    background: #fff;
+  }
+
+  .a4-page {
+    width: 100%;
+    min-height: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: #fff;
+  }
+
+  .a4-page svg {
+    width: 100%;
+    max-height: 273mm;
   }
 }

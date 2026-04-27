@@ -57,6 +57,7 @@ export function ScorePreview({ musicXml, onCopyMusicXml, onDownloadMusicXml, onP
           autoResize: true,
           drawTitle: false,
           backend: 'svg',
+          pageFormat: 'A4',
         })
 
         await osmd.load(musicXml)
@@ -108,7 +109,7 @@ export function ScorePreview({ musicXml, onCopyMusicXml, onDownloadMusicXml, onP
           Download XML
         </button>
         <button type="button" onClick={onPrintScore} disabled={!musicXml}>
-          Print
+          Print / PDF
         </button>
       </div>
       {renderError && renderError.musicXml === musicXml ? (
@@ -119,7 +120,9 @@ export function ScorePreview({ musicXml, onCopyMusicXml, onDownloadMusicXml, onP
           <p>Render a valid input to preview staff notation.</p>
         </div>
       ) : null}
-      <div className="preview-surface" ref={containerRef} />
+      <div className="preview-surface" aria-label="A4 score page">
+        <div className="a4-page" ref={containerRef} />
+      </div>
     </SectionCard>
   )
 }
