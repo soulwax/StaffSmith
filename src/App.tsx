@@ -3,6 +3,7 @@ import './app.css'
 import { SectionCard } from './components/SectionCard'
 import { EditorPanel } from './features/editor/EditorPanel'
 import { EXAMPLES } from './features/editor/examples'
+import { SyntaxHelp } from './features/help/SyntaxHelp'
 import { ScorePreview } from './features/renderer/ScorePreview'
 import type {
   ApiErrorResponse,
@@ -350,6 +351,8 @@ export function App() {
             onRender={handleRender}
             onSelectExample={handleSelectExample}
           />
+
+          <SyntaxHelp />
 
           <SectionCard title="Studio Intelligence">
             <label className="editor-label" htmlFor="assistant-prompt">

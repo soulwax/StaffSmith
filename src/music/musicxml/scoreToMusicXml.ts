@@ -1,28 +1,54 @@
 import { escapeXml } from '../../lib/text'
-import type { ChordEvent, Measure, NoteEvent, Score, ScoreEvent } from '../model/types'
+import { isRhythmicEvent, type ChordEvent, type DirectionEvent, type Measure, type NoteEvent, type Score, type ScoreEvent } from '../model/types'
 import { DURATION_UNITS, MUSICXML_NOTE_TYPE } from '../theory/duration'
 import { buildPitchClass } from '../theory/pitch'
+import { DEFAULT_SHEET_OPTIONS, getClefDefinition, getDensityScale, type ScoreSheetOptions } from './sheetOptions'
 
 const FULL_MEASURE_UNITS = 8
 
-export function scoreToMusicXml(score: Score): string {
-  const measuresXml = score.measures.map((measure, index) => renderMeasure(measure, index === 0)).join('\n')
+export function scoreToMusicXml(score: Score, options: Partial<ScoreSheetOptions> = {}): string {
+  const sheetOptions = { ...DEFAULT_SHEET_OPTIONS, ...options }
+  const measuresXml = score.measures
+    .map((measure, index) => renderMeasure(measure, index === 0, sheetOptions))
+    .join('\n')
+  const title = sheetOptions.title || score.metadata.title
+  const subtitle = sheetOptions.subtitle
+  const creatorXml = sheetOptions.composer
+    ? `    <creator type="composer">${escapeXml(sheetOptions.composer)}</creator>\n`
+    : ''
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="4.0">
   <work>
-    <work-title>${escapeXml(score.metadata.title)}</work-title>
+    <work-title>${escapeXml(title)}</work-title>
   </work>
   <identification>
+${creatorXml}    ${subtitle ? `<miscellaneous><miscellaneous-field name="subtitle">${escapeXml(subtitle)}</miscellaneous-field></miscellaneous>` : ''}
     <creator type="software">StaffSmith MVP</creator>
     <encoding>
       <software>StaffSmith</software>
     </encoding>
   </identification>
+  <defaults>
+    <scaling>
+      <millimeters>7</millimeters>
+      <tenths>${Math.round(40 / getDensityScale(sheetOptions.density))}</tenths>
+    </scaling>
+    <page-layout>
+      <page-height>1683.78</page-height>
+      <page-width>1190.55</page-width>
+      <page-margins type="both">
+        <left-margin>70</left-margin>
+        <right-margin>70</right-margin>
+        <top-margin>70</top-margin>
+        <bottom-margin>70</bottom-margin>
+      </page-margins>
+    </page-layout>
+  </defaults>
   <part-list>
     <score-part id="P1">
-      <part-name>${score.metadata.mode === 'notes' ? 'Melody' : 'Lead Sheet'}</part-name>
+      <part-name>${escapeXml(sheetOptions.staffLabel || (score.metadata.mode === 'notes' ? 'Melody' : 'Lead Sheet'))}</part-name>
     </score-part>
   </part-list>
   <part id="P1">
@@ -31,25 +57,30 @@ ${measuresXml}
 </score-partwise>`
 }
 
-function renderMeasure(measure: Measure, isFirst: boolean): string {
+function renderMeasure(measure: Measure, isFirst: boolean, options: ScoreSheetOptions): string {
   const contents = measure.events.map(renderEvent).join('\n')
-  const measureUnits = measure.events.reduce((sum, event) => sum + DURATION_UNITS[event.duration], 0)
-  const padding = measureUnits < FULL_MEASURE_UNITS ? renderRestSequence(FULL_MEASURE_UNITS - measureUnits) : ''
+  const measureUnits = measure.events
+    .filter(isRhythmicEvent)
+    .reduce((sum, event) => sum + DURATION_UNITS[event.duration], 0)
+  const padding = options.padIncompleteMeasures && measureUnits < FULL_MEASURE_UNITS
+    ? renderRestSequence(FULL_MEASURE_UNITS - measureUnits)
+    : ''
+  const clef = getClefDefinition(options.clef)
   const attributes = isFirst
     ? `    <attributes>
       <divisions>2</divisions>
       <key>
-        <fifths>0</fifths>
+        <fifths>${options.keyFifths}</fifths>
       </key>
       <time>
-        <beats>4</beats>
-        <beat-type>4</beat-type>
+        <beats>${options.beats}</beats>
+        <beat-type>${options.beatType}</beat-type>
       </time>
       <clef>
-        <sign>G</sign>
-        <line>2</line>
+        <sign>${clef.sign}</sign>
+        <line>${clef.line}</line>
       </clef>
-    </attributes>`
+    </attributes>${options.showTempo ? `\n${renderTempo(options.tempoBpm)}` : ''}`
     : ''
 
   return `    <measure number="${measure.index + 1}">
@@ -58,8 +89,30 @@ ${contents}${padding ? `\n${padding}` : ''}
     </measure>`
 }
 
+function renderTempo(tempoBpm: number): string {
+  const tempo = Number.isFinite(tempoBpm) ? Math.max(20, Math.min(260, Math.round(tempoBpm))) : 96
+
+  return `      <direction placement="above">
+        <direction-type>
+          <metronome parentheses="no">
+            <beat-unit>quarter</beat-unit>
+            <per-minute>${tempo}</per-minute>
+          </metronome>
+        </direction-type>
+        <sound tempo="${tempo}" />
+      </direction>`
+}
+
 function renderEvent(event: ScoreEvent): string {
-  return event.kind === 'note' ? renderNoteEvent(event) : renderChordEvent(event)
+  if (event.kind === 'note') {
+    return renderNoteEvent(event)
+  }
+
+  if (event.kind === 'chord') {
+    return renderChordEvent(event)
+  }
+
+  return renderDirectionEvent(event)
 }
 
 function renderNoteEvent(event: NoteEvent): string {
@@ -91,6 +144,37 @@ ${event.helperPitch.alter !== 0 ? `          <alter>${event.helperPitch.alter}</
           <text>${escapeXml(buildPitchClass(event.root.step, event.root.alter))}</text>
         </lyric>
       </note>`
+}
+
+function renderDirectionEvent(event: DirectionEvent): string {
+  if (event.directionKind === 'dynamic') {
+    return `      <direction placement="below">
+        <direction-type>
+          <dynamics>
+            <${event.text} />
+          </dynamics>
+        </direction-type>
+      </direction>`
+  }
+
+  if (event.directionKind === 'hairpin') {
+    const wedgeType = event.value ?? 'crescendo'
+
+    return `      <direction placement="below">
+        <direction-type>
+          <wedge type="${wedgeType}" />
+        </direction-type>
+        <direction-type>
+          <words>${escapeXml(event.text)}</words>
+        </direction-type>
+      </direction>`
+  }
+
+  return `      <direction placement="above">
+        <direction-type>
+          <words>${escapeXml(event.text)}</words>
+        </direction-type>
+      </direction>`
 }
 
 function renderRestSequence(units: number): string {

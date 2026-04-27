@@ -87,8 +87,14 @@ Accepted syntax:
 
 - `C4 q, D4 q, E4 h`
 - `C4 E4 G4 | F4 A4 C5`
+- `mf [dolce] C4 q, E4 q, G4 h`
+- `p C4 E4 G4 | < F4 A4 C5 | > G4 h`
 - bar separators with `|`
 - durations: `w`, `h`, `q`, `8`
+- dynamics: `pp`, `p`, `mp`, `mf`, `f`, `ff`
+- expression words: `dolce`, `legato`, `staccato`, `tenuto`, `cantabile`, `espressivo`, `rit.`, `accel.`
+- custom expression text: `[like_this]`
+- volume changes: `<` or `cresc`, `>` or `dim`
 
 Rules:
 
@@ -108,6 +114,8 @@ Accepted syntax:
 - `F#dim`
 - `Bbmaj7`
 - `Cmaj7 | Am7 | Dm7 G7 | Cmaj7`
+- `mf Cmaj7 | < Am7 | Dm7 G7 | p Cmaj7`
+- dynamics, expression text, and volume changes work in chord mode too
 
 Rules:
 
@@ -117,8 +125,9 @@ Rules:
 ## Working Examples
 
 - `C4 q, E4 q, G4 h`
-- `C4 E4 G4 | F4 A4 C5`
-- `Cmaj7 | Am7 | Dm7 G7 | Cmaj7`
+- `mf [dolce] C4 q, E4 q, G4 h`
+- `p C4 E4 G4 | < F4 A4 C5 | > G4 h`
+- `mf Cmaj7 | < Am7 | Dm7 G7 | p Cmaj7`
 - `Bbmaj7 | Gm7 | C7 | F#dim`
 
 ## Validation Behavior

@@ -40,7 +40,23 @@ export interface ChordEvent {
   tones: string[]
 }
 
-export type ScoreEvent = NoteEvent | ChordEvent
+export type DirectionKind = 'dynamic' | 'expression' | 'hairpin'
+
+export interface DirectionEvent {
+  id: string
+  kind: 'direction'
+  directionKind: DirectionKind
+  text: string
+  value?: 'crescendo' | 'diminuendo'
+}
+
+export type RhythmEvent = NoteEvent | ChordEvent
+
+export type ScoreEvent = RhythmEvent | DirectionEvent
+
+export function isRhythmicEvent(event: ScoreEvent): event is RhythmEvent {
+  return event.kind === 'note' || event.kind === 'chord'
+}
 
 export interface Measure {
   index: number

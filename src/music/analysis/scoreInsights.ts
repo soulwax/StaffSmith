@@ -1,4 +1,4 @@
-import type { ChordEvent, NoteEvent, Score, ScoreEvent } from '../model/types'
+import { isRhythmicEvent, type ChordEvent, type NoteEvent, type Score, type ScoreEvent } from '../model/types'
 
 export type ScoreInsights = {
   measureCount: number
@@ -40,7 +40,7 @@ export function getScoreInsights(score: Score | null): ScoreInsights {
   const chords = events.filter(isChordEvent)
   const durationCounts = new Map<string, number>()
 
-  for (const event of events) {
+  for (const event of events.filter(isRhythmicEvent)) {
     durationCounts.set(event.duration, (durationCounts.get(event.duration) ?? 0) + 1)
   }
 

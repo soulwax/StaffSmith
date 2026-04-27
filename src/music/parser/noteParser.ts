@@ -1,10 +1,11 @@
 import { createEmptyScore } from '../model/createEmptyScore'
-import type { Measure, NoteEvent, ParseResult, Score } from '../model/types'
+import { isRhythmicEvent, type Measure, type NoteEvent, type ParseResult, type Score } from '../model/types'
 import { isDurationSymbol, sumMeasureUnits } from '../theory/duration'
 import { parseScientificPitch } from '../theory/pitch'
+import { parseDirectionToken } from './notation'
 import { createParseError, tokenize } from './shared'
 
-const NOTE_TOKEN_PATTERN = /\||,|[A-Ga-g](?:#|b)?\d+|w|h|q|8|\S+/g
+const NOTE_TOKEN_PATTERN = /\||,|\[[^\]]+\]|[<>]|[A-Ga-g](?:#|b)?\d+|w|h|q|8|\S+/g
 const MAX_MEASURE_UNITS = 8
 
 export function parseNoteInput(input: string): ParseResult<Score> {
@@ -18,9 +19,10 @@ export function parseNoteInput(input: string): ParseResult<Score> {
     return { ok: false, value: score, errors, warnings }
   }
 
-  let currentMeasureEvents: NoteEvent[] = []
+  let currentMeasureEvents: Measure['events'] = []
   let measureIndex = 0
   let eventIndex = 0
+  let directionIndex = 0
 
   const pushMeasure = () => {
     if (currentMeasureEvents.length === 0) {
@@ -49,6 +51,13 @@ export function parseNoteInput(input: string): ParseResult<Score> {
 
     if (token.value === '|') {
       pushMeasure()
+      continue
+    }
+
+    const direction = parseDirectionToken(token.value, `m${measureIndex + 1}-d${directionIndex + 1}`)
+    if (direction) {
+      currentMeasureEvents.push(direction)
+      directionIndex += 1
       continue
     }
 
@@ -85,7 +94,7 @@ export function parseNoteInput(input: string): ParseResult<Score> {
     })
     eventIndex += 1
 
-    const totalUnits = sumMeasureUnits(currentMeasureEvents.map((event) => event.duration))
+    const totalUnits = sumMeasureUnits(currentMeasureEvents.filter(isRhythmicEvent).map((event) => event.duration))
     if (totalUnits > MAX_MEASURE_UNITS) {
       errors.push(
         createParseError(
@@ -105,7 +114,7 @@ export function parseNoteInput(input: string): ParseResult<Score> {
   }
 
   const incompleteMeasureCount = score.measures.filter(
-    (measure) => sumMeasureUnits(measure.events.map((event) => event.duration)) < MAX_MEASURE_UNITS,
+    (measure) => sumMeasureUnits(measure.events.filter(isRhythmicEvent).map((event) => event.duration)) < MAX_MEASURE_UNITS,
   ).length
 
   if (incompleteMeasureCount > 0) {

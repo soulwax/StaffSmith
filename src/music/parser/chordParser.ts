@@ -1,9 +1,20 @@
 import { createEmptyScore } from '../model/createEmptyScore'
-import type { ChordEvent, Measure, ParseResult, Score } from '../model/types'
+import type { Measure, ParseResult, Score } from '../model/types'
 import { parseChordSymbol, resolveChordDurations } from '../theory/chords'
+import { parseDirectionToken } from './notation'
 import { createParseError, tokenize } from './shared'
 
-const CHORD_TOKEN_PATTERN = /\||,|[^\s|,]+/g
+const CHORD_TOKEN_PATTERN = /\||,|\[[^\]]+\]|[<>]|[^\s|,]+/g
+
+type ChordMeasureItem =
+  | {
+      kind: 'chord-token'
+      token: ReturnType<typeof tokenize>[number]
+    }
+  | {
+      kind: 'direction'
+      event: Measure['events'][number]
+    }
 
 export function parseChordInput(input: string): ParseResult<Score> {
   const score = createEmptyScore('chords')
@@ -16,20 +27,25 @@ export function parseChordInput(input: string): ParseResult<Score> {
     return { ok: false, value: score, errors, warnings }
   }
 
-  let currentMeasureTokens: typeof tokens = []
+  let currentMeasureItems: ChordMeasureItem[] = []
   let measureIndex = 0
   let eventIndex = 0
+  let directionIndex = 0
 
   const pushMeasure = () => {
-    if (currentMeasureTokens.length === 0) {
+    if (currentMeasureItems.length === 0) {
       return
     }
+
+    const currentMeasureTokens = currentMeasureItems
+      .filter((item): item is Extract<ChordMeasureItem, { kind: 'chord-token' }> => item.kind === 'chord-token')
+      .map((item) => item.token)
 
     const durations = resolveChordDurations(currentMeasureTokens.length)
     if (!durations) {
       const token = currentMeasureTokens[4] ?? currentMeasureTokens[currentMeasureTokens.length - 1]
       if (!token) {
-        currentMeasureTokens = []
+        currentMeasureItems = []
         return
       }
 
@@ -41,15 +57,23 @@ export function parseChordInput(input: string): ParseResult<Score> {
           token.value,
         ),
       )
-      currentMeasureTokens = []
+      currentMeasureItems = []
       return
     }
 
-    const events: ChordEvent[] = []
+    const events: Measure['events'] = []
+    let chordIndex = 0
 
-    currentMeasureTokens.forEach((token, index) => {
+    currentMeasureItems.forEach((item) => {
+      if (item.kind === 'direction') {
+        events.push(item.event)
+        return
+      }
+
+      const token = item.token
       const parsedChord = parseChordSymbol(token.value)
-      const duration = durations[index]
+      const duration = durations[chordIndex]
+      chordIndex += 1
       if (!duration) {
         return
       }
@@ -84,7 +108,7 @@ export function parseChordInput(input: string): ParseResult<Score> {
       measureIndex += 1
     }
 
-    currentMeasureTokens = []
+    currentMeasureItems = []
   }
 
   for (const token of tokens) {
@@ -97,7 +121,14 @@ export function parseChordInput(input: string): ParseResult<Score> {
       continue
     }
 
-    currentMeasureTokens.push(token)
+    const direction = parseDirectionToken(token.value, `m${measureIndex + 1}-d${directionIndex + 1}`)
+    if (direction) {
+      currentMeasureItems.push({ kind: 'direction', event: direction })
+      directionIndex += 1
+      continue
+    }
+
+    currentMeasureItems.push({ kind: 'chord-token', token })
   }
 
   pushMeasure()

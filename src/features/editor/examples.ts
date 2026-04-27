@@ -11,24 +11,24 @@ export type ExamplePreset = {
 export const EXAMPLES: ExamplePreset[] = [
   {
     id: 'notes-triad',
-    label: 'C Triad',
+    label: 'Dynamic Triad',
     mode: 'notes',
-    description: 'Simple note events with explicit durations.',
-    input: 'C4 q, E4 q, G4 h',
+    description: 'Simple note events with dynamics and expression text.',
+    input: 'mf [dolce] C4 q, E4 q, G4 h',
   },
   {
     id: 'notes-bars',
-    label: 'Bar Split',
+    label: 'Hairpin Notes',
     mode: 'notes',
-    description: 'Whitespace note entry with bar separators.',
-    input: 'C4 E4 G4 | F4 A4 C5',
+    description: 'Whitespace note entry with bar separators and volume changes.',
+    input: 'p C4 E4 G4 | < F4 A4 C5 | > G4 h',
   },
   {
     id: 'chords-turnaround',
     label: 'Jazz Turnaround',
     mode: 'chords',
-    description: 'Lead-sheet style harmony symbols.',
-    input: 'Cmaj7 | Am7 | Dm7 G7 | Cmaj7',
+    description: 'Lead-sheet style harmony symbols with dynamics.',
+    input: 'mf Cmaj7 | < Am7 | Dm7 G7 | p Cmaj7',
   },
   {
     id: 'chords-color',
