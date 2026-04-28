@@ -1,4 +1,5 @@
 import {
+  ArrowRight,
   Bot,
   CircleHelp,
   Copy,
@@ -16,7 +17,6 @@ import {
   ScrollText,
   Search,
   Sparkles,
-  WandSparkles,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import './app.css'
@@ -677,11 +677,11 @@ export function App() {
             <div className="studio-actions">
               <button
                 type="button"
-                className="secondary-button"
+                className="subtle-button"
                 onClick={generateNotesFromText}
                 disabled={isGeneratingNotes}
               >
-                <WandSparkles size={16} aria-hidden="true" />
+                <ArrowRight size={16} aria-hidden="true" />
                 {isGeneratingNotes ? 'Generating...' : 'Generate'}
               </button>
               <a className="inline-help-link" href="#/help">

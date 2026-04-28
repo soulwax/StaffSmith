@@ -313,6 +313,7 @@
 }
 
 .secondary-button,
+.subtle-button,
 .ghost-button {
   display: inline-flex;
   align-items: center;
@@ -333,6 +334,12 @@
   color: #173947;
 }
 
+.subtle-button {
+  border: 1px solid rgba(54, 76, 62, 0.14);
+  background: rgba(248, 249, 246, 0.92);
+  color: #4c5b53;
+}
+
 .ghost-button {
   border: 1px solid rgba(28, 126, 152, 0.16);
   background: rgba(255, 255, 255, 0.78);
@@ -340,11 +347,13 @@
 }
 
 .secondary-button:hover,
+.subtle-button:hover,
 .ghost-button:hover {
   transform: translateY(-1px);
 }
 
-.secondary-button:disabled {
+.secondary-button:disabled,
+.subtle-button:disabled {
   cursor: wait;
   opacity: 0.62;
   transform: none;
