@@ -179,45 +179,66 @@
   html,
   body,
   #root {
-    width: 210mm;
-    min-height: 297mm;
+    width: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
     background: #fff;
   }
 
-  body * {
-    visibility: hidden;
+  .app-shell {
+    min-height: 0;
+    padding: 0;
+    background: #fff;
+    color: #000;
   }
 
-  .score-preview-card,
-  .score-preview-card * {
-    visibility: visible;
+  .workspace-header,
+  .workbench-column,
+  .inspector-sidebar,
+  .score-preview-card::before,
+  .score-preview-card > .section-card__header,
+  .preview-toolbar,
+  .preview-placeholder,
+  .preview-error,
+  .page-controls {
+    display: none !important;
+  }
+
+  .layout,
+  .preview-column {
+    display: block;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
   }
 
   .score-preview-card {
-    position: absolute;
-    inset: 0;
-    width: 100%;
+    display: block;
+    position: static;
+    width: auto;
+    height: auto;
     min-height: auto;
     border: 0;
     box-shadow: none;
     background: #fff;
-  }
-
-  .score-preview-card::before,
-  .score-preview-card > .section-card__header,
-  .preview-toolbar {
-    display: none;
+    overflow: visible;
   }
 
   .score-preview-card .section-card__content {
     display: block;
+    height: auto;
     min-height: auto;
     padding: 0;
   }
 
   .preview-surface {
+    display: block;
     overflow: visible;
     min-height: auto;
+    margin: 0;
     padding: 0;
     border: 0;
     background: #fff;
@@ -225,6 +246,7 @@
 
   .a4-page {
     width: 100%;
+    aspect-ratio: auto;
     min-height: auto;
     margin: 0;
     padding: 0;
