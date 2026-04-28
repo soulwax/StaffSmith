@@ -6,6 +6,42 @@ import { DEFAULT_SHEET_OPTIONS, getClefDefinition, getDensityScale, type ScoreSh
 
 const FULL_MEASURE_UNITS = 8
 
+type BeamMark = 'begin' | 'continue' | 'end'
+
+function computeBeams(events: ScoreEvent[]): Map<string, BeamMark> {
+  const beams = new Map<string, BeamMark>()
+  let run: string[] = []
+
+  const flush = () => {
+    if (run.length >= 2) {
+      beams.set(run[0]!, 'begin')
+      for (let i = 1; i < run.length - 1; i++) {
+        beams.set(run[i]!, 'continue')
+      }
+      beams.set(run[run.length - 1]!, 'end')
+    }
+    run = []
+  }
+
+  for (const event of events) {
+    if (!isRhythmicEvent(event)) {
+      continue
+    }
+    if (event.duration === '8') {
+      run.push(event.id)
+    } else {
+      flush()
+    }
+  }
+  flush()
+  return beams
+}
+
+function stemDirection(octave: number): 'up' | 'down' {
+  // Treble clef middle line is B4. C5 and above → stem down; B4 and below → stem up.
+  return octave >= 5 ? 'down' : 'up'
+}
+
 export function scoreToMusicXml(score: Score, options: Partial<ScoreSheetOptions> = {}): string {
   const sheetOptions = { ...DEFAULT_SHEET_OPTIONS, ...options }
   const measuresXml = score.measures
@@ -58,7 +94,8 @@ ${measuresXml}
 }
 
 function renderMeasure(measure: Measure, isFirst: boolean, options: ScoreSheetOptions): string {
-  const contents = measure.events.map(renderEvent).join('\n')
+  const beams = computeBeams(measure.events)
+  const contents = measure.events.map((event) => renderEvent(event, beams)).join('\n')
   const measureUnits = measure.events
     .filter(isRhythmicEvent)
     .reduce((sum, event) => sum + DURATION_UNITS[event.duration], 0)
@@ -103,9 +140,9 @@ function renderTempo(tempoBpm: number): string {
       </direction>`
 }
 
-function renderEvent(event: ScoreEvent): string {
+function renderEvent(event: ScoreEvent, beams: Map<string, BeamMark>): string {
   if (event.kind === 'note') {
-    return renderNoteEvent(event)
+    return renderNoteEvent(event, beams.get(event.id))
   }
 
   if (event.kind === 'chord') {
@@ -115,18 +152,22 @@ function renderEvent(event: ScoreEvent): string {
   return renderDirectionEvent(event)
 }
 
-function renderNoteEvent(event: NoteEvent): string {
+function renderNoteEvent(event: NoteEvent, beamMark: BeamMark | undefined): string {
+  const stem = event.duration === 'w' ? '' : `\n        <stem>${stemDirection(event.pitch.octave)}</stem>`
+  const beam = beamMark ? `\n        <beam number="1">${beamMark}</beam>` : ''
   return `      <note>
         <pitch>
           <step>${event.pitch.step}</step>
 ${event.pitch.alter !== 0 ? `          <alter>${event.pitch.alter}</alter>\n` : ''}          <octave>${event.pitch.octave}</octave>
         </pitch>
         <duration>${DURATION_UNITS[event.duration]}</duration>
-        <type>${MUSICXML_NOTE_TYPE[event.duration]}</type>
+        <voice>1</voice>
+        <type>${MUSICXML_NOTE_TYPE[event.duration]}</type>${stem}${beam}
       </note>`
 }
 
 function renderChordEvent(event: ChordEvent): string {
+  const stem = event.duration === 'w' ? '' : `\n        <stem>${stemDirection(event.helperPitch.octave)}</stem>`
   return `      <harmony>
         <root>
           <root-step>${event.root.step}</root-step>
@@ -139,7 +180,8 @@ ${event.root.alter !== 0 ? `          <root-alter>${event.root.alter}</root-alte
 ${event.helperPitch.alter !== 0 ? `          <alter>${event.helperPitch.alter}</alter>\n` : ''}          <octave>${event.helperPitch.octave}</octave>
         </pitch>
         <duration>${DURATION_UNITS[event.duration]}</duration>
-        <type>${MUSICXML_NOTE_TYPE[event.duration]}</type>
+        <voice>1</voice>
+        <type>${MUSICXML_NOTE_TYPE[event.duration]}</type>${stem}
         <lyric>
           <text>${escapeXml(buildPitchClass(event.root.step, event.root.alter))}</text>
         </lyric>
@@ -185,6 +227,7 @@ function renderRestSequence(units: number): string {
       (chunk) => `      <note>
         <rest />
         <duration>${chunk}</duration>
+        <voice>1</voice>
         <type>${MUSICXML_NOTE_TYPE[toDurationSymbol(chunk)]}</type>
       </note>`,
     )
