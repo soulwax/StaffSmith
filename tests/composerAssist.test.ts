@@ -100,4 +100,19 @@ describe('composer assist normalization', () => {
 
     expect(result.generatedInput).toBe('mp D5 q F5 q A5 h | < G5 q A5 q B5 q A5 q')
   })
+
+  it('returns a parseable fallback when the pinned Gemini generation model is unavailable', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 503 }))
+
+    const result = await runComposerAssist({
+      task: 'generate',
+      mode: 'notes',
+      input: 'C4 q E4 q G4 h',
+      prompt: 'A flute solo for beginners, in the style of jethro tull jazz',
+    })
+
+    expect(result.generatedInput).toBe('mp [airy flute] D5 q, F5 q, A5 h | < G5 q, A5 q, B5 q, A5 q | > G5 q, F5 q, E5 q, D5 q')
+    expect(result.summary).toContain('local beginner flute fallback')
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+  })
 })

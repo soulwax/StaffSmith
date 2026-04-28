@@ -25,7 +25,7 @@ describe('Gemini availability check', () => {
     expect(status).toMatchObject({
       available: true,
       message: 'Gemini available.',
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.1-flash-lite-preview',
     })
     expect(status.checkedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/)
     expect(status.latencyMs).toBeGreaterThanOrEqual(0)
@@ -39,7 +39,7 @@ describe('Gemini availability check', () => {
     expect(status).toMatchObject({
       available: false,
       message: 'Gemini key rejected.',
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.1-flash-lite-preview',
     })
   })
 })

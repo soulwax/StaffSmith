@@ -17,7 +17,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
       available: false,
       checkedAt: new Date().toISOString(),
       message,
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.1-flash-lite-preview',
     }
 
     sendJson(response, 200, body)

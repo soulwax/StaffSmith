@@ -247,7 +247,7 @@ const initialGeminiStatus: GeminiUiStatus = {
   available: false,
   checkedAt: '',
   message: 'Checking Gemini...',
-  model: 'gemini-2.5-flash',
+  model: 'gemini-3.1-flash-lite-preview',
   state: 'checking',
 }
 
@@ -322,7 +322,7 @@ export function App() {
             available: false,
             checkedAt: new Date().toISOString(),
             message: getErrorMessage(error, 'Gemini status check failed.'),
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.1-flash-lite-preview',
             state: 'unavailable',
           })
         }
@@ -560,9 +560,7 @@ export function App() {
     <div className="app-shell">
       <header className="workspace-header">
         <div className="brand-lockup">
-          <span className="brand-mark" aria-hidden="true">
-            <Music2 size={18} strokeWidth={2.4} />
-          </span>
+          <img className="brand-mark" src="/favicon.svg" alt="" aria-hidden="true" />
           <h1>Staffsmith</h1>
         </div>
         <div className="header-project-console" aria-label="Project console">

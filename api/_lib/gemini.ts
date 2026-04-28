@@ -4,7 +4,7 @@ import type { InputMode } from '../../src/music/model/types.js'
 import { getGeminiApiKey } from './env.js'
 import { fail } from './http.js'
 
-const GEMINI_MODEL = 'gemini-2.5-flash'
+const GEMINI_MODEL = 'gemini-3.1-flash-lite-preview'
 const DEFAULT_GENERATED_NOTATION = 'mp [airy flute] D5 q, F5 q, A5 h | < G5 q, A5 q, B5 q, A5 q | > G5 q, F5 q, E5 q, D5 q'
 const DURATION_VALUES = new Set(['w', 'h', 'q', '8'])
 
@@ -25,34 +25,41 @@ type GeminiResponse = {
 
 export async function runComposerAssist(payload: ComposerAssistRequest): Promise<ComposerAssistResult> {
   const apiKey = getGeminiApiKey()
-  const response = await fetch(
+  const body = JSON.stringify({
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          {
+            text: buildPrompt(payload),
+          },
+        ],
+      },
+    ],
+    generationConfig: {
+      temperature: payload.task === 'generate' ? 0.85 : 0.35,
+      responseMimeType: 'application/json',
+    },
+  })
+  let response: Response | null = null
+
+  response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              {
-                text: buildPrompt(payload),
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: payload.task === 'generate' ? 0.85 : 0.35,
-          responseMimeType: 'application/json',
-        },
-      }),
+      body,
     },
   )
 
-  if (!response.ok) {
-    fail(response.status, 'Gemini request failed.')
+  if (!response?.ok) {
+    if (payload.task === 'generate') {
+      return createFallbackAssistResult(payload, response?.status)
+    }
+
+    fail(response?.status ?? 502, response?.status ? `Gemini request failed with HTTP ${response.status}.` : 'Gemini request failed.')
   }
 
   const data = await response.json() as GeminiResponse
@@ -63,6 +70,22 @@ export async function runComposerAssist(payload: ComposerAssistRequest): Promise
   }
 
   return normalizeAssistResult(JSON.parse(text) as LooseComposerAssistResult, payload)
+}
+
+function createFallbackAssistResult(payload: ComposerAssistRequest, statusCode?: number): ComposerAssistResult {
+  return {
+    summary: statusCode
+      ? `Gemini generation returned HTTP ${statusCode}, so StaffSmith used a local beginner flute fallback.`
+      : 'Gemini generation was unavailable, so StaffSmith used a local beginner flute fallback.',
+    keyCenter: 'D minor',
+    suggestedMode: 'notes',
+    generatedInput: DEFAULT_GENERATED_NOTATION,
+    notes: [
+      'Uses a beginner-friendly flute range.',
+      'Keeps StaffSmith syntax parseable while Gemini is unavailable.',
+      payload.prompt ? 'Try Generate again later for a fresh AI variation.' : 'Add a prompt and try again later for a fresh AI variation.',
+    ],
+  }
 }
 
 export async function checkGeminiAvailability(): Promise<GeminiStatusResponse> {
