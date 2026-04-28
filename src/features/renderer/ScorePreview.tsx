@@ -1,11 +1,19 @@
 import { useCallback, useDeferredValue, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { ChevronLeft, ChevronRight, Copy, Download, Printer, RotateCcw } from 'lucide-react'
 import { SectionCard } from '../../components/SectionCard'
+import {
+  DEFAULT_PART_LAYOUT_PRESET,
+  PART_LAYOUT_PRESETS,
+  getPartLayoutPreset,
+  type PartLayoutPresetId,
+} from '../../music/musicxml/sheetOptions'
 import './ScorePreview.css'
 
 type ScorePreviewProps = {
   musicXml: string | null
   title: string
+  partLayoutPresetId: PartLayoutPresetId
+  onPartLayoutPresetChange: (presetId: PartLayoutPresetId) => void
   onCopyMusicXml: () => void
   onDownloadMusicXml: () => void
   onPrintScore: () => void
@@ -29,16 +37,6 @@ type ZoomableDisplay = {
 }
 
 const BASE_PREVIEW_ZOOM = 0.84
-const DEFAULT_NOTE_SCALE = 100
-const DEFAULT_SYSTEM_SPACING = 100
-const DEFAULT_MEASURES_PER_LINE = 0
-const MEASURES_PER_LINE_OPTIONS = [
-  { label: 'Auto', value: 0 },
-  { label: '2 / line', value: 2 },
-  { label: '3 / line', value: 3 },
-  { label: '4 / line', value: 4 },
-  { label: '5 / line', value: 5 },
-] as const
 
 function applyZoom(display: ZoomableDisplay, zoom: number) {
   if (display.setZoom) {
@@ -57,6 +55,8 @@ function applyZoom(display: ZoomableDisplay, zoom: number) {
 export function ScorePreview({
   musicXml,
   title,
+  partLayoutPresetId,
+  onPartLayoutPresetChange,
   onCopyMusicXml,
   onDownloadMusicXml,
   onPrintScore,
@@ -67,13 +67,10 @@ export function ScorePreview({
   const [renderError, setRenderError] = useState<RenderError | null>(null)
   const [pageIndex, setPageIndex] = useState(0)
   const [pageCount, setPageCount] = useState(1)
-  const [noteScale, setNoteScale] = useState(DEFAULT_NOTE_SCALE)
-  const [systemSpacing, setSystemSpacing] = useState(DEFAULT_SYSTEM_SPACING)
-  const [measuresPerLine, setMeasuresPerLine] = useState(DEFAULT_MEASURES_PER_LINE)
   const [showTitle, setShowTitle] = useState(true)
   const [showMeasureNumbers, setShowMeasureNumbers] = useState(true)
-  const deferredSystemSpacing = useDeferredValue(systemSpacing)
-  const deferredMeasuresPerLine = useDeferredValue(measuresPerLine)
+  const partLayoutPreset = getPartLayoutPreset(partLayoutPresetId)
+  const deferredPartLayoutPreset = useDeferredValue(partLayoutPreset)
   const deferredShowMeasureNumbers = useDeferredValue(showMeasureNumbers)
 
   const updateRenderedPages = useCallback((resetPage = false) => {
@@ -137,11 +134,11 @@ export function ScorePreview({
           pageFormat: 'A4',
         })
 
-        const spacingScale = deferredSystemSpacing / 100
+        const spacingScale = deferredPartLayoutPreset.previewSystemSpacing / 100
         osmd.EngravingRules.MinimumDistanceBetweenSystems *= spacingScale
         osmd.EngravingRules.MinSkyBottomDistBetweenSystems *= spacingScale
         osmd.EngravingRules.RenderMeasureNumbers = deferredShowMeasureNumbers
-        osmd.EngravingRules.RenderXMeasuresPerLineAkaSystem = deferredMeasuresPerLine
+        osmd.EngravingRules.RenderXMeasuresPerLineAkaSystem = deferredPartLayoutPreset.measuresPerSystem
 
         await osmd.load(musicXml)
         if (cancelled) {
@@ -174,7 +171,7 @@ export function ScorePreview({
         container.replaceChildren()
       }
     }
-  }, [deferredMeasuresPerLine, deferredShowMeasureNumbers, deferredSystemSpacing, musicXml, updateRenderedPages])
+  }, [deferredPartLayoutPreset, deferredShowMeasureNumbers, musicXml, updateRenderedPages])
 
   const goToPreviousPage = () => {
     setPageIndex((current) => Math.max(0, current - 1))
@@ -212,66 +209,36 @@ export function ScorePreview({
   }
 
   const handleResetLayout = () => {
-    setNoteScale(DEFAULT_NOTE_SCALE)
-    setSystemSpacing(DEFAULT_SYSTEM_SPACING)
-    setMeasuresPerLine(DEFAULT_MEASURES_PER_LINE)
+    onPartLayoutPresetChange(DEFAULT_PART_LAYOUT_PRESET)
     setShowTitle(true)
     setShowMeasureNumbers(true)
   }
 
   const engravingStyle = {
-    '--score-engraving-scale': `${noteScale / 100}`,
+    '--score-engraving-scale': `${partLayoutPreset.previewNoteScale / 100}`,
   } as CSSProperties
 
   return (
     <SectionCard title="Score" className="score-preview-card">
       <div className="preview-toolbar" aria-label="Score preview actions">
         <div className="preview-toolbar__controls">
-          <label className="preview-range-control">
-            <span className="preview-control__label">Size</span>
-            <input
-              type="range"
-              min="75"
-              max="140"
-              step="5"
-              value={noteScale}
-              onChange={(event) => setNoteScale(Number(event.target.value))}
-              aria-label="Adjust note preview size"
-              disabled={!musicXml}
-            />
-            <span className="preview-control__value" aria-hidden="true">{noteScale}%</span>
-          </label>
-
-          <label className="preview-range-control">
-            <span className="preview-control__label">Spacing</span>
-            <input
-              type="range"
-              min="80"
-              max="180"
-              step="10"
-              value={systemSpacing}
-              onChange={(event) => setSystemSpacing(Number(event.target.value))}
-              aria-label="Adjust spacing between notation lines"
-              disabled={!musicXml}
-            />
-            <span className="preview-control__value" aria-hidden="true">{systemSpacing}%</span>
-          </label>
-
-          <label className="preview-select-control">
-            <span className="preview-control__label">Wrap</span>
-            <select
-              value={measuresPerLine}
-              onChange={(event) => setMeasuresPerLine(Number(event.target.value))}
-              aria-label="Set measures per notation line"
-              disabled={!musicXml}
-            >
-              {MEASURES_PER_LINE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
+          <div className="preview-preset-control">
+            <span className="preview-control__label">Layout</span>
+            <div className="preview-segmented-control" role="group" aria-label="Part layout preset">
+              {PART_LAYOUT_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  className={preset.id === partLayoutPresetId ? 'is-active' : undefined}
+                  onClick={() => onPartLayoutPresetChange(preset.id)}
+                  aria-pressed={preset.id === partLayoutPresetId}
+                  disabled={!musicXml}
+                >
+                  {preset.label}
+                </button>
               ))}
-            </select>
-          </label>
+            </div>
+          </div>
 
           <label className="preview-toggle-control">
             <input

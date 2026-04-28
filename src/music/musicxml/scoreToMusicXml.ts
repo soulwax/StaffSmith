@@ -1,12 +1,41 @@
 import { escapeXml } from '../../lib/text'
-import { isRhythmicEvent, type ChordEvent, type DirectionEvent, type Measure, type NoteEvent, type Score, type ScoreEvent } from '../model/types'
+import {
+  isRhythmicEvent,
+  type ChordEvent,
+  type DirectionEvent,
+  type Measure,
+  type NoteEvent,
+  type NotePitch,
+  type RestEvent,
+  type Score,
+  type ScoreEvent,
+} from '../model/types'
 import { DURATION_UNITS, MUSICXML_NOTE_TYPE } from '../theory/duration'
 import { buildPitchClass } from '../theory/pitch'
-import { DEFAULT_SHEET_OPTIONS, getClefDefinition, getDensityScale, type ScoreSheetOptions } from './sheetOptions'
+import { DEFAULT_SHEET_OPTIONS, getClefDefinition, getDensityScale, getPartLayoutPreset, type ScoreSheetOptions } from './sheetOptions'
 
 const FULL_MEASURE_UNITS = 8
+const STAFF_HEIGHT_TENTHS = 40
+const LONG_SILENCE_CUE_THRESHOLD = 12
+const MIN_PAGE_TURN_REST_MEASURES = 4
 
 type BeamMark = 'begin' | 'continue' | 'end'
+
+type PageSize = {
+  widthMm: number
+  heightMm: number
+}
+
+type MeasureLayoutPlan = {
+  newSystem: boolean
+  newPage: boolean
+  cuePitch?: NotePitch
+}
+
+const PAGE_SIZES: Record<ScoreSheetOptions['pageFormat'], PageSize> = {
+  a4: { widthMm: 210, heightMm: 297 },
+  'nine-by-twelve': { widthMm: 228.6, heightMm: 304.8 },
+}
 
 function computeBeams(events: ScoreEvent[]): Map<string, BeamMark> {
   const beams = new Map<string, BeamMark>()
@@ -43,9 +72,12 @@ function stemDirection(octave: number): 'up' | 'down' {
 }
 
 export function scoreToMusicXml(score: Score, options: Partial<ScoreSheetOptions> = {}): string {
-  const sheetOptions = { ...DEFAULT_SHEET_OPTIONS, ...options }
+  const sheetOptions = resolveSheetOptions(options)
+  const layoutPlan = buildLayoutPlan(score, sheetOptions)
+  const pageLayout = renderPageLayout(sheetOptions)
+  const systemLayout = renderSystemLayout(sheetOptions)
   const measuresXml = score.measures
-    .map((measure, index) => renderMeasure(measure, index === 0, sheetOptions))
+    .map((measure, index) => renderMeasure(measure, index === 0, sheetOptions, layoutPlan.get(index)))
     .join('\n')
   const title = sheetOptions.title || score.metadata.title
   const subtitle = sheetOptions.subtitle
@@ -71,16 +103,10 @@ ${creatorXml}    ${subtitle ? `<miscellaneous><miscellaneous-field name="subtitl
       <millimeters>7</millimeters>
       <tenths>${Math.round(40 / getDensityScale(sheetOptions.density))}</tenths>
     </scaling>
-    <page-layout>
-      <page-height>1683.78</page-height>
-      <page-width>1190.55</page-width>
-      <page-margins type="both">
-        <left-margin>52</left-margin>
-        <right-margin>52</right-margin>
-        <top-margin>52</top-margin>
-        <bottom-margin>52</bottom-margin>
-      </page-margins>
-    </page-layout>
+    <music-font font-family="Bravura, Maestro, Petaluma, Finale Maestro" />
+    <word-font font-family="Times New Roman, Times, serif" font-size="10" />
+${pageLayout}
+${systemLayout}
   </defaults>
   <part-list>
     <score-part id="P1">
@@ -93,8 +119,273 @@ ${measuresXml}
 </score-partwise>`
 }
 
-function renderMeasure(measure: Measure, isFirst: boolean, options: ScoreSheetOptions): string {
+function resolveSheetOptions(options: Partial<ScoreSheetOptions>): ScoreSheetOptions {
+  const baseOptions = { ...DEFAULT_SHEET_OPTIONS, ...options }
+  const preset = getPartLayoutPreset(baseOptions.partLayoutPreset)
+
+  return {
+    ...baseOptions,
+    density: options.density ?? preset.density,
+    measuresPerSystem: options.measuresPerSystem ?? preset.measuresPerSystem,
+    systemsPerPageTarget: options.systemsPerPageTarget ?? preset.systemsPerPageTarget,
+    minimumSystemGapMm: options.minimumSystemGapMm ?? preset.minimumSystemGapMm,
+  }
+}
+
+function buildLayoutPlan(score: Score, options: ScoreSheetOptions): Map<number, MeasureLayoutPlan> {
+  const plan = new Map<number, MeasureLayoutPlan>()
+  const measuresPerSystem = clampInteger(options.measuresPerSystem, 1, 12)
+  const systemsPerPage = clampInteger(options.systemsPerPageTarget, 8, 10)
+  const measuresPerPage = measuresPerSystem * systemsPerPage
+  const pageBreaks = computePageBreaks(score, measuresPerPage)
+  const cueMeasures = computeCueMeasures(score)
+
+  score.measures.forEach((_, index) => {
+    const newSystem = index > 0 && index % measuresPerSystem === 0
+    const newPage = pageBreaks.has(index)
+    const cuePitch = cueMeasures.get(index)
+
+    if (newSystem || newPage || cuePitch) {
+      plan.set(index, {
+        newSystem: newPage ? false : newSystem,
+        newPage,
+        cuePitch,
+      })
+    }
+  })
+
+  return plan
+}
+
+function computePageBreaks(score: Score, measuresPerPage: number): Set<number> {
+  const breaks = new Set<number>()
+  let target = measuresPerPage
+  let previousBreak = 0
+
+  while (target < score.measures.length) {
+    const restBreak = findRestPageBreak(score, target, previousBreak)
+    const sectionBreak = restBreak ?? findSectionPageBreak(score, target, previousBreak)
+    const nextBreak = sectionBreak ?? target
+
+    if (nextBreak <= previousBreak || nextBreak >= score.measures.length) {
+      break
+    }
+
+    breaks.add(nextBreak)
+    previousBreak = nextBreak
+    target = previousBreak + measuresPerPage
+  }
+
+  return breaks
+}
+
+function findRestPageBreak(score: Score, target: number, previousBreak: number): number | undefined {
+  const searchStart = Math.max(previousBreak + 1, target - MIN_PAGE_TURN_REST_MEASURES)
+  const searchEnd = Math.min(score.measures.length - 1, target + MIN_PAGE_TURN_REST_MEASURES * 2)
+  const runs = findFullMeasureRestRuns(score)
+
+  return runs
+    .map((run) => run.start)
+    .filter((start) => start >= searchStart && start <= searchEnd)
+    .sort((a, b) => Math.abs(a - target) - Math.abs(b - target))[0]
+}
+
+function findSectionPageBreak(score: Score, target: number, previousBreak: number): number | undefined {
+  const searchStart = Math.max(previousBreak + 1, target - 2)
+  const searchEnd = Math.min(score.measures.length - 1, target + 8)
+
+  for (let index = searchStart; index <= searchEnd; index += 1) {
+    if (hasSectionChange(score.measures[index])) {
+      return index
+    }
+  }
+
+  return undefined
+}
+
+function computeCueMeasures(score: Score): Map<number, NotePitch> {
+  const cueMeasures = new Map<number, NotePitch>()
+  const runs = findFullMeasureRestRuns(score)
+
+  for (const run of runs) {
+    if (run.length <= LONG_SILENCE_CUE_THRESHOLD) {
+      continue
+    }
+
+    const cuePitch = findCuePitch(score, run.start + run.length)
+    if (cuePitch) {
+      cueMeasures.set(run.start, cuePitch)
+    }
+  }
+
+  return cueMeasures
+}
+
+function findFullMeasureRestRuns(score: Score): Array<{ start: number, length: number }> {
+  const runs: Array<{ start: number, length: number }> = []
+  let runStart: number | null = null
+  let runLength = 0
+
+  score.measures.forEach((measure, index) => {
+    if (isFullMeasureRest(measure)) {
+      if (runStart === null) {
+        runStart = index
+      }
+      runLength += 1
+      return
+    }
+
+    if (runStart !== null) {
+      runs.push({ start: runStart, length: runLength })
+      runStart = null
+      runLength = 0
+    }
+  })
+
+  if (runStart !== null) {
+    runs.push({ start: runStart, length: runLength })
+  }
+
+  return runs.filter((run) => run.length >= MIN_PAGE_TURN_REST_MEASURES)
+}
+
+function isFullMeasureRest(measure: Measure): boolean {
+  const rhythmicEvents = measure.events.filter(isRhythmicEvent)
+
+  return rhythmicEvents.length > 0
+    && rhythmicEvents.every((event) => event.kind === 'rest')
+    && rhythmicEvents.reduce((sum, event) => sum + DURATION_UNITS[event.duration], 0) === FULL_MEASURE_UNITS
+}
+
+function hasSectionChange(measure: Measure | undefined): boolean {
+  if (!measure) {
+    return false
+  }
+
+  return measure.events.some((event) => (
+    event.kind === 'direction'
+    && event.directionKind === 'expression'
+    && /^(intro|verse|chorus|bridge|solo|trio|coda|rehearsal|section|[a-z])(?:\d+)?$/i.test(event.text.trim())
+  ))
+}
+
+function findCuePitch(score: Score, startIndex: number): NotePitch | undefined {
+  for (let index = startIndex; index < score.measures.length; index += 1) {
+    for (const event of score.measures[index]?.events ?? []) {
+      if (event.kind === 'note') {
+        return event.pitch
+      }
+
+      if (event.kind === 'chord') {
+        return event.helperPitch
+      }
+    }
+  }
+
+  return undefined
+}
+
+function renderPageLayout(options: ScoreSheetOptions): string {
+  const pageSize = PAGE_SIZES[options.pageFormat]
+  const tenthsPerMm = getTenthsPerMm(options)
+  const inside = toTenths(options.insideMarginMm, tenthsPerMm)
+  const outside = toTenths(options.outsideMarginMm, tenthsPerMm)
+  const top = toTenths(options.topMarginMm, tenthsPerMm)
+  const bottom = toTenths(options.bottomMarginMm, tenthsPerMm)
+
+  return `    <page-layout>
+      <page-height>${toTenths(pageSize.heightMm, tenthsPerMm)}</page-height>
+      <page-width>${toTenths(pageSize.widthMm, tenthsPerMm)}</page-width>
+      <page-margins type="odd">
+        <left-margin>${inside}</left-margin>
+        <right-margin>${outside}</right-margin>
+        <top-margin>${top}</top-margin>
+        <bottom-margin>${bottom}</bottom-margin>
+      </page-margins>
+      <page-margins type="even">
+        <left-margin>${outside}</left-margin>
+        <right-margin>${inside}</right-margin>
+        <top-margin>${top}</top-margin>
+        <bottom-margin>${bottom}</bottom-margin>
+      </page-margins>
+    </page-layout>`
+}
+
+function renderSystemLayout(options: ScoreSheetOptions): string {
+  const tenthsPerMm = getTenthsPerMm(options)
+  const minimumDistance = toTenths(options.minimumSystemGapMm, tenthsPerMm)
+  const systemDistance = Math.max(minimumDistance, toTenths(options.minimumSystemGapMm * 2.5, tenthsPerMm))
+  const topSystemDistance = toTenths(8, tenthsPerMm)
+
+  return `    <system-layout>
+      <system-margins>
+        <left-margin>0</left-margin>
+        <right-margin>0</right-margin>
+      </system-margins>
+      <system-distance>${systemDistance}</system-distance>
+      <top-system-distance>${topSystemDistance}</top-system-distance>
+    </system-layout>`
+}
+
+function renderPrint(layout: MeasureLayoutPlan | undefined): string {
+  if (!layout?.newPage && !layout?.newSystem) {
+    return ''
+  }
+
+  if (layout.newPage) {
+    return '      <print new-page="yes" />'
+  }
+
+  return '      <print new-system="yes" />'
+}
+
+function renderCueOverlay(pitch: NotePitch): string {
+  return `      <note>
+        <cue />
+        <pitch>
+          <step>${pitch.step}</step>
+${pitch.alter !== 0 ? `          <alter>${pitch.alter}</alter>\n` : ''}          <octave>${pitch.octave}</octave>
+        </pitch>
+        <duration>2</duration>
+        <voice>2</voice>
+        <type>quarter</type>
+        <stem>${stemDirection(pitch.octave)}</stem>
+        <notehead font-size="cue">normal</notehead>
+      </note>
+      <backup>
+        <duration>2</duration>
+      </backup>`
+}
+
+function getTenthsPerMm(options: ScoreSheetOptions): number {
+  return Math.round(STAFF_HEIGHT_TENTHS / getDensityScale(options.density)) / 7
+}
+
+function toTenths(valueMm: number, tenthsPerMm: number): string {
+  return formatDecimal(valueMm * tenthsPerMm)
+}
+
+function formatDecimal(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2)
+}
+
+function clampInteger(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) {
+    return min
+  }
+
+  return Math.max(min, Math.min(max, Math.round(value)))
+}
+
+function renderMeasure(
+  measure: Measure,
+  isFirst: boolean,
+  options: ScoreSheetOptions,
+  layout?: MeasureLayoutPlan,
+): string {
   const beams = computeBeams(measure.events)
+  const print = renderPrint(layout)
+  const cueOverlay = layout?.cuePitch ? renderCueOverlay(layout.cuePitch) : ''
   const contents = measure.events.map((event) => renderEvent(event, beams)).join('\n')
   const measureUnits = measure.events
     .filter(isRhythmicEvent)
@@ -121,7 +412,9 @@ function renderMeasure(measure: Measure, isFirst: boolean, options: ScoreSheetOp
     : ''
 
   return `    <measure number="${measure.index + 1}">
+${print}
 ${attributes}
+${cueOverlay}
 ${contents}${padding ? `\n${padding}` : ''}
     </measure>`
 }
@@ -145,6 +438,10 @@ function renderEvent(event: ScoreEvent, beams: Map<string, BeamMark>): string {
     return renderNoteEvent(event, beams.get(event.id))
   }
 
+  if (event.kind === 'rest') {
+    return renderRestEvent(event)
+  }
+
   if (event.kind === 'chord') {
     return renderChordEvent(event)
   }
@@ -163,6 +460,17 @@ ${event.pitch.alter !== 0 ? `          <alter>${event.pitch.alter}</alter>\n` : 
         <duration>${DURATION_UNITS[event.duration]}</duration>
         <voice>1</voice>
         <type>${MUSICXML_NOTE_TYPE[event.duration]}</type>${stem}${beam}
+      </note>`
+}
+
+function renderRestEvent(event: RestEvent): string {
+  const measureRest = event.duration === 'w' ? ' measure="yes"' : ''
+
+  return `      <note>
+        <rest${measureRest} />
+        <duration>${DURATION_UNITS[event.duration]}</duration>
+        <voice>1</voice>
+        <type>${MUSICXML_NOTE_TYPE[event.duration]}</type>
       </note>`
 }
 

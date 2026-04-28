@@ -29,6 +29,12 @@ export interface NoteEvent {
   duration: DurationSymbol
 }
 
+export interface RestEvent {
+  id: string
+  kind: 'rest'
+  duration: DurationSymbol
+}
+
 export interface ChordEvent {
   id: string
   kind: 'chord'
@@ -50,12 +56,12 @@ export interface DirectionEvent {
   value?: 'crescendo' | 'diminuendo'
 }
 
-export type RhythmEvent = NoteEvent | ChordEvent
+export type RhythmEvent = NoteEvent | RestEvent | ChordEvent
 
 export type ScoreEvent = RhythmEvent | DirectionEvent
 
 export function isRhythmicEvent(event: ScoreEvent): event is RhythmEvent {
-  return event.kind === 'note' || event.kind === 'chord'
+  return event.kind === 'note' || event.kind === 'rest' || event.kind === 'chord'
 }
 
 export interface Measure {

@@ -2,6 +2,21 @@ export type ClefOption = 'treble' | 'bass' | 'alto' | 'tenor'
 
 export type SheetDensity = 'spacious' | 'standard' | 'compact'
 
+export type PageFormat = 'a4' | 'nine-by-twelve'
+
+export type PartLayoutPresetId = 'orchestra-solo' | 'moderate' | 'children'
+
+export type PartLayoutPreset = {
+  id: PartLayoutPresetId
+  label: string
+  density: SheetDensity
+  measuresPerSystem: number
+  systemsPerPageTarget: number
+  minimumSystemGapMm: number
+  previewNoteScale: number
+  previewSystemSpacing: number
+}
+
 export type ScoreSheetOptions = {
   title: string
   subtitle: string
@@ -16,7 +31,51 @@ export type ScoreSheetOptions = {
   showTempo: boolean
   padIncompleteMeasures: boolean
   density: SheetDensity
+  partLayoutPreset: PartLayoutPresetId
+  pageFormat: PageFormat
+  measuresPerSystem: number
+  systemsPerPageTarget: number
+  insideMarginMm: number
+  outsideMarginMm: number
+  topMarginMm: number
+  bottomMarginMm: number
+  minimumSystemGapMm: number
 }
+
+export const PART_LAYOUT_PRESETS: PartLayoutPreset[] = [
+  {
+    id: 'orchestra-solo',
+    label: 'Orchestra solo',
+    density: 'compact',
+    measuresPerSystem: 5,
+    systemsPerPageTarget: 10,
+    minimumSystemGapMm: 4,
+    previewNoteScale: 94,
+    previewSystemSpacing: 96,
+  },
+  {
+    id: 'moderate',
+    label: 'Moderate',
+    density: 'standard',
+    measuresPerSystem: 4,
+    systemsPerPageTarget: 9,
+    minimumSystemGapMm: 5,
+    previewNoteScale: 102,
+    previewSystemSpacing: 112,
+  },
+  {
+    id: 'children',
+    label: 'For children',
+    density: 'spacious',
+    measuresPerSystem: 3,
+    systemsPerPageTarget: 8,
+    minimumSystemGapMm: 7,
+    previewNoteScale: 120,
+    previewSystemSpacing: 148,
+  },
+]
+
+export const DEFAULT_PART_LAYOUT_PRESET: PartLayoutPresetId = 'moderate'
 
 export const DEFAULT_SHEET_OPTIONS: ScoreSheetOptions = {
   title: 'Untitled sketch',
@@ -32,6 +91,19 @@ export const DEFAULT_SHEET_OPTIONS: ScoreSheetOptions = {
   showTempo: true,
   padIncompleteMeasures: true,
   density: 'standard',
+  partLayoutPreset: DEFAULT_PART_LAYOUT_PRESET,
+  pageFormat: 'a4',
+  measuresPerSystem: 4,
+  systemsPerPageTarget: 9,
+  insideMarginMm: 15,
+  outsideMarginMm: 10,
+  topMarginMm: 10,
+  bottomMarginMm: 10,
+  minimumSystemGapMm: 4,
+}
+
+export function getPartLayoutPreset(id: PartLayoutPresetId) {
+  return PART_LAYOUT_PRESETS.find((preset) => preset.id === id) ?? PART_LAYOUT_PRESETS[1]!
 }
 
 export const KEY_SIGNATURES = [

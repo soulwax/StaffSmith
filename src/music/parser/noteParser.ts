@@ -1,11 +1,11 @@
 import { createEmptyScore } from '../model/createEmptyScore'
-import { isRhythmicEvent, type Measure, type NoteEvent, type ParseResult, type Score } from '../model/types'
+import { isRhythmicEvent, type Measure, type NoteEvent, type ParseResult, type RestEvent, type Score } from '../model/types'
 import { isDurationSymbol, sumMeasureUnits } from '../theory/duration'
 import { parseScientificPitch } from '../theory/pitch'
 import { parseDirectionToken } from './notation'
 import { createParseError, tokenize } from './shared'
 
-const NOTE_TOKEN_PATTERN = /\||,|\[[^\]]+\]|[<>]|[A-Ga-g](?:#|b)?\d+|w|h|q|8|\S+/g
+const NOTE_TOKEN_PATTERN = /\||,|\[[^\]]+\]|[<>]|[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|w|h|q|8|\S+/g
 const MAX_MEASURE_UNITS = 8
 
 export function parseNoteInput(input: string): ParseResult<Score> {
@@ -62,7 +62,37 @@ export function parseNoteInput(input: string): ParseResult<Score> {
     }
 
     if (isDurationSymbol(token.value)) {
-      errors.push(createParseError(input, token.index, 'Duration token must follow a note.', token.value))
+      errors.push(createParseError(input, token.index, 'Duration token must follow a note or rest.', token.value))
+      continue
+    }
+
+    const isRestToken = /^rest$/i.test(token.value) || /^r$/i.test(token.value)
+    if (isRestToken) {
+      let duration: RestEvent['duration'] = 'q'
+      const maybeDuration = tokens[tokenIndex + 1]
+      if (maybeDuration && isDurationSymbol(maybeDuration.value)) {
+        duration = maybeDuration.value
+        tokenIndex += 1
+      }
+
+      currentMeasureEvents.push({
+        id: `m${measureIndex + 1}-r${eventIndex + 1}`,
+        kind: 'rest',
+        duration,
+      })
+      eventIndex += 1
+
+      const totalUnits = sumMeasureUnits(currentMeasureEvents.filter(isRhythmicEvent).map((event) => event.duration))
+      if (totalUnits > MAX_MEASURE_UNITS) {
+        errors.push(
+          createParseError(
+            input,
+            token.index,
+            'Measure exceeds 4/4. Add a bar line or shorten durations.',
+            token.value,
+          ),
+        )
+      }
       continue
     }
 

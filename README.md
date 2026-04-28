@@ -87,10 +87,12 @@ Accepted syntax:
 
 - `C4 q, D4 q, E4 h`
 - `C4 E4 G4 | F4 A4 C5`
+- `C4 h, R h | R w | D4 w`
 - `mf [dolce] C4 q, E4 q, G4 h`
 - `p C4 E4 G4 | < F4 A4 C5 | > G4 h`
 - bar separators with `|`
 - durations: `w`, `h`, `q`, `8`
+- rests: `R` or `rest`, with optional duration such as `R w` or `rest q`
 - dynamics: `pp`, `p`, `mp`, `mf`, `f`, `ff`
 - expression words: `dolce`, `legato`, `staccato`, `tenuto`, `cantabile`, `espressivo`, `rit.`, `accel.`
 - custom expression text: `[like_this]`
@@ -101,6 +103,7 @@ Rules:
 - Note names require octave numbers.
 - Durations are optional and default to quarter notes.
 - Measures currently assume 4/4.
+- Full-measure rest runs are used by the MusicXML export for page-turn and long-silence cue placement.
 
 ### Chords mode
 

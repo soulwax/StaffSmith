@@ -20,6 +20,12 @@ export function SyntaxHelp() {
           <code>Bb5 8</code>
         </div>
         <div>
+          <h3>Rests</h3>
+          <p>Use R or rest with optional duration.</p>
+          <code>R w</code>
+          <code>rest q</code>
+        </div>
+        <div>
           <h3>Chords</h3>
           <p>Use common lead-sheet symbols.</p>
           <code>C</code>

@@ -42,6 +42,21 @@ describe('StaffSmith parser', () => {
     expect(result.errors[0]?.message).toContain('Measure exceeds 4/4')
   })
 
+  it('parses explicit note-mode rests with durations', () => {
+    const result = parseScoreInput('notes', 'C4 h R h | rest w')
+
+    expect(result.ok).toBe(true)
+    expect(result.value.measures).toHaveLength(2)
+    expect(result.value.measures[0]?.events[1]).toMatchObject({
+      kind: 'rest',
+      duration: 'h',
+    })
+    expect(result.value.measures[1]?.events[0]).toMatchObject({
+      kind: 'rest',
+      duration: 'w',
+    })
+  })
+
   it('parses lead-sheet chords and distributes durations inside measures', () => {
     const result = parseScoreInput('chords', 'mf Cmaj7 Am7 | Dm7 G7 Cmaj7')
 

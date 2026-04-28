@@ -48,13 +48,12 @@
 
 .preview-toolbar button:disabled,
 .preview-select-control select:disabled,
-.preview-range-control input:disabled,
 .preview-toggle-control input:disabled {
   cursor: not-allowed;
   opacity: 0.52;
 }
 
-.preview-range-control,
+.preview-preset-control,
 .preview-select-control,
 .preview-toggle-control {
   display: inline-flex;
@@ -68,8 +67,9 @@
   color: #273c4a;
 }
 
-.preview-range-control {
-  min-width: min(100%, 158px);
+.preview-preset-control {
+  align-items: stretch;
+  gap: 8px;
 }
 
 .preview-control__label {
@@ -80,18 +80,28 @@
   white-space: nowrap;
 }
 
-.preview-control__value {
-  color: #172027;
-  min-width: 34px;
-  font-size: 0.74rem;
-  font-weight: 800;
-  text-align: right;
+.preview-segmented-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: rgba(28, 126, 152, 0.08);
 }
 
-.preview-range-control input[type="range"] {
-  width: 62px;
-  flex: 0 0 auto;
-  accent-color: #1b8e9f;
+.preview-segmented-control button {
+  min-height: 22px;
+  padding: 2px 7px;
+  border-color: transparent;
+  border-radius: 5px;
+  background: transparent;
+  font-size: 0.74rem;
+}
+
+.preview-segmented-control button.is-active {
+  background: #ffffff;
+  color: #0e6774;
+  box-shadow: 0 1px 4px rgba(36, 103, 122, 0.14);
 }
 
 .preview-select-control {
@@ -281,7 +291,7 @@
     grid-template-columns: 1fr;
   }
 
-  .preview-range-control,
+  .preview-preset-control,
   .preview-select-control,
   .preview-toggle-control,
   .preview-toolbar__actions button,
@@ -289,12 +299,16 @@
     width: 100%;
   }
 
-  .preview-range-control {
-    min-width: 0;
+  .preview-segmented-control {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
   }
 
-  .preview-range-control input[type="range"] {
-    width: 92px;
+  .preview-segmented-control button {
+    justify-content: center;
+    min-width: 0;
+    white-space: normal;
   }
 }
 

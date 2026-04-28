@@ -10,7 +10,7 @@ export function AboutPage() {
           <p>
             By training, a neuroscientist. By vocation, a programmer. By calling, a teacher —
             delivering lectures in Amsterdam to students who still believe the brain holds a few
-            unsolved mysteries, because it does.
+            unsolved mysteries.
           </p>
           <p>
             Between grading papers and git commits, there is a small girl. She reaches for the

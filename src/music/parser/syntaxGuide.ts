@@ -1,5 +1,6 @@
 export const NOTE_SYNTAX_EXAMPLES = [
   'C4 q, E4 q, G4 h',
+  'C4 h, R h | R w | D4 w',
   'mf [dolce] C4 q, E4 q, G4 h',
   'p C4 E4 G4 | < F4 A4 C5 | > G4 h',
 ] as const
@@ -28,6 +29,7 @@ export const HAIRPIN_TOKENS = ['< or cresc', '> or dim'] as const
 export const STAFFSMITH_AI_SYNTAX_GUIDE = `StaffSmith syntax guide:
 - Return generatedInput as plain StaffSmith notation only, never markdown.
 - Notes mode uses pitch+octave and optional duration: C4 q, F#3 h, Bb5 8.
+- R or rest creates an explicit rest and can take a duration: R w, rest q.
 - Notes require octave numbers. Valid durations are w, h, q, 8. Omitted durations default to q.
 - Duration beat values: w=4 beats, h=2 beats, q=1 beat, 8=0.5 beats.
 - CRITICAL: Each measure between | bars must total EXACTLY 4 beats — never more, never less.
