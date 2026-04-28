@@ -2,6 +2,13 @@
 
 All notable StaffSmith changes will be documented in this file.
 
+## 2026-04-28 - AI Note Generation Guard
+
+### Fixed
+
+- Natural-language note generation no longer inserts `[object Object]` when Gemini returns notation inside an object.
+- The default note-generation prompt is now "A flute solo for beginners, in the style of jethro tull jazz".
+
 ## 2026-04-28 - Core Test Coverage
 
 ### Added

@@ -59,6 +59,7 @@ type LocalDraft = {
 }
 
 const AUTOSAVE_KEY = 'staffsmith:draft:v2'
+const DEFAULT_NOTE_GENERATION_PROMPT = 'A flute solo for beginners, in the style of jethro tull jazz'
 const API_TIMEOUT_MS = 45_000
 const API_PREFLIGHT_TIMEOUT_MS = 3_000
 const GEMINI_STATUS_INTERVAL_MS = 60 * 60 * 1000
@@ -199,9 +200,11 @@ function loadLocalDraft(): LocalDraft | null {
       projectId: typeof draft.projectId === 'string' ? draft.projectId : null,
       projectTitle: typeof draft.projectTitle === 'string' ? draft.projectTitle : 'Untitled sketch',
       mode: draft.mode,
-      input: draft.input,
+      input: draft.input.includes('[object Object]') ? initialExample.input : draft.input,
       assistantPrompt: typeof draft.assistantPrompt === 'string' ? draft.assistantPrompt : '',
-      noteGenerationPrompt: typeof draft.noteGenerationPrompt === 'string' ? draft.noteGenerationPrompt : '',
+      noteGenerationPrompt: typeof draft.noteGenerationPrompt === 'string' && draft.noteGenerationPrompt.trim()
+        ? draft.noteGenerationPrompt
+        : DEFAULT_NOTE_GENERATION_PROMPT,
       analysis: draft.analysis ?? null,
     }
   } catch {
@@ -229,7 +232,7 @@ export function App() {
   const [projectTitle, setProjectTitle] = useState(initialDraft?.projectTitle ?? 'Untitled sketch')
   const [projects, setProjects] = useState<SavedProject[]>([])
   const [assistantPrompt, setAssistantPrompt] = useState(initialDraft?.assistantPrompt ?? '')
-  const [noteGenerationPrompt, setNoteGenerationPrompt] = useState(initialDraft?.noteGenerationPrompt ?? '')
+  const [noteGenerationPrompt, setNoteGenerationPrompt] = useState(initialDraft?.noteGenerationPrompt ?? DEFAULT_NOTE_GENERATION_PROMPT)
   const [analysis, setAnalysis] = useState<ComposerAssistResult | null>(initialDraft?.analysis ?? null)
   const [isAssisting, setIsAssisting] = useState(false)
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false)
@@ -433,7 +436,7 @@ export function App() {
     setProjectId(null)
     setProjectTitle('Untitled sketch')
     setAssistantPrompt('')
-    setNoteGenerationPrompt('')
+    setNoteGenerationPrompt(DEFAULT_NOTE_GENERATION_PROMPT)
     setAnalysis(null)
     updateDraft(initialExample.mode, initialExample.input)
     setServerMessage('New sketch ready.')
