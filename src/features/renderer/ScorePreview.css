@@ -155,10 +155,7 @@
 }
 
 .a4-page {
-  width: min(
-    calc(100% * var(--preview-page-width-factor, 1)),
-    calc((100vh - 300px) * 210 / 297 * var(--preview-page-width-factor, 1))
-  );
+  width: min(100%, calc((100vh - 300px) * 210 / 297));
   aspect-ratio: 210 / 297;
   min-height: 0;
   margin: 0 auto;
@@ -190,6 +187,12 @@
 .score-engraving,
 .score-engraving .preview-render-target {
   min-height: 0;
+}
+
+.score-engraving {
+  width: calc(100% * var(--score-engraving-scale, 1));
+  max-width: none;
+  margin: 0 auto;
 }
 
 .score-engraving svg {
@@ -262,7 +265,7 @@
   }
 
   .a4-page {
-    width: min(calc(100% * var(--preview-page-width-factor, 1)), calc(720px * var(--preview-page-width-factor, 1)));
+    width: min(100%, 720px);
     padding: 14px 12px;
   }
 

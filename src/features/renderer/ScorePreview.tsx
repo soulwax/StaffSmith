@@ -26,13 +26,6 @@ type ZoomableDisplay = {
     RenderMeasureNumbers: boolean
     RenderXMeasuresPerLineAkaSystem: number
   }
-  updateGraphic: () => void
-  render: () => void
-}
-
-type EngravingDefaults = {
-  minimumDistanceBetweenSystems: number
-  minSkyBottomDistBetweenSystems: number
 }
 
 const BASE_PREVIEW_ZOOM = 0.84
@@ -71,8 +64,6 @@ export function ScorePreview({
   const containerRef = useRef<HTMLDivElement | null>(null)
   const dragStartRef = useRef<number | null>(null)
   const renderIdRef = useRef(0)
-  const osmdRef = useRef<ZoomableDisplay | null>(null)
-  const engravingDefaultsRef = useRef<EngravingDefaults | null>(null)
   const [renderError, setRenderError] = useState<RenderError | null>(null)
   const [pageIndex, setPageIndex] = useState(0)
   const [pageCount, setPageCount] = useState(1)
@@ -84,21 +75,6 @@ export function ScorePreview({
   const deferredSystemSpacing = useDeferredValue(systemSpacing)
   const deferredMeasuresPerLine = useDeferredValue(measuresPerLine)
   const deferredShowMeasureNumbers = useDeferredValue(showMeasureNumbers)
-  const deferredSystemSpacingRef = useRef(deferredSystemSpacing)
-  const deferredMeasuresPerLineRef = useRef(deferredMeasuresPerLine)
-  const deferredShowMeasureNumbersRef = useRef(deferredShowMeasureNumbers)
-
-  useEffect(() => {
-    deferredSystemSpacingRef.current = deferredSystemSpacing
-  }, [deferredSystemSpacing])
-
-  useEffect(() => {
-    deferredMeasuresPerLineRef.current = deferredMeasuresPerLine
-  }, [deferredMeasuresPerLine])
-
-  useEffect(() => {
-    deferredShowMeasureNumbersRef.current = deferredShowMeasureNumbers
-  }, [deferredShowMeasureNumbers])
 
   const updateRenderedPages = useCallback((resetPage = false) => {
     const container = containerRef.current
@@ -111,23 +87,6 @@ export function ScorePreview({
     setPageCount(nextPageCount)
     setPageIndex((current) => (resetPage ? 0 : Math.min(current, nextPageCount - 1)))
   }, [])
-
-  const refreshPreviewLayout = useCallback((resetPage = false) => {
-    const display = osmdRef.current
-    const defaults = engravingDefaultsRef.current
-    if (!display || !defaults) {
-      return
-    }
-
-    const spacingScale = deferredSystemSpacingRef.current / 100
-    display.EngravingRules.MinimumDistanceBetweenSystems = defaults.minimumDistanceBetweenSystems * spacingScale
-    display.EngravingRules.MinSkyBottomDistBetweenSystems = defaults.minSkyBottomDistBetweenSystems * spacingScale
-    display.EngravingRules.RenderMeasureNumbers = deferredShowMeasureNumbersRef.current
-    display.EngravingRules.RenderXMeasuresPerLineAkaSystem = deferredMeasuresPerLineRef.current
-    display.updateGraphic()
-    display.render()
-    updateRenderedPages(resetPage)
-  }, [updateRenderedPages])
 
   useEffect(() => {
     const container = containerRef.current
@@ -149,8 +108,6 @@ export function ScorePreview({
 
     if (!musicXml) {
       renderIdRef.current += 1
-      osmdRef.current = null
-      engravingDefaultsRef.current = null
       container.replaceChildren()
       return
     }
@@ -180,6 +137,12 @@ export function ScorePreview({
           pageFormat: 'A4',
         })
 
+        const spacingScale = deferredSystemSpacing / 100
+        osmd.EngravingRules.MinimumDistanceBetweenSystems *= spacingScale
+        osmd.EngravingRules.MinSkyBottomDistBetweenSystems *= spacingScale
+        osmd.EngravingRules.RenderMeasureNumbers = deferredShowMeasureNumbers
+        osmd.EngravingRules.RenderXMeasuresPerLineAkaSystem = deferredMeasuresPerLine
+
         await osmd.load(musicXml)
         if (cancelled) {
           renderTarget.remove()
@@ -192,19 +155,13 @@ export function ScorePreview({
         }
 
         const zoomableDisplay = osmd as ZoomableDisplay
-        osmdRef.current = zoomableDisplay
-        engravingDefaultsRef.current = {
-          minimumDistanceBetweenSystems: zoomableDisplay.EngravingRules.MinimumDistanceBetweenSystems,
-          minSkyBottomDistBetweenSystems: zoomableDisplay.EngravingRules.MinSkyBottomDistBetweenSystems,
-        }
         applyZoom(zoomableDisplay, BASE_PREVIEW_ZOOM)
-        refreshPreviewLayout(true)
+        osmd.render()
+        updateRenderedPages(true)
         setRenderError(null)
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown renderer error.'
         setRenderError({ musicXml, message })
-        osmdRef.current = null
-        engravingDefaultsRef.current = null
         container.replaceChildren()
       }
     }
@@ -214,20 +171,10 @@ export function ScorePreview({
     return () => {
       cancelled = true
       if (renderId === renderIdRef.current) {
-        osmdRef.current = null
-        engravingDefaultsRef.current = null
         container.replaceChildren()
       }
     }
-  }, [musicXml, refreshPreviewLayout])
-
-  useEffect(() => {
-    if (!musicXml) {
-      return
-    }
-
-    refreshPreviewLayout()
-  }, [deferredMeasuresPerLine, deferredShowMeasureNumbers, deferredSystemSpacing, musicXml, refreshPreviewLayout])
+  }, [deferredMeasuresPerLine, deferredShowMeasureNumbers, deferredSystemSpacing, musicXml, updateRenderedPages])
 
   const goToPreviousPage = () => {
     setPageIndex((current) => Math.max(0, current - 1))
@@ -272,8 +219,8 @@ export function ScorePreview({
     setShowMeasureNumbers(true)
   }
 
-  const previewPageStyle = {
-    '--preview-page-width-factor': `${noteScale / 100}`,
+  const engravingStyle = {
+    '--score-engraving-scale': `${noteScale / 100}`,
   } as CSSProperties
 
   return (
@@ -405,13 +352,13 @@ export function ScorePreview({
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
       >
-        <div className="a4-page" style={previewPageStyle}>
+        <div className="a4-page">
           {showTitle ? (
             <header className="score-title-block">
               <h2>{title || 'Untitled sketch'}</h2>
             </header>
           ) : null}
-          <div className="score-engraving" ref={containerRef} />
+          <div className="score-engraving" ref={containerRef} style={engravingStyle} />
         </div>
       </div>
       <div className="page-controls" aria-label="Score page controls">

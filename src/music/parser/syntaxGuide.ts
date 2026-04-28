@@ -29,7 +29,11 @@ export const STAFFSMITH_AI_SYNTAX_GUIDE = `StaffSmith syntax guide:
 - Return generatedInput as plain StaffSmith notation only, never markdown.
 - Notes mode uses pitch+octave and optional duration: C4 q, F#3 h, Bb5 8.
 - Notes require octave numbers. Valid durations are w, h, q, 8. Omitted durations default to q.
-- Separate measures with |. Keep 4/4-friendly measure groupings.
+- Duration beat values: w=4 beats, h=2 beats, q=1 beat, 8=0.5 beats.
+- CRITICAL: Each measure between | bars must total EXACTLY 4 beats — never more, never less.
+- Example of INVALID measure (5 beats): D5 8, F5 8, A5 8, F5 8, G5 8, E5 8, D5 h (6×0.5+2=5). Split it.
+- Example of VALID replacement: D5 8, F5 8, A5 8, F5 8, G5 8, A5 8 | D5 h, G5 h
+- Count beats before writing each measure. If the measure would overflow, insert a | and continue.
 - Dynamics may appear before notes or chords: ${DYNAMIC_TOKENS.join(', ')}.
 - Expressions may appear before notes or chords: ${EXPRESSION_TOKENS.join(', ')}.
 - Hairpins / volume changes: < or cresc for louder, > or dim for quieter.

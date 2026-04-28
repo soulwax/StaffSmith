@@ -7,6 +7,8 @@ import { fail } from './http.js'
 const GEMINI_MODEL = 'gemini-3.1-flash-lite-preview'
 const DEFAULT_GENERATED_NOTATION = 'mp [airy flute] D5 q, F5 q, A5 h | < G5 q, A5 q, B5 q, A5 q | > G5 q, F5 q, E5 q, D5 q'
 const DURATION_VALUES = new Set(['w', 'h', 'q', '8'])
+const DURATION_UNITS: Record<string, number> = { w: 8, h: 4, q: 2, '8': 1 }
+const MAX_MEASURE_UNITS = 8
 
 type LooseComposerAssistResult = Omit<Partial<ComposerAssistResult>, 'generatedInput' | 'notes'> & {
   generatedInput?: unknown
@@ -417,10 +419,23 @@ function isLikelyParseableStaffSmithInput(mode: InputMode, input: string) {
   }
 
   let noteCount = 0
+  let measureUnits = 0
 
   for (let index = 0; index < tokens.length; index += 1) {
     const token = tokens[index]
-    if (!token || token === '|' || token === ',' || isDirectionToken(token)) {
+    if (!token) {
+      continue
+    }
+
+    if (token === '|') {
+      if (measureUnits > MAX_MEASURE_UNITS) {
+        return false
+      }
+      measureUnits = 0
+      continue
+    }
+
+    if (token === ',' || isDirectionToken(token)) {
       continue
     }
 
@@ -429,10 +444,17 @@ function isLikelyParseableStaffSmithInput(mode: InputMode, input: string) {
     }
 
     noteCount += 1
-    const duration = tokens[index + 1]
-    if (duration && DURATION_VALUES.has(duration)) {
+    const nextToken = tokens[index + 1]
+    let durationKey = 'q'
+    if (nextToken && DURATION_VALUES.has(nextToken)) {
+      durationKey = nextToken
       index += 1
     }
+    measureUnits += DURATION_UNITS[durationKey] ?? 2
+  }
+
+  if (measureUnits > MAX_MEASURE_UNITS) {
+    return false
   }
 
   return noteCount > 0

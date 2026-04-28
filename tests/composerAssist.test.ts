@@ -116,6 +116,29 @@ describe('composer assist normalization', () => {
     expect(globalThis.fetch).toHaveBeenCalledTimes(1)
   })
 
+  it('rejects a measure that overflows 4/4 before it reaches the editor', async () => {
+    mockGeminiJson({
+      summary: 'Overfull last measure.',
+      keyCenter: 'D minor',
+      suggestedMode: 'notes',
+      // measure 3: 6 eighths (3 beats) + 1 half (2 beats) = 5 beats — exceeds 4/4
+      generatedInput: 'mf D5 8, F5 8, A5 8, C6 8, D6 q, A5 8, F5 8 | < G5 8, A5 8, Bb5 8, A5 8, G5 8, F5 8, E5 8, D5 8 | > D5 8, F5 8, A5 8, F5 8, G5 8, E5 8, D5 h',
+      notes: [],
+    })
+
+    const result = await runComposerAssist({
+      task: 'generate',
+      mode: 'notes',
+      input: 'C4 q E4 q G4 h',
+      prompt: 'A flute solo for experts in the style of jethro tull jazz',
+    })
+
+    // The overfull measure is rejected and falls back to DEFAULT_GENERATED_NOTATION
+    expect(result.generatedInput).toBe('mp [airy flute] D5 q, F5 q, A5 h | < G5 q, A5 q, B5 q, A5 q | > G5 q, F5 q, E5 q, D5 q')
+    // Summary is still taken from the Gemini response since the HTTP call succeeded
+    expect(result.summary).toBe('Overfull last measure.')
+  })
+
   it('rejects unsupported generated durations before they reach the editor', async () => {
     mockGeminiJson({
       summary: 'Contains an unsupported dotted duration.',

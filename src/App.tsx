@@ -36,7 +36,7 @@ import type {
 } from './lib/apiTypes'
 import { copyText, downloadTextFile, toSafeFilename } from './lib/fileActions'
 import { getScoreInsights } from './music/analysis/scoreInsights'
-import type { InputMode, ParseError, ParseResult, Score } from './music/model/types'
+import type { InputMode, NotePitch, ParseError, ParseResult, Score } from './music/model/types'
 import { scoreToMusicXml } from './music/musicxml/scoreToMusicXml'
 import { parseScoreInput } from './music/parser'
 
@@ -69,6 +69,151 @@ type GeminiUiStatus = GeminiStatusResponse & {
 }
 
 type AppView = 'workspace' | 'help' | 'changelog'
+
+type StudioToneAccent = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'neutral'
+
+type StudioToneTag = {
+  key: string
+  label: string
+  accent: StudioToneAccent
+}
+
+type StudioInsightTag = {
+  key: string
+  label: string
+  tone: 'warm' | 'cool' | 'growth' | 'neutral'
+}
+
+const NOTE_ACCENT_BY_STEP: Record<NotePitch['step'], StudioToneAccent> = {
+  A: 'a',
+  B: 'b',
+  C: 'c',
+  D: 'd',
+  E: 'e',
+  F: 'f',
+  G: 'g',
+}
+
+const INSIGHT_TONE_RULES = [
+  { pattern: /(dynamic|crescendo|diminuendo|accent|mf|ff|pp|volume|shape)/i, tone: 'warm' as const },
+  { pattern: /(range|register|playable|breath|octave|melody|line|phrase)/i, tone: 'cool' as const },
+  { pattern: /(key|tonic|dominant|cadence|chord|harmony|voicing|color)/i, tone: 'growth' as const },
+]
+
+function formatPitchClass(pitch: NotePitch) {
+  if (pitch.alter === 1) {
+    return `${pitch.step}#`
+  }
+
+  if (pitch.alter === -1) {
+    return `${pitch.step}b`
+  }
+
+  return pitch.step
+}
+
+function getToneAccent(label: string): StudioToneAccent {
+  const match = label.match(/\b([A-G])([#b]?)/i)
+  if (!match) {
+    return 'neutral'
+  }
+
+  const step = match[1]?.toUpperCase() as NotePitch['step'] | undefined
+  if (!step || !(step in NOTE_ACCENT_BY_STEP)) {
+    return 'neutral'
+  }
+
+  return NOTE_ACCENT_BY_STEP[step]
+}
+
+function createToneTag(label: string): StudioToneTag {
+  return {
+    key: label,
+    label,
+    accent: getToneAccent(label),
+  }
+}
+
+function getStudioPalette(score: Score | null, analysis: ComposerAssistResult | null) {
+  const toneMap = new Map<string, StudioToneTag>()
+  const harmonyMap = new Map<string, StudioToneTag>()
+
+  const addTone = (label: string | null | undefined) => {
+    const normalized = label?.trim()
+    if (!normalized || toneMap.has(normalized)) {
+      return
+    }
+
+    toneMap.set(normalized, createToneTag(normalized))
+  }
+
+  const addHarmony = (label: string) => {
+    const normalized = label.trim()
+    if (!normalized || harmonyMap.has(normalized)) {
+      return
+    }
+
+    harmonyMap.set(normalized, createToneTag(normalized))
+  }
+
+  if (analysis?.keyCenter) {
+    addTone(analysis.keyCenter)
+  }
+
+  if (score) {
+    for (const measure of score.measures) {
+      for (const event of measure.events) {
+        if (event.kind === 'note') {
+          addTone(formatPitchClass(event.pitch))
+          continue
+        }
+
+        if (event.kind === 'chord') {
+          addHarmony(event.symbol)
+          addTone(formatPitchClass(event.root))
+
+          for (const tone of event.tones) {
+            addTone(tone)
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    toneTags: [...toneMap.values()].slice(0, 10),
+    harmonyTags: [...harmonyMap.values()].slice(0, 6),
+  }
+}
+
+function getStudioInsightTags(analysis: ComposerAssistResult | null) {
+  if (!analysis) {
+    return []
+  }
+
+  return analysis.notes
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .slice(0, 6)
+    .map((label) => ({
+      key: label,
+      label,
+      tone: INSIGHT_TONE_RULES.find((rule) => rule.pattern.test(label))?.tone ?? 'neutral',
+    }) satisfies StudioInsightTag)
+}
+
+function formatModeLabel(mode: InputMode) {
+  return mode === 'notes' ? 'Notes' : 'Chords'
+}
+
+function formatProjectTimestamp(value: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(value))
+}
 
 function getCurrentView(): AppView {
   if (window.location.hash === '#/help') {
@@ -277,6 +422,8 @@ export function App() {
   const warnings = state.parseResult.warnings
   const errors = state.parseResult.errors
   const insights = useMemo(() => getScoreInsights(activeScore), [activeScore])
+  const studioPalette = useMemo(() => getStudioPalette(activeScore, analysis), [activeScore, analysis])
+  const studioInsightTags = useMemo(() => getStudioInsightTags(analysis), [analysis])
 
   useEffect(() => {
     const handleHashChange = () => setView(getCurrentView())
@@ -692,19 +839,58 @@ export function App() {
             {noteGenerationMessage ? <p className="server-message">{noteGenerationMessage}</p> : null}
           </SectionCard>
 
-          <SectionCard title="Smart Studio">
+          <SectionCard title="Smart Studio" className="smart-studio-card">
+            <div className="studio-signal-strip" aria-label="Smart Studio score signals">
+              <span className="studio-signal-pill">
+                {formatModeLabel(state.mode)}
+              </span>
+              <span className="studio-signal-pill studio-signal-pill--muted">
+                {insights.density}
+              </span>
+              <span className="studio-signal-pill studio-signal-pill--muted">
+                {insights.pitchRange}
+              </span>
+              {analysis ? (
+                <span className={`studio-signal-pill studio-signal-pill--tone studio-tone-tag--${getToneAccent(analysis.keyCenter)}`}>
+                  {analysis.keyCenter}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="studio-tag-deck" aria-label="Current tonal palette">
+              {studioPalette.toneTags.length > 0 ? (
+                studioPalette.toneTags.map((tag) => (
+                  <span key={tag.key} className={`studio-tone-tag studio-tone-tag--${tag.accent}`}>
+                    {tag.label}
+                  </span>
+                ))
+              ) : (
+                <span className="studio-empty-line">Render or analyze to build a tonal palette.</span>
+              )}
+            </div>
+
+            {studioPalette.harmonyTags.length > 0 ? (
+              <div className="studio-harmony-strip" aria-label="Harmony palette">
+                {studioPalette.harmonyTags.map((tag) => (
+                  <span key={tag.key} className={`studio-harmony-tag studio-tone-tag--${tag.accent}`}>
+                    {tag.label}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+
             <label className="visually-hidden" htmlFor="assistant-prompt">
               Direction
             </label>
             <textarea
               id="assistant-prompt"
-              className="assistant-textarea"
-              rows={3}
+              className="assistant-textarea assistant-textarea--studio"
+              rows={2}
               value={assistantPrompt}
               onChange={(event) => setAssistantPrompt(event.target.value)}
               placeholder="Ask for a folk-rock variation, a clearer key center, or a four-bar continuation."
             />
-            <div className="studio-actions">
+            <div className="studio-actions studio-actions--smart">
               <button type="button" className="secondary-button" onClick={() => runAssist('analyze')} disabled={isAssisting}>
                 <Search size={16} aria-hidden="true" />
                 Analyze
@@ -722,27 +908,42 @@ export function App() {
                 Recent
               </button>
             </div>
-            {serverMessage ? <p className="server-message">{serverMessage}</p> : null}
-            {analysis ? (
-              <div className="analysis-panel">
-                <p>
+
+            {serverMessage ? <p className="studio-status-message">{serverMessage}</p> : null}
+
+            <div className="studio-briefing" aria-label="Assistant briefing">
+              {analysis ? (
+                <p className="studio-summary">
                   <strong>{analysis.keyCenter}</strong> {analysis.summary}
                 </p>
-                {analysis.notes.length > 0 ? (
-                  <ul className="compact-list">
-                    {analysis.notes.map((note) => (
-                      <li key={note}>{note}</li>
-                    ))}
-                  </ul>
-                ) : null}
-              </div>
-            ) : null}
+              ) : (
+                <p className="studio-empty-line">
+                  Analyze the current sketch to surface key center, phrasing ideas, harmonic color, and continuation cues.
+                </p>
+              )}
+
+              {studioInsightTags.length > 0 ? (
+                <div className="studio-insight-tags">
+                  {studioInsightTags.map((tag) => (
+                    <span key={tag.key} className={`studio-insight-tag studio-insight-tag--${tag.tone}`}>
+                      {tag.label}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
             {projects.length > 0 ? (
-              <div className="project-list" aria-label="Recent saved projects">
+              <div className="project-list project-list--studio" aria-label="Recent saved projects">
                 {projects.map((project) => (
                   <button key={project.id} type="button" className="project-row" onClick={() => loadProject(project)}>
-                    <span>{project.title}</span>
-                    <span>{new Date(project.updatedAt).toLocaleString()}</span>
+                    <span className="project-row__title">{project.title}</span>
+                    <span className="project-row__meta">
+                      <span className={project.mode === 'notes' ? 'project-mode-pill project-mode-pill--notes' : 'project-mode-pill project-mode-pill--chords'}>
+                        {formatModeLabel(project.mode)}
+                      </span>
+                      <span>{formatProjectTimestamp(project.updatedAt)}</span>
+                    </span>
                   </button>
                 ))}
               </div>
