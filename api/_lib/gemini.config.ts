@@ -6,8 +6,8 @@ export const GEMINI_CONFIG = {
   // https://ai.google.dev/api/generate-content#generationconfig
   generation: {
     analyze: {
-      temperature: 0.35,
-      maxOutputTokens: 1024,
+      temperature: 0.5,
+      maxOutputTokens: 4096,
       topP: 0.9,
       responseMimeType: 'application/json',
     },
