@@ -2,6 +2,23 @@
 
 All notable StaffSmith changes will be documented in this file.
 
+## 0.1.1 - 2026-04-29 - AI Syntax Hardening
+
+### Fixed
+
+- AI-generated notation is now rejected before reaching the editor when any measure exceeds 4/4 (e.g. 6 eighth notes + 1 half note = 5 beats). The safe fallback phrase is substituted instead.
+- The Gemini syntax guide now spells out duration beat values (`w=4, h=2, q=1, 8=0.5`) and includes a concrete example of an overfull measure so the model can self-correct before returning output.
+
+### Added
+
+- `api/_lib/gemini.config.ts` — single config file for all Gemini request parameters: model, API base URL, per-task `temperature` / `maxOutputTokens` / `topP` / `responseMimeType`, system instruction, generation rules, and fallback notation.
+- Default landing notation updated to a four-bar D minor flute phrase with hairpins and a held final whole note.
+- `CLAUDE.md` expanded with API layer architecture, environment variable setup, dev vs dev:full distinction, and test coverage notes.
+
+### Changed
+
+- Model name, generation config, system instruction, and generation rules are now sourced from `gemini.config.ts` across all API handlers — no more scattered hardcoded strings.
+
 ## 0.1.0 - 2026-04-28 - Production Reliability Release
 
 ### Highlights

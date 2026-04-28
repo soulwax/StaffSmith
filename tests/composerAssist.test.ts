@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runComposerAssist } from '../api/_lib/gemini'
+import { GEMINI_CONFIG } from '../api/_lib/gemini.config'
 
 const originalGeminiKey = process.env.GEMINI_API_KEY
 
@@ -111,7 +112,7 @@ describe('composer assist normalization', () => {
       prompt: 'A flute solo for beginners, in the style of jethro tull jazz',
     })
 
-    expect(result.generatedInput).toBe('mp [airy flute] D5 q, F5 q, A5 h | < G5 q, A5 q, B5 q, A5 q | > G5 q, F5 q, E5 q, D5 q')
+    expect(result.generatedInput).toBe(GEMINI_CONFIG.fallbackNotation)
     expect(result.summary).toContain('local beginner flute fallback')
     expect(globalThis.fetch).toHaveBeenCalledTimes(1)
   })
@@ -134,7 +135,7 @@ describe('composer assist normalization', () => {
     })
 
     // The overfull measure is rejected and falls back to DEFAULT_GENERATED_NOTATION
-    expect(result.generatedInput).toBe('mp [airy flute] D5 q, F5 q, A5 h | < G5 q, A5 q, B5 q, A5 q | > G5 q, F5 q, E5 q, D5 q')
+    expect(result.generatedInput).toBe(GEMINI_CONFIG.fallbackNotation)
     // Summary is still taken from the Gemini response since the HTTP call succeeded
     expect(result.summary).toBe('Overfull last measure.')
   })
@@ -155,6 +156,6 @@ describe('composer assist normalization', () => {
       prompt: 'A flute solo for beginners, in the style of jethro tull jazz',
     })
 
-    expect(result.generatedInput).toBe('mp [airy flute] D5 q, F5 q, A5 h | < G5 q, A5 q, B5 q, A5 q | > G5 q, F5 q, E5 q, D5 q')
+    expect(result.generatedInput).toBe(GEMINI_CONFIG.fallbackNotation)
   })
 })

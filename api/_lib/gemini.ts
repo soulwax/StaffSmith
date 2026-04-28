@@ -2,10 +2,9 @@ import type { ComposerAssistRequest, ComposerAssistResult, GeminiStatusResponse 
 import { STAFFSMITH_AI_SYNTAX_GUIDE } from '../../src/music/parser/syntaxGuide.js'
 import type { InputMode } from '../../src/music/model/types.js'
 import { getGeminiApiKey } from './env.js'
+import { GEMINI_CONFIG } from './gemini.config.js'
 import { fail } from './http.js'
 
-const GEMINI_MODEL = 'gemini-3.1-flash-lite-preview'
-const DEFAULT_GENERATED_NOTATION = 'mp [airy flute] D5 q, F5 q, A5 h | < G5 q, A5 q, B5 q, A5 q | > G5 q, F5 q, E5 q, D5 q'
 const DURATION_VALUES = new Set(['w', 'h', 'q', '8'])
 const DURATION_UNITS: Record<string, number> = { w: 8, h: 4, q: 2, '8': 1 }
 const MAX_MEASURE_UNITS = 8
@@ -27,31 +26,23 @@ type GeminiResponse = {
 
 export async function runComposerAssist(payload: ComposerAssistRequest): Promise<ComposerAssistResult> {
   const apiKey = getGeminiApiKey()
+  const generationConfig = GEMINI_CONFIG.generation[payload.task]
   const body = JSON.stringify({
     contents: [
       {
         role: 'user',
-        parts: [
-          {
-            text: buildPrompt(payload),
-          },
-        ],
+        parts: [{ text: buildPrompt(payload) }],
       },
     ],
-    generationConfig: {
-      temperature: payload.task === 'generate' ? 0.85 : 0.35,
-      responseMimeType: 'application/json',
-    },
+    generationConfig,
   })
   let response: Response | null = null
 
   response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    `${GEMINI_CONFIG.apiBase}/${GEMINI_CONFIG.model}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body,
     },
   )
@@ -81,7 +72,7 @@ function createFallbackAssistResult(payload: ComposerAssistRequest, statusCode?:
       : 'Gemini generation was unavailable, so StaffSmith used a local beginner flute fallback.',
     keyCenter: 'D minor',
     suggestedMode: 'notes',
-    generatedInput: DEFAULT_GENERATED_NOTATION,
+    generatedInput: GEMINI_CONFIG.fallbackNotation,
     notes: [
       'Uses a beginner-friendly flute range.',
       'Keeps StaffSmith syntax parseable while Gemini is unavailable.',
@@ -94,12 +85,10 @@ export async function checkGeminiAvailability(): Promise<GeminiStatusResponse> {
   const apiKey = getGeminiApiKey()
   const startedAt = Date.now()
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}?key=${apiKey}`,
+    `${GEMINI_CONFIG.apiBase}/${GEMINI_CONFIG.model}?key=${apiKey}`,
     {
       method: 'GET',
-      headers: {
-        Accept: 'application/json',
-      },
+      headers: { Accept: 'application/json' },
     },
   )
   const latencyMs = Date.now() - startedAt
@@ -112,7 +101,7 @@ export async function checkGeminiAvailability(): Promise<GeminiStatusResponse> {
       message: response.status === 403 || response.status === 401
         ? 'Gemini key rejected.'
         : `Gemini status check failed with HTTP ${response.status}.`,
-      model: GEMINI_MODEL,
+      model: GEMINI_CONFIG.model,
     }
   }
 
@@ -121,30 +110,18 @@ export async function checkGeminiAvailability(): Promise<GeminiStatusResponse> {
     checkedAt: new Date().toISOString(),
     latencyMs,
     message: 'Gemini available.',
-    model: GEMINI_MODEL,
+    model: GEMINI_CONFIG.model,
   }
 }
 
 function buildPrompt(payload: ComposerAssistRequest) {
-  return `You are StaffSmith's music assistant. Return only JSON matching this TypeScript type:
-{
-  "summary": string,
-  "keyCenter": string,
-  "suggestedMode": "notes" | "chords",
-  "generatedInput": string,
-  "notes": string[]
-}
+  const rules = GEMINI_CONFIG.generationRules.map((rule) => `- ${rule}`).join('\n')
+  return `${GEMINI_CONFIG.systemInstruction}
 
 ${STAFFSMITH_AI_SYNTAX_GUIDE}
 
 Generation rules:
-- keep generatedInput directly parseable by StaffSmith
-- generatedInput must be a single plain StaffSmith notation string, not an object, array, markdown block, or JSON structure
-- do not return nested notes, measures, events, pitch objects, or token objects inside generatedInput
-- for natural-language note generation, prefer suggestedMode "notes"
-- include useful notation tokens from the syntax when the user asks for mood, dynamics, articulation, or intensity
-- if the user names an artist or band, translate that into broad musical traits instead of imitating the named artist directly
-- keep notes concise and practical
+${rules}
 
 Task: ${payload.task}
 Current mode: ${payload.mode}
@@ -175,7 +152,7 @@ function normalizeAssistResult(
 function coerceGeneratedInput(value: unknown, payload: ComposerAssistRequest, mode: InputMode) {
   const candidates = collectNotationCandidates(value)
   const fallback = payload.task === 'generate'
-    ? [DEFAULT_GENERATED_NOTATION]
+    ? [GEMINI_CONFIG.fallbackNotation]
     : collectNotationCandidates(payload.input)
 
   for (const candidate of [...candidates, ...fallback]) {

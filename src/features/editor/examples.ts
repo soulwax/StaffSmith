@@ -10,11 +10,11 @@ export type ExamplePreset = {
 
 export const EXAMPLES: ExamplePreset[] = [
   {
-    id: 'notes-triad',
-    label: 'Dynamic Triad',
+    id: 'notes-flute-phrase',
+    label: 'Airy Flute Phrase',
     mode: 'notes',
-    description: 'Simple note events with dynamics and expression text.',
-    input: 'mf [dolce] C4 q, E4 q, G4 h',
+    description: 'Four-bar D minor melody with hairpins and a held final note.',
+    input: 'mp [airy flute] D5 q, F5 q, A5 8, G5 8, A5 8, F5 8 | < D5 8, E5 8, F5 8, G5 8, A5 q, D5 q | > A5 q, G5 q, F5 q, E5 q | D5 w',
   },
   {
     id: 'notes-bars',
