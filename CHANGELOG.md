@@ -7,6 +7,7 @@ All notable StaffSmith changes will be documented in this file.
 ### Fixed
 
 - Header brand mark now uses the shared `public/favicon.svg` asset.
+- Print/PDF export now collapses the surrounding workspace chrome instead of preserving hidden layout space, preventing a blank first PDF page.
 - API routes now use deployment-safe `.js` import specifiers for Vercel's ESM serverless runtime.
 - Gemini output validation no longer imports the full browser parser tree inside the serverless function bundle.
 - Composer generation now uses only `gemini-3.1-flash-lite-preview` and returns a parseable local flute fallback if that pinned model is temporarily unavailable.

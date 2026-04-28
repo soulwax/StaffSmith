@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useState } from 'react'
 import {
   Bot,
   CircleHelp,
@@ -19,6 +18,7 @@ import {
   Sparkles,
   WandSparkles,
 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import './app.css'
 import { SectionCard } from './components/SectionCard'
 import { ChangelogPage } from './features/changelog/ChangelogPage'
@@ -692,7 +692,7 @@ export function App() {
             {noteGenerationMessage ? <p className="server-message">{noteGenerationMessage}</p> : null}
           </SectionCard>
 
-          <SectionCard title="AI Studio">
+          <SectionCard title="Smart Studio">
             <label className="visually-hidden" htmlFor="assistant-prompt">
               Direction
             </label>
