@@ -2,6 +2,18 @@
 
 All notable StaffSmith changes will be documented in this file.
 
+## 0.1.0 - 2026-04-28 - Production Reliability Release
+
+### Highlights
+
+- Production API routes now deploy cleanly on Vercel's ESM serverless runtime and `/api/health` is verified live.
+- AI generation now uses only `gemini-3.1-flash-lite-preview`, with stricter StaffSmith syntax validation and a parseable local fallback when the pinned model is unavailable.
+- Print/PDF export now starts on the first page with the score content instead of producing a blank leading page.
+
+### Changed
+
+- Header branding now reuses the shared `public/favicon.svg` asset.
+
 ## 2026-04-28 - Vercel Function Import Fix
 
 ### Fixed
