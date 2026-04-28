@@ -13,8 +13,8 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(217, 85, 47, 0.07), transparent 30%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent 55%);
+    linear-gradient(90deg, rgba(31, 177, 196, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), transparent 58%);
   pointer-events: none;
 }
 
@@ -28,7 +28,7 @@
   letter-spacing: 0.02em;
   position: relative;
   text-transform: uppercase;
-  color: #394333;
+  color: #243746;
 }
 
 .section-card__content {

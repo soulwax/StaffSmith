@@ -7,7 +7,7 @@
   width: 100%;
   max-width: 240px;
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(217, 85, 47, 0.1), rgba(25, 155, 140, 0.13));
+  background: linear-gradient(135deg, rgba(255, 118, 83, 0.16), rgba(31, 177, 196, 0.18));
 }
 
 .mode-toggle__button,
@@ -23,17 +23,18 @@
 }
 
 .mode-toggle__button {
+  min-width: 0;
   min-height: 36px;
   padding: 8px 10px;
   background: transparent;
-  color: #59634d;
+  color: #5b6972;
   font-weight: 600;
 }
 
 .mode-toggle__button.is-active {
-  background: rgba(251, 255, 246, 0.96);
-  color: #171b13;
-  box-shadow: 0 8px 18px rgba(27, 52, 44, 0.12);
+  background: rgba(255, 255, 255, 0.98);
+  color: #172027;
+  box-shadow: 0 8px 18px rgba(36, 103, 122, 0.13);
 }
 
 .examples {
@@ -44,12 +45,13 @@
 }
 
 .example-chip {
+  min-width: 0;
   min-height: 34px;
   padding: 7px 10px;
-  background: rgba(248, 252, 241, 0.98);
-  color: #2b3124;
-  border: 1px solid rgba(91, 113, 67, 0.14);
-  box-shadow: 0 8px 18px rgba(87, 115, 45, 0.05);
+  background: rgba(255, 255, 255, 0.94);
+  color: #2c3c49;
+  border: 1px solid rgba(28, 126, 152, 0.16);
+  box-shadow: 0 8px 18px rgba(36, 103, 122, 0.06);
 }
 
 .editor-label {
@@ -60,17 +62,18 @@
 
 .editor-textarea {
   width: 100%;
-  min-height: clamp(330px, 42vh, 560px);
+  min-height: 320px;
+  height: clamp(320px, 40vh, 560px);
   resize: vertical;
   padding: 16px;
   border-radius: 8px;
-  border: 1px solid rgba(96, 118, 71, 0.16);
+  border: 1px solid rgba(28, 126, 152, 0.18);
   background:
-    linear-gradient(180deg, rgba(255, 255, 252, 0.98), rgba(247, 252, 243, 0.96));
-  color: #1f2419;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 254, 255, 0.96));
+  color: #172027;
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.02),
-    0 12px 28px rgba(90, 114, 52, 0.05);
+    0 12px 28px rgba(36, 103, 122, 0.06);
 }
 
 .editor-textarea:focus {
@@ -103,10 +106,45 @@
 
 .helper-text {
   margin: 0;
-  color: #5f6858;
+  color: #64737d;
   flex: 1 1 220px;
 }
 
 .helper-text--error {
   color: var(--danger);
+}
+
+@media (max-width: 700px) {
+  .mode-toggle {
+    max-width: none;
+  }
+
+  .examples {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .example-chip {
+    width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .editor-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .render-button {
+    width: 100%;
+  }
+
+  .helper-text {
+    flex-basis: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .examples {
+    grid-template-columns: 1fr;
+  }
 }

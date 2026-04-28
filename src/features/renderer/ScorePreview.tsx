@@ -4,6 +4,7 @@ import './ScorePreview.css'
 
 type ScorePreviewProps = {
   musicXml: string | null
+  title: string
   onCopyMusicXml: () => void
   onDownloadMusicXml: () => void
   onPrintScore: () => void
@@ -20,7 +21,13 @@ type ZoomableDisplay = {
   zoom?: number
 }
 
-export function ScorePreview({ musicXml, onCopyMusicXml, onDownloadMusicXml, onPrintScore }: ScorePreviewProps) {
+export function ScorePreview({
+  musicXml,
+  title,
+  onCopyMusicXml,
+  onDownloadMusicXml,
+  onPrintScore,
+}: ScorePreviewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const renderIdRef = useRef(0)
   const [renderError, setRenderError] = useState<RenderError | null>(null)
@@ -56,6 +63,8 @@ export function ScorePreview({ musicXml, onCopyMusicXml, onDownloadMusicXml, onP
         const osmd = new OpenSheetMusicDisplay(renderTarget, {
           autoResize: true,
           drawTitle: false,
+          drawPartNames: false,
+          drawPartAbbreviations: false,
           backend: 'svg',
           pageFormat: 'A4',
         })
@@ -73,11 +82,11 @@ export function ScorePreview({ musicXml, onCopyMusicXml, onDownloadMusicXml, onP
 
         const zoomableDisplay = osmd as ZoomableDisplay
         if (zoomableDisplay.setZoom) {
-          zoomableDisplay.setZoom(1.3)
+          zoomableDisplay.setZoom(0.84)
         } else if ('Zoom' in zoomableDisplay) {
-          zoomableDisplay.Zoom = 1.3
+          zoomableDisplay.Zoom = 0.84
         } else {
-          zoomableDisplay.zoom = 1.3
+          zoomableDisplay.zoom = 0.84
         }
 
         osmd.render()
@@ -121,7 +130,12 @@ export function ScorePreview({ musicXml, onCopyMusicXml, onDownloadMusicXml, onP
         </div>
       ) : null}
       <div className="preview-surface" aria-label="A4 score page">
-        <div className="a4-page" ref={containerRef} />
+        <div className="a4-page">
+          <header className="score-title-block">
+            <h2>{title || 'Untitled sketch'}</h2>
+          </header>
+          <div className="score-engraving" ref={containerRef} />
+        </div>
       </div>
     </SectionCard>
   )

@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "vite",
     "dev:full": "pnpm dlx vercel@latest dev",
-    "build": "tsc -b && vite build",
+    "sync:changelog": "node scripts/sync-changelog.mjs",
+    "build": "pnpm sync:changelog && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

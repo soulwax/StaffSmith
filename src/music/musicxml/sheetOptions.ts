@@ -22,7 +22,7 @@ export const DEFAULT_SHEET_OPTIONS: ScoreSheetOptions = {
   title: 'Untitled sketch',
   subtitle: '',
   composer: '',
-  staffLabel: 'Melody',
+  staffLabel: '',
   clef: 'treble',
   keyFifths: 0,
   beats: 4,
@@ -78,7 +78,7 @@ export function getClefDefinition(clef: ClefOption) {
 
 export function getDensityScale(density: SheetDensity) {
   if (density === 'compact') {
-    return 0.88
+    return 0.78
   }
 
   if (density === 'spacious') {

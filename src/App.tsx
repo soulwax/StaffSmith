@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import './app.css'
 import { SectionCard } from './components/SectionCard'
+import { ChangelogPage } from './features/changelog/ChangelogPage'
 import { EditorPanel } from './features/editor/EditorPanel'
 import { EXAMPLES } from './features/editor/examples'
 import { SyntaxHelp } from './features/help/SyntaxHelp'
@@ -32,14 +33,36 @@ type LocalDraft = {
   mode: InputMode
   input: string
   assistantPrompt: string
+  noteGenerationPrompt: string
   analysis: ComposerAssistResult | null
 }
 
 const AUTOSAVE_KEY = 'staffsmith:draft:v2'
 
-function renderInput(mode: InputMode, input: string): RenderState {
+type AppView = 'workspace' | 'help' | 'changelog'
+
+function getCurrentView(): AppView {
+  if (window.location.hash === '#/help') {
+    return 'help'
+  }
+
+  if (window.location.hash === '#/changelog') {
+    return 'changelog'
+  }
+
+  return 'workspace'
+}
+
+function renderInput(mode: InputMode, input: string, title = 'Untitled sketch'): RenderState {
   const parseResult = parseScoreInput(mode, input)
-  const musicXml = parseResult.ok ? scoreToMusicXml(parseResult.value) : null
+  const musicXml = parseResult.ok
+    ? scoreToMusicXml(parseResult.value, {
+      title,
+      staffLabel: '',
+      density: 'compact',
+      showTempo: true,
+    })
+    : null
 
   return {
     input,
@@ -84,6 +107,7 @@ function loadLocalDraft(): LocalDraft | null {
       mode: draft.mode,
       input: draft.input,
       assistantPrompt: typeof draft.assistantPrompt === 'string' ? draft.assistantPrompt : '',
+      noteGenerationPrompt: typeof draft.noteGenerationPrompt === 'string' ? draft.noteGenerationPrompt : '',
       analysis: draft.analysis ?? null,
     }
   } catch {
@@ -96,13 +120,17 @@ export function App() {
   const [state, setState] = useState<RenderState>(() => renderInput(
     initialDraft?.mode ?? initialExample.mode,
     initialDraft?.input ?? initialExample.input,
+    initialDraft?.projectTitle ?? 'Untitled sketch',
   ))
+  const [view, setView] = useState<AppView>(() => getCurrentView())
   const [projectId, setProjectId] = useState<string | null>(initialDraft?.projectId ?? null)
   const [projectTitle, setProjectTitle] = useState(initialDraft?.projectTitle ?? 'Untitled sketch')
   const [projects, setProjects] = useState<SavedProject[]>([])
   const [assistantPrompt, setAssistantPrompt] = useState(initialDraft?.assistantPrompt ?? '')
+  const [noteGenerationPrompt, setNoteGenerationPrompt] = useState(initialDraft?.noteGenerationPrompt ?? '')
   const [analysis, setAnalysis] = useState<ComposerAssistResult | null>(initialDraft?.analysis ?? null)
   const [isAssisting, setIsAssisting] = useState(false)
+  const [isGeneratingNotes, setIsGeneratingNotes] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [serverMessage, setServerMessage] = useState<string | null>(null)
 
@@ -112,25 +140,38 @@ export function App() {
   const insights = useMemo(() => getScoreInsights(activeScore), [activeScore])
 
   useEffect(() => {
+    const handleHashChange = () => setView(getCurrentView())
+    window.addEventListener('hashchange', handleHashChange)
+
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  useEffect(() => {
     const draft: LocalDraft = {
       projectId,
       projectTitle,
       mode: state.mode,
       input: state.input,
       assistantPrompt,
+      noteGenerationPrompt,
       analysis,
     }
 
     window.localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(draft))
-  }, [analysis, assistantPrompt, projectId, projectTitle, state.input, state.mode])
+  }, [analysis, assistantPrompt, noteGenerationPrompt, projectId, projectTitle, state.input, state.mode])
 
   const updateDraft = (mode: InputMode, input: string) => {
-    setState(renderInput(mode, input))
+    setState(renderInput(mode, input, projectTitle))
     setServerMessage(null)
   }
 
   const handleRender = (mode: InputMode, input: string) => {
-    setState(renderInput(mode, input))
+    setState(renderInput(mode, input, projectTitle))
+  }
+
+  const handleProjectTitleChange = (title: string) => {
+    setProjectTitle(title)
+    setState((current) => renderInput(current.mode, current.input, title))
   }
 
   const handleSelectExample = (exampleId: string) => {
@@ -242,9 +283,47 @@ export function App() {
     setProjectId(null)
     setProjectTitle('Untitled sketch')
     setAssistantPrompt('')
+    setNoteGenerationPrompt('')
     setAnalysis(null)
     updateDraft(initialExample.mode, initialExample.input)
     setServerMessage('New sketch ready.')
+  }
+
+  const generateNotesFromText = async () => {
+    const prompt = noteGenerationPrompt.trim()
+    if (!prompt) {
+      setServerMessage('Describe the notes you want first.')
+      return
+    }
+
+    setIsGeneratingNotes(true)
+    setServerMessage(null)
+
+    try {
+      const response = await fetch('/api/composer-assist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task: 'generate',
+          mode: 'notes',
+          input: state.input,
+          prompt: `Generate StaffSmith notes mode notation from this text. Use only supported StaffSmith syntax. Prefer compact 4/4 measures with useful dynamics and expression tokens when appropriate.\n\n${prompt}`,
+        }),
+      })
+
+      const body = await response.json() as { result?: ComposerAssistResult } & ApiErrorResponse
+      if (!response.ok || !body.result) {
+        throw new Error(body.error || 'Note generation failed.')
+      }
+
+      setAnalysis(body.result)
+      updateDraft('notes', body.result.generatedInput)
+      setServerMessage('Generated notes from text.')
+    } catch (error) {
+      setServerMessage(error instanceof Error ? error.message : 'Note generation failed.')
+    } finally {
+      setIsGeneratingNotes(false)
+    }
   }
 
   const exportProject = () => {
@@ -308,6 +387,45 @@ export function App() {
           </svg>
           <h1>Staffsmith</h1>
         </div>
+        <div className="header-project-console" aria-label="Project console">
+          <label className="visually-hidden" htmlFor="project-title">
+            Title
+          </label>
+          <input
+            id="project-title"
+            className="project-title-input"
+            value={projectTitle}
+            onChange={(event) => handleProjectTitleChange(event.target.value)}
+            placeholder="Untitled sketch"
+          />
+          <div className="header-project-actions">
+            <button type="button" className="secondary-button" onClick={newSketch}>
+              New
+            </button>
+            <button type="button" className="secondary-button" onClick={copySource}>
+              Copy Source
+            </button>
+            <button type="button" className="secondary-button" onClick={exportProject}>
+              Export Project
+            </button>
+          </div>
+        </div>
+        <nav className="workspace-nav" aria-label="Primary">
+          <a className={view === 'workspace' ? 'is-active' : ''} href="#/">
+            Workspace
+          </a>
+          <a className={view === 'help' ? 'is-active' : ''} href="#/help">
+            Syntax Help
+          </a>
+          <a
+            className={view === 'changelog' ? 'changelog-link is-active' : 'changelog-link'}
+            href="#/changelog"
+            aria-label="Changelog"
+            title="Changelog"
+          >
+            Δ
+          </a>
+        </nav>
         <div className="workspace-metrics" aria-label="Current score summary">
           <span>{state.mode === 'notes' ? 'Notes' : 'Chords'}</span>
           <span>{activeScore ? `${insights.measureCount} measures` : 'No score'}</span>
@@ -315,33 +433,17 @@ export function App() {
         </div>
       </header>
 
+      {view === 'help' ? (
+        <main className="help-layout">
+          <SyntaxHelp />
+        </main>
+      ) : view === 'changelog' ? (
+        <main className="help-layout">
+          <ChangelogPage />
+        </main>
+      ) : (
       <main className="layout">
         <div className="workbench-column">
-          <SectionCard title="Project Console">
-            <label className="editor-label" htmlFor="project-title">
-              Title
-            </label>
-            <input
-              id="project-title"
-              className="project-title-input"
-              value={projectTitle}
-              onChange={(event) => setProjectTitle(event.target.value)}
-              placeholder="Untitled sketch"
-            />
-            <div className="studio-actions">
-              <button type="button" className="secondary-button" onClick={newSketch}>
-                New
-              </button>
-              <button type="button" className="secondary-button" onClick={copySource}>
-                Copy Source
-              </button>
-              <button type="button" className="secondary-button" onClick={exportProject}>
-                Export Project
-              </button>
-            </div>
-            <p className="muted">Autosaves locally while Neon handles deliberate project saves.</p>
-          </SectionCard>
-
           <EditorPanel
             examples={EXAMPLES}
             input={state.input}
@@ -352,7 +454,32 @@ export function App() {
             onSelectExample={handleSelectExample}
           />
 
-          <SyntaxHelp />
+          <SectionCard title="Generate Notes From Text">
+            <label className="visually-hidden" htmlFor="note-generation-prompt">
+              Text idea
+            </label>
+            <textarea
+              id="note-generation-prompt"
+              className="generation-textarea"
+              rows={2}
+              value={noteGenerationPrompt}
+              onChange={(event) => setNoteGenerationPrompt(event.target.value)}
+              placeholder="A quiet four-bar cello-like line that grows louder, then settles into a warm final note."
+            />
+            <div className="studio-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={generateNotesFromText}
+                disabled={isGeneratingNotes}
+              >
+                {isGeneratingNotes ? 'Generating...' : 'Generate Notes'}
+              </button>
+              <a className="inline-help-link" href="#/help">
+                Syntax Help
+              </a>
+            </div>
+          </SectionCard>
 
           <SectionCard title="Studio Intelligence">
             <label className="editor-label" htmlFor="assistant-prompt">
@@ -485,12 +612,14 @@ export function App() {
         <div className="preview-column">
           <ScorePreview
             musicXml={state.musicXml}
+            title={projectTitle}
             onCopyMusicXml={copyMusicXml}
             onDownloadMusicXml={downloadMusicXml}
             onPrintScore={printScore}
           />
         </div>
       </main>
+      )}
     </div>
   )
 }

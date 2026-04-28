@@ -1,4 +1,5 @@
 import type { ComposerAssistRequest, ComposerAssistResult } from '../../src/lib/apiTypes'
+import { STAFFSMITH_AI_SYNTAX_GUIDE } from '../../src/music/parser/syntaxGuide'
 import { getGeminiApiKey } from './env'
 import { fail } from './http'
 
@@ -64,11 +65,12 @@ function buildPrompt(payload: ComposerAssistRequest) {
   "notes": string[]
 }
 
-StaffSmith syntax:
-- notes mode examples: C4 q, D4 q, E4 h | G4 q
-- chords mode examples: Cmaj7 | Am7 | Dm7 G7 | Cmaj7
-- durations are w, h, q, 8
+${STAFFSMITH_AI_SYNTAX_GUIDE}
+
+Generation rules:
 - keep generatedInput directly parseable by StaffSmith
+- for natural-language note generation, prefer suggestedMode "notes"
+- include useful notation tokens from the syntax when the user asks for mood, dynamics, articulation, or intensity
 - keep notes concise and practical
 
 Task: ${payload.task}

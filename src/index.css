@@ -3,25 +3,28 @@
     "Segoe UI", "Aptos", system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #161914;
+  color: #172027;
   background:
-    linear-gradient(115deg, rgba(255, 122, 74, 0.2) 0%, transparent 23%),
-    linear-gradient(245deg, rgba(60, 184, 164, 0.18) 0%, transparent 28%),
-    linear-gradient(180deg, #fbfcf6 0%, #eef4eb 48%, #e8f0ef 100%);
+    radial-gradient(circle at 13% 10%, rgba(255, 201, 86, 0.55) 0 12%, transparent 29%),
+    radial-gradient(circle at 90% 4%, rgba(80, 220, 200, 0.52) 0 13%, transparent 32%),
+    linear-gradient(135deg, rgba(255, 119, 83, 0.22) 0%, transparent 28%),
+    linear-gradient(225deg, rgba(160, 224, 43, 0.26) 0%, transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f5fffb 45%, #fff8e8 100%);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  color-scheme: light;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  --panel-bg: rgba(253, 255, 249, 0.82);
-  --panel-bg-strong: rgba(255, 255, 252, 0.96);
-  --panel-border: rgba(46, 68, 58, 0.14);
-  --panel-shadow: 0 18px 44px rgba(27, 52, 44, 0.1);
+  --panel-bg: rgba(255, 255, 255, 0.84);
+  --panel-bg-strong: rgba(255, 255, 255, 0.98);
+  --panel-border: rgba(29, 125, 137, 0.18);
+  --panel-shadow: 0 18px 44px rgba(36, 103, 122, 0.12);
   --accent: #d9552f;
   --accent-soft: rgba(217, 85, 47, 0.1);
   --accent-lime: #b8df31;
   --accent-teal: #199b8c;
   --surface: #fcfff9;
-  --ink-soft: #556051;
+  --ink-soft: #52606a;
   --success: #287358;
   --danger: #b44f35;
 }

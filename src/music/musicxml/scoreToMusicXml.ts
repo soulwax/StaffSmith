@@ -39,16 +39,16 @@ ${creatorXml}    ${subtitle ? `<miscellaneous><miscellaneous-field name="subtitl
       <page-height>1683.78</page-height>
       <page-width>1190.55</page-width>
       <page-margins type="both">
-        <left-margin>70</left-margin>
-        <right-margin>70</right-margin>
-        <top-margin>70</top-margin>
-        <bottom-margin>70</bottom-margin>
+        <left-margin>52</left-margin>
+        <right-margin>52</right-margin>
+        <top-margin>52</top-margin>
+        <bottom-margin>52</bottom-margin>
       </page-margins>
     </page-layout>
   </defaults>
   <part-list>
     <score-part id="P1">
-      <part-name>${escapeXml(sheetOptions.staffLabel || (score.metadata.mode === 'notes' ? 'Melody' : 'Lead Sheet'))}</part-name>
+      <part-name>${escapeXml(sheetOptions.staffLabel)}</part-name>
     </score-part>
   </part-list>
   <part id="P1">
