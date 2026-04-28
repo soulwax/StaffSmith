@@ -40,7 +40,7 @@ import { copyText, downloadTextFile, toSafeFilename } from './lib/fileActions'
 import { getScoreInsights } from './music/analysis/scoreInsights'
 import type { InputMode, NotePitch, ParseError, ParseResult, Score } from './music/model/types'
 import { scoreToMusicXml } from './music/musicxml/scoreToMusicXml'
-import { DEFAULT_PART_LAYOUT_PRESET, PART_LAYOUT_PRESETS, type PartLayoutPresetId } from './music/musicxml/sheetOptions'
+import { DEFAULT_PART_LAYOUT_PRESET, normalizePartLayoutPresetId, type PartLayoutPresetId } from './music/musicxml/sheetOptions'
 import { parseScoreInput } from './music/parser'
 
 type RenderState = {
@@ -208,10 +208,6 @@ function getStudioInsightTags(analysis: ComposerAssistResult | null) {
 
 function formatModeLabel(mode: InputMode) {
   return mode === 'notes' ? 'Notes' : 'Chords'
-}
-
-function isPartLayoutPresetId(value: unknown): value is PartLayoutPresetId {
-  return typeof value === 'string' && PART_LAYOUT_PRESETS.some((preset) => preset.id === value)
 }
 
 function formatProjectTimestamp(value: string) {
@@ -398,9 +394,7 @@ function loadLocalDraft(): LocalDraft | null {
       noteGenerationPrompt: typeof draft.noteGenerationPrompt === 'string' && draft.noteGenerationPrompt.trim()
         ? draft.noteGenerationPrompt
         : DEFAULT_NOTE_GENERATION_PROMPT,
-      partLayoutPresetId: isPartLayoutPresetId(draft.partLayoutPresetId)
-        ? draft.partLayoutPresetId
-        : DEFAULT_PART_LAYOUT_PRESET,
+      partLayoutPresetId: normalizePartLayoutPresetId(draft.partLayoutPresetId),
       analysis: draft.analysis ?? null,
     }
   } catch {

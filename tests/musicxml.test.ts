@@ -8,7 +8,7 @@ describe('MusicXML export', () => {
     expect(result.ok).toBe(true)
 
     const xml = scoreToMusicXml(result.value, {
-      partLayoutPreset: 'orchestra-solo',
+      partLayoutPreset: 'orchestral-solo',
       density: 'compact',
       staffLabel: '',
       title: 'Etude & Print',

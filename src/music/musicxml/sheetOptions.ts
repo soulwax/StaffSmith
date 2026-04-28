@@ -4,7 +4,9 @@ export type SheetDensity = 'spacious' | 'standard' | 'compact'
 
 export type PageFormat = 'a4' | 'nine-by-twelve'
 
-export type PartLayoutPresetId = 'orchestra-solo' | 'moderate' | 'children'
+export type PartLayoutPresetId = 'orchestral-solo' | 'standard-part' | 'children-songs'
+
+type LegacyPartLayoutPresetId = 'orchestra-solo' | 'moderate' | 'children'
 
 export type PartLayoutPreset = {
   id: PartLayoutPresetId
@@ -44,8 +46,8 @@ export type ScoreSheetOptions = {
 
 export const PART_LAYOUT_PRESETS: PartLayoutPreset[] = [
   {
-    id: 'orchestra-solo',
-    label: 'Orchestra solo',
+    id: 'orchestral-solo',
+    label: 'Orchestral Solo',
     density: 'compact',
     measuresPerSystem: 5,
     systemsPerPageTarget: 10,
@@ -54,8 +56,8 @@ export const PART_LAYOUT_PRESETS: PartLayoutPreset[] = [
     previewSystemSpacing: 96,
   },
   {
-    id: 'moderate',
-    label: 'Moderate',
+    id: 'standard-part',
+    label: 'Standard Part',
     density: 'standard',
     measuresPerSystem: 4,
     systemsPerPageTarget: 9,
@@ -64,8 +66,8 @@ export const PART_LAYOUT_PRESETS: PartLayoutPreset[] = [
     previewSystemSpacing: 112,
   },
   {
-    id: 'children',
-    label: 'For children',
+    id: 'children-songs',
+    label: "For Children's Songs",
     density: 'spacious',
     measuresPerSystem: 3,
     systemsPerPageTarget: 8,
@@ -75,7 +77,7 @@ export const PART_LAYOUT_PRESETS: PartLayoutPreset[] = [
   },
 ]
 
-export const DEFAULT_PART_LAYOUT_PRESET: PartLayoutPresetId = 'moderate'
+export const DEFAULT_PART_LAYOUT_PRESET: PartLayoutPresetId = 'standard-part'
 
 export const DEFAULT_SHEET_OPTIONS: ScoreSheetOptions = {
   title: 'Untitled sketch',
@@ -102,8 +104,28 @@ export const DEFAULT_SHEET_OPTIONS: ScoreSheetOptions = {
   minimumSystemGapMm: 4,
 }
 
-export function getPartLayoutPreset(id: PartLayoutPresetId) {
-  return PART_LAYOUT_PRESETS.find((preset) => preset.id === id) ?? PART_LAYOUT_PRESETS[1]!
+export function normalizePartLayoutPresetId(value: unknown): PartLayoutPresetId {
+  if (value === 'orchestra-solo') {
+    return 'orchestral-solo'
+  }
+
+  if (value === 'moderate') {
+    return 'standard-part'
+  }
+
+  if (value === 'children') {
+    return 'children-songs'
+  }
+
+  return PART_LAYOUT_PRESETS.some((preset) => preset.id === value)
+    ? value as PartLayoutPresetId
+    : DEFAULT_PART_LAYOUT_PRESET
+}
+
+export function getPartLayoutPreset(id: PartLayoutPresetId | LegacyPartLayoutPresetId) {
+  const normalizedId = normalizePartLayoutPresetId(id)
+
+  return PART_LAYOUT_PRESETS.find((preset) => preset.id === normalizedId) ?? PART_LAYOUT_PRESETS[1]!
 }
 
 export const KEY_SIGNATURES = [

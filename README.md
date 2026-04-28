@@ -78,7 +78,7 @@ Key design decisions:
 - Parsers are renderer-agnostic and testable.
 - Chord rendering uses lead-sheet style harmony symbols plus helper root notes for the MVP.
 - Incomplete note measures are padded with rests during MusicXML generation rather than hidden inside parsing.
-- Part layout presets map musician-facing choices (Orchestra solo, Moderate, For children) to notation density, system spacing, and measures per system.
+- Part layout presets map musician-facing choices (Orchestral Solo, Standard Part, For Children's Songs) to notation density, system spacing, and measures per system.
 
 ## Supported Syntax
 
