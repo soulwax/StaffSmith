@@ -313,8 +313,8 @@ function renderPageLayout(options: ScoreSheetOptions): string {
 
 function renderSystemLayout(options: ScoreSheetOptions): string {
   const tenthsPerMm = getTenthsPerMm(options)
-  const minimumDistance = toTenths(options.minimumSystemGapMm, tenthsPerMm)
-  const systemDistance = Math.max(minimumDistance, toTenths(options.minimumSystemGapMm * 2.5, tenthsPerMm))
+  const minimumDistance = options.minimumSystemGapMm * tenthsPerMm
+  const systemDistance = Math.max(minimumDistance, options.minimumSystemGapMm * 2.5 * tenthsPerMm)
   const topSystemDistance = toTenths(8, tenthsPerMm)
 
   return `    <system-layout>
@@ -322,7 +322,7 @@ function renderSystemLayout(options: ScoreSheetOptions): string {
         <left-margin>0</left-margin>
         <right-margin>0</right-margin>
       </system-margins>
-      <system-distance>${systemDistance}</system-distance>
+      <system-distance>${formatDecimal(systemDistance)}</system-distance>
       <top-system-distance>${topSystemDistance}</top-system-distance>
     </system-layout>`
 }
