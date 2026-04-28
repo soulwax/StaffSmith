@@ -2,6 +2,21 @@
 
 All notable StaffSmith changes will be documented in this file.
 
+## 0.1.2 - 2026-04-29 - Engraved Part Layouts
+
+### Added
+
+- Score preview now offers musician-facing part layout categories: Orchestral Solo, Standard Part, and For Children's Songs.
+- Note mode now supports explicit rests with `R` or `rest`, including durations such as `R w` and `rest q`.
+- MusicXML export now includes professional part-layout defaults for A4 / 9x12 pages, mirrored inside/outside margins, notation font hints, system spacing, and print system/page break hints.
+- Long explicit rest passages now receive cue-sized notes when silence exceeds 12 measures.
+
+### Changed
+
+- Layout presets now drive both the on-screen preview and exported MusicXML instead of exposing raw size, spacing, or wrap percentages.
+- Page-turn planning now prefers rest passages of at least 4 measures, then section changes, before falling back to the target page length.
+- Eighth-note beaming now breaks across rests instead of joining note beams through silent beats.
+
 ## 0.1.1 - 2026-04-29 - AI Syntax Hardening
 
 ### Fixed
