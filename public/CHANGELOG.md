@@ -7,6 +7,7 @@ All notable StaffSmith changes will be documented in this file.
 ### Added
 
 - Composer now includes a colorful smart notation board for notes, rests, durations, octaves, accidentals, chord roots, chord qualities, progressions, dynamics, and expressions.
+- Composer controls now use a tighter command-strip layout so note/chord building takes less vertical space.
 - Smart note/rest insertion now adds barlines when a token would overflow or complete a 4/4 measure.
 - Gemini generation rules and validation now know the same smart composer assumptions: complete measures, explicit rests for missing beats, and barlines before overflow.
 - Score preview now offers musician-facing part layout categories: Orchestral Solo, Standard Part, and For Children's Songs.
@@ -16,6 +17,7 @@ All notable StaffSmith changes will be documented in this file.
 
 ### Changed
 
+- Orchestral Solo now uses standard 7 mm part scaling with tighter system spacing and 6-measure systems so it fits more music per page.
 - Layout presets now drive both the on-screen preview and exported MusicXML instead of exposing raw size, spacing, or wrap percentages.
 - Page-turn planning now prefers rest passages of at least 4 measures, then section changes, before falling back to the target page length.
 - Eighth-note beaming now breaks across rests instead of joining note beams through silent beats.

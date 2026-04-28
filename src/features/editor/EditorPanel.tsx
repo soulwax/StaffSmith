@@ -219,8 +219,8 @@ export function EditorPanel({
       <div className="editor-builder" aria-label="Notation builder">
         {mode === 'notes' ? (
           <>
-            <div className="builder-row builder-row--split">
-              <div className="builder-group">
+            <div className="builder-row builder-row--note-console">
+              <div className="builder-group builder-group--duration">
                 <span className="builder-label">Duration</span>
                 <div className="builder-segmented" role="group" aria-label="Note duration">
                   {DURATIONS.map((entry) => (
@@ -247,23 +247,8 @@ export function EditorPanel({
                   <Plus size={14} aria-hidden="true" />
                 </button>
               </div>
-            </div>
 
-            <div className="builder-row">
-              <div className="builder-group">
-                <span className="builder-label">Pitch</span>
-                <div className="pitch-grid" role="group" aria-label="Insert note">
-                  {NOTE_STEPS.map((step) => (
-                    <button key={step} type="button" onClick={() => insertNote(step)}>
-                      {step}{accidental}{octave}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="builder-row builder-row--split">
-              <div className="builder-group">
+              <div className="builder-group builder-group--accidental">
                 <span className="builder-label">Accidental</span>
                 <div className="builder-segmented" role="group" aria-label="Accidental">
                   {ACCIDENTALS.map((entry) => (
@@ -286,11 +271,24 @@ export function EditorPanel({
                 <button type="button" onClick={() => insertToken('|')}>Bar</button>
               </div>
             </div>
+
+            <div className="builder-row">
+              <div className="builder-group builder-group--pitch">
+                <span className="builder-label">Pitch</span>
+                <div className="pitch-grid" role="group" aria-label="Insert note">
+                  {NOTE_STEPS.map((step) => (
+                    <button key={step} type="button" onClick={() => insertNote(step)}>
+                      {step}{accidental}{octave}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </>
         ) : (
           <>
-            <div className="builder-row builder-row--split">
-              <div className="builder-group">
+            <div className="builder-row builder-row--chord-console">
+              <div className="builder-group builder-group--roots">
                 <span className="builder-label">Root</span>
                 <div className="chord-root-grid" role="group" aria-label="Chord root">
                   {CHORD_ROOTS.map((root) => (
@@ -307,7 +305,7 @@ export function EditorPanel({
                 </div>
               </div>
 
-              <div className="builder-group">
+              <div className="builder-group builder-group--quality">
                 <span className="builder-label">Quality</span>
                 <div className="quality-grid" role="group" aria-label="Chord quality">
                   {CHORD_QUALITIES.map((quality) => (
@@ -323,16 +321,16 @@ export function EditorPanel({
                   ))}
                 </div>
               </div>
-            </div>
 
-            <div className="builder-row builder-row--split">
               <div className="builder-group builder-group--tools">
                 <span className="builder-label">Chord</span>
                 <button type="button" onClick={insertChord}>{chordRoot}{chordQuality}</button>
                 <button type="button" onClick={() => insertToken('|')}>Bar</button>
               </div>
+            </div>
 
-              <div className="builder-group">
+            <div className="builder-row">
+              <div className="builder-group builder-group--progression">
                 <span className="builder-label">Progression</span>
                 <div className="progression-strip">
                   {CHORD_PROGRESSIONS.map((progression) => (
@@ -346,7 +344,7 @@ export function EditorPanel({
           </>
         )}
 
-        <div className="builder-row builder-row--split">
+        <div className="builder-row builder-row--expression-console">
           <div className="builder-group">
             <span className="builder-label">Dynamics</span>
             <div className="token-strip" role="group" aria-label="Dynamics">

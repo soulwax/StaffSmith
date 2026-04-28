@@ -48,12 +48,12 @@ export const PART_LAYOUT_PRESETS: PartLayoutPreset[] = [
   {
     id: 'orchestral-solo',
     label: 'Orchestral Solo',
-    density: 'compact',
-    measuresPerSystem: 5,
+    density: 'standard',
+    measuresPerSystem: 6,
     systemsPerPageTarget: 10,
     minimumSystemGapMm: 4,
-    previewNoteScale: 94,
-    previewSystemSpacing: 96,
+    previewNoteScale: 88,
+    previewSystemSpacing: 84,
   },
   {
     id: 'standard-part',
