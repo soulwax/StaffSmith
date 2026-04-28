@@ -1,3 +1,4 @@
+import { Music2, Play, SquareStack } from 'lucide-react'
 import { SectionCard } from '../../components/SectionCard'
 import type { InputMode, ParseError } from '../../music/model/types'
 import type { ExamplePreset } from './examples'
@@ -40,7 +41,7 @@ export function EditorPanel({
   }
 
   return (
-    <SectionCard title="Composer Input">
+    <SectionCard title="Composer" className="composer-card">
       <div className="mode-toggle" role="tablist" aria-label="Input mode">
         {(['notes', 'chords'] as const).map((entry) => (
           <button
@@ -49,6 +50,7 @@ export function EditorPanel({
             className={entry === mode ? 'mode-toggle__button is-active' : 'mode-toggle__button'}
             onClick={() => handleModeChange(entry)}
           >
+            {entry === 'notes' ? <Music2 size={15} aria-hidden="true" /> : <SquareStack size={15} aria-hidden="true" />}
             {entry === 'notes' ? 'Notes' : 'Chords'}
           </button>
         ))}
@@ -68,8 +70,8 @@ export function EditorPanel({
         ))}
       </div>
 
-      <label className="editor-label" htmlFor="staffsmith-input">
-        Source input
+      <label className="visually-hidden" htmlFor="staffsmith-input">
+        Source
       </label>
       <textarea
         id="staffsmith-input"
@@ -86,12 +88,13 @@ export function EditorPanel({
 
       <div className="editor-actions">
         <button type="button" className="render-button" onClick={() => onRender(mode, input)}>
-          Render Score
+          <Play size={16} aria-hidden="true" />
+          Render
         </button>
         <p className={errors.length > 0 ? 'helper-text helper-text--error' : 'helper-text'}>
           {mode === 'notes'
-            ? 'Notes mode accepts note+octave with optional durations: w, h, q, 8.'
-            : 'Chords mode accepts one to four chord symbols per measure.'}
+            ? 'C4 q, mf, <, >, slur(...), staccato'
+            : 'Cmaj7 | Am7 | Dm7 G7 | Cmaj7'}
         </p>
       </div>
     </SectionCard>

@@ -6,7 +6,7 @@
 .score-preview-card .section-card__content {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  height: calc(100vh - 220px);
+  height: calc(100vh - 170px);
   min-height: 0;
 }
 
@@ -14,13 +14,16 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .preview-toolbar button {
-  min-height: 34px;
-  padding: 7px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 9px;
   border: 1px solid rgba(28, 126, 152, 0.16);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.86);
@@ -49,7 +52,7 @@
   place-items: center;
   overflow: hidden;
   min-height: 0;
-  padding: 16px;
+  padding: 10px;
   border-radius: 8px;
   background:
     linear-gradient(90deg, rgba(30, 150, 170, 0.08) 1px, transparent 1px),
@@ -62,11 +65,11 @@
 }
 
 .a4-page {
-  width: min(100%, calc((100vh - 360px) * 210 / 297));
+  width: min(100%, calc((100vh - 300px) * 210 / 297));
   aspect-ratio: 210 / 297;
   min-height: 0;
   margin: 0 auto;
-  padding: clamp(12px, 2.2vh, 22px) clamp(14px, 2.7vh, 28px) clamp(16px, 3vh, 30px);
+  padding: clamp(10px, 1.8vh, 20px) clamp(12px, 2.4vh, 26px) clamp(14px, 2.6vh, 28px);
   border: 1px solid rgba(28, 126, 152, 0.14);
   border-radius: 4px;
   background: #ffffff;
@@ -78,7 +81,7 @@
 .score-title-block {
   display: grid;
   justify-items: center;
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   text-align: center;
 }
 
@@ -110,13 +113,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .page-controls button {
-  min-height: 34px;
-  padding: 7px 10px;
+  display: inline-grid;
+  width: 34px;
+  min-height: 32px;
+  padding: 0;
+  place-items: center;
   border: 1px solid rgba(28, 126, 152, 0.16);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.86);
@@ -131,7 +137,7 @@
 }
 
 .page-controls span {
-  min-width: 86px;
+  min-width: 74px;
   color: #455563;
   font-size: 0.86rem;
   font-weight: 750;

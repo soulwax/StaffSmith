@@ -4,6 +4,7 @@
   border-radius: 8px;
   box-shadow: var(--panel-shadow);
   backdrop-filter: blur(14px);
+  min-height: 0;
   position: relative;
   overflow: hidden;
 }
@@ -19,12 +20,12 @@
 }
 
 .section-card__header {
-  padding: 14px 16px 0;
+  padding: 10px 14px 0;
 }
 
 .section-card__header h2 {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   letter-spacing: 0.02em;
   position: relative;
   text-transform: uppercase;
@@ -32,7 +33,7 @@
 }
 
 .section-card__content {
-  padding: 12px 16px 16px;
+  padding: 9px 14px 12px;
   position: relative;
 }
 

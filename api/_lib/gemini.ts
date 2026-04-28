@@ -1,7 +1,9 @@
-import type { ComposerAssistRequest, ComposerAssistResult } from '../../src/lib/apiTypes'
+import type { ComposerAssistRequest, ComposerAssistResult, GeminiStatusResponse } from '../../src/lib/apiTypes'
 import { STAFFSMITH_AI_SYNTAX_GUIDE } from '../../src/music/parser/syntaxGuide'
 import { getGeminiApiKey } from './env'
 import { fail } from './http'
+
+const GEMINI_MODEL = 'gemini-2.5-flash'
 
 type GeminiResponse = {
   candidates?: Array<{
@@ -16,7 +18,7 @@ type GeminiResponse = {
 export async function runComposerAssist(payload: ComposerAssistRequest): Promise<ComposerAssistResult> {
   const apiKey = getGeminiApiKey()
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: {
@@ -53,6 +55,41 @@ export async function runComposerAssist(payload: ComposerAssistRequest): Promise
   }
 
   return normalizeAssistResult(JSON.parse(text) as Partial<ComposerAssistResult>, payload)
+}
+
+export async function checkGeminiAvailability(): Promise<GeminiStatusResponse> {
+  const apiKey = getGeminiApiKey()
+  const startedAt = Date.now()
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}?key=${apiKey}`,
+    {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+      },
+    },
+  )
+  const latencyMs = Date.now() - startedAt
+
+  if (!response.ok) {
+    return {
+      available: false,
+      checkedAt: new Date().toISOString(),
+      latencyMs,
+      message: response.status === 403 || response.status === 401
+        ? 'Gemini key rejected.'
+        : `Gemini status check failed with HTTP ${response.status}.`,
+      model: GEMINI_MODEL,
+    }
+  }
+
+  return {
+    available: true,
+    checkedAt: new Date().toISOString(),
+    latencyMs,
+    message: 'Gemini available.',
+    model: GEMINI_MODEL,
+  }
 }
 
 function buildPrompt(payload: ComposerAssistRequest) {

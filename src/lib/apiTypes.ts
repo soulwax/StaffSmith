@@ -43,6 +43,14 @@ export type ProjectListResponse = {
   projects: SavedProject[]
 }
 
+export type GeminiStatusResponse = {
+  available: boolean
+  checkedAt: string
+  latencyMs?: number
+  message: string
+  model: string
+}
+
 export type ApiErrorResponse = {
   error: string
   missingEnv?: string[]

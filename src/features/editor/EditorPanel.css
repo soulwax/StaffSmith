@@ -1,11 +1,22 @@
+.composer-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.composer-card .section-card__content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .mode-toggle {
   display: inline-grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   padding: 4px;
   width: 100%;
-  max-width: 240px;
+  max-width: 220px;
   border-radius: 8px;
   background: linear-gradient(135deg, rgba(255, 118, 83, 0.16), rgba(31, 177, 196, 0.18));
 }
@@ -23,9 +34,13 @@
 }
 
 .mode-toggle__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   min-width: 0;
-  min-height: 36px;
-  padding: 8px 10px;
+  min-height: 32px;
+  padding: 7px 9px;
   background: transparent;
   color: #5b6972;
   font-weight: 600;
@@ -40,14 +55,14 @@
 .examples {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .example-chip {
   min-width: 0;
-  min-height: 34px;
-  padding: 7px 10px;
+  min-height: 30px;
+  padding: 6px 9px;
   background: rgba(255, 255, 255, 0.94);
   color: #2c3c49;
   border: 1px solid rgba(28, 126, 152, 0.16);
@@ -56,16 +71,17 @@
 
 .editor-label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-weight: 600;
 }
 
 .editor-textarea {
   width: 100%;
-  min-height: 240px;
-  height: clamp(240px, 28vh, 360px);
+  flex: 1 1 auto;
+  min-height: 190px;
+  height: auto;
   resize: vertical;
-  padding: 16px;
+  padding: 14px;
   border-radius: 8px;
   border: 1px solid rgba(28, 126, 152, 0.18);
   background:
@@ -84,14 +100,17 @@
 .editor-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .render-button {
-  min-height: 42px;
-  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 8px 13px;
   background: linear-gradient(135deg, #d9552f 0%, #f2b64b 52%, #b7df36 100%);
   color: #161b10;
   font-weight: 700;
@@ -107,6 +126,7 @@
 .helper-text {
   margin: 0;
   color: #64737d;
+  font-size: 0.82rem;
   flex: 1 1 220px;
 }
 

@@ -2,6 +2,25 @@
 
 All notable StaffSmith changes will be documented in this file.
 
+## 2026-04-28 - Gemini Availability Light
+
+### Added
+
+- Server-side `/api/gemini-status` endpoint that pings the configured Gemini model without exposing `GEMINI_API_KEY`.
+- Header Gemini availability light that checks immediately and refreshes once per hour while the app is open.
+
+## 2026-04-28 - Compact Control Pass
+
+### Added
+
+- Richer Lucide icon set for header, workspace navigation, composer actions, and score preview controls.
+
+### Changed
+
+- Header project controls are now compact icon buttons to return horizontal and vertical space to the workspace.
+- Section names, helper text, AI prompt fields, and action rows are shorter so the composer and sheet preview occupy more of the viewport.
+- The A4 preview surface now uses the recovered header space for a larger white score page.
+
 ## 2026-04-28 - Composer Assist Feedback Fix
 
 ### Fixed

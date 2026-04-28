@@ -1,4 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
+import {
+  Bot,
+  CircleHelp,
+  Copy,
+  Download,
+  FilePlus2,
+  FolderOpen,
+  Gauge,
+  LayoutDashboard,
+  LoaderCircle,
+  Music2,
+  PanelRightClose,
+  PanelRightOpen,
+  Ruler,
+  Save,
+  ScrollText,
+  Search,
+  Sparkles,
+  WandSparkles,
+} from 'lucide-react'
 import './app.css'
 import { SectionCard } from './components/SectionCard'
 import { ChangelogPage } from './features/changelog/ChangelogPage'
@@ -9,6 +29,7 @@ import { ScorePreview } from './features/renderer/ScorePreview'
 import type {
   ApiErrorResponse,
   ComposerAssistResult,
+  GeminiStatusResponse,
   ProjectListResponse,
   SavedProject,
   SaveProjectRequest,
@@ -40,6 +61,11 @@ type LocalDraft = {
 const AUTOSAVE_KEY = 'staffsmith:draft:v2'
 const API_TIMEOUT_MS = 45_000
 const API_PREFLIGHT_TIMEOUT_MS = 3_000
+const GEMINI_STATUS_INTERVAL_MS = 60 * 60 * 1000
+
+type GeminiUiStatus = GeminiStatusResponse & {
+  state: 'checking' | 'available' | 'unavailable'
+}
 
 type AppView = 'workspace' | 'help' | 'changelog'
 
@@ -183,6 +209,14 @@ function loadLocalDraft(): LocalDraft | null {
   }
 }
 
+const initialGeminiStatus: GeminiUiStatus = {
+  available: false,
+  checkedAt: '',
+  message: 'Checking Gemini...',
+  model: 'gemini-2.5-flash',
+  state: 'checking',
+}
+
 export function App() {
   const [initialDraft] = useState<LocalDraft | null>(() => loadLocalDraft())
   const [state, setState] = useState<RenderState>(() => renderInput(
@@ -201,6 +235,7 @@ export function App() {
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isInspectorOpen, setIsInspectorOpen] = useState(false)
+  const [geminiStatus, setGeminiStatus] = useState<GeminiUiStatus>(initialGeminiStatus)
   const [serverMessage, setServerMessage] = useState<string | null>(null)
   const [noteGenerationMessage, setNoteGenerationMessage] = useState<string | null>(null)
 
@@ -214,6 +249,59 @@ export function App() {
     window.addEventListener('hashchange', handleHashChange)
 
     return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    const refreshGeminiStatus = async () => {
+      setGeminiStatus((current) => ({
+        ...current,
+        message: current.checkedAt ? 'Refreshing Gemini status...' : 'Checking Gemini...',
+        state: 'checking',
+      }))
+
+      try {
+        const response = await fetch('/api/gemini-status', {
+          headers: { Accept: 'application/json' },
+        })
+        const contentType = response.headers.get('content-type') ?? ''
+
+        if (!contentType.includes('application/json')) {
+          throw new Error('Gemini status API is not running. In local development, use pnpm dev:full.')
+        }
+
+        const body = await response.json() as GeminiStatusResponse & ApiErrorResponse
+        if (!response.ok) {
+          throw new Error(body.error || 'Gemini status check failed.')
+        }
+
+        if (isMounted) {
+          setGeminiStatus({
+            ...body,
+            state: body.available ? 'available' : 'unavailable',
+          })
+        }
+      } catch (error) {
+        if (isMounted) {
+          setGeminiStatus({
+            available: false,
+            checkedAt: new Date().toISOString(),
+            message: error instanceof Error ? error.message : 'Gemini status check failed.',
+            model: 'gemini-2.5-flash',
+            state: 'unavailable',
+          })
+        }
+      }
+    }
+
+    void refreshGeminiStatus()
+    const intervalId = window.setInterval(refreshGeminiStatus, GEMINI_STATUS_INTERVAL_MS)
+
+    return () => {
+      isMounted = false
+      window.clearInterval(intervalId)
+    }
   }, [])
 
   useEffect(() => {
@@ -438,15 +526,9 @@ export function App() {
     <div className="app-shell">
       <header className="workspace-header">
         <div className="brand-lockup">
-          <svg
-            className="brand-mark"
-            viewBox="0 0 32 32"
-            aria-hidden="true"
-            focusable="false"
-          >
-            <rect x="2" y="2" width="28" height="28" rx="9" />
-            <path d="M10 22V10h2.4v12H10Zm4.8-6.8V10h2.4v5.2h4V10h2.4v12h-2.4v-4.8h-4V22h-2.4v-6.8Z" />
-          </svg>
+          <span className="brand-mark" aria-hidden="true">
+            <Music2 size={18} strokeWidth={2.4} />
+          </span>
           <h1>Staffsmith</h1>
         </div>
         <div className="header-project-console" aria-label="Project console">
@@ -461,45 +543,65 @@ export function App() {
             placeholder="Untitled sketch"
           />
           <div className="header-project-actions">
-            <button type="button" className="secondary-button" onClick={newSketch}>
-              New
+            <button type="button" className="icon-button" onClick={newSketch} aria-label="New sketch" title="New sketch">
+              <FilePlus2 size={17} aria-hidden="true" />
             </button>
-            <button type="button" className="secondary-button" onClick={copySource}>
-              Copy Source
+            <button type="button" className="icon-button" onClick={copySource} aria-label="Copy source" title="Copy source">
+              <Copy size={17} aria-hidden="true" />
             </button>
-            <button type="button" className="secondary-button" onClick={exportProject}>
-              Export Project
+            <button type="button" className="icon-button" onClick={exportProject} aria-label="Export project" title="Export project">
+              <Download size={17} aria-hidden="true" />
             </button>
           </div>
         </div>
         <nav className="workspace-nav" aria-label="Primary">
-          <a className={view === 'workspace' ? 'is-active' : ''} href="#/">
-            Workspace
+          <a className={view === 'workspace' ? 'is-active' : ''} href="#/" aria-label="Workspace" title="Workspace">
+            <LayoutDashboard size={17} aria-hidden="true" />
           </a>
-          <a className={view === 'help' ? 'is-active' : ''} href="#/help">
-            Syntax Help
+          <a className={view === 'help' ? 'is-active' : ''} href="#/help" aria-label="Syntax help" title="Syntax help">
+            <CircleHelp size={17} aria-hidden="true" />
           </a>
           <a
-            className={view === 'changelog' ? 'changelog-link is-active' : 'changelog-link'}
+            className={view === 'changelog' ? 'is-active' : ''}
             href="#/changelog"
             aria-label="Changelog"
             title="Changelog"
           >
-            Δ
+            <ScrollText size={17} aria-hidden="true" />
           </a>
         </nav>
         <div className="workspace-metrics" aria-label="Current score summary">
-          <span>{state.mode === 'notes' ? 'Notes' : 'Chords'}</span>
-          <span>{activeScore ? `${insights.measureCount} measures` : 'No score'}</span>
-          <span>{activeScore ? insights.pitchRange : summarizeErrors(errors)}</span>
+          <span
+            className={`service-light service-light--${geminiStatus.state}`}
+            title={`${geminiStatus.message}${geminiStatus.latencyMs ? ` (${geminiStatus.latencyMs} ms)` : ''}`}
+          >
+            {geminiStatus.state === 'checking'
+              ? <LoaderCircle size={15} aria-hidden="true" />
+              : <Bot size={15} aria-hidden="true" />}
+            Gemini
+          </span>
+          <span title="Input mode">
+            <Music2 size={15} aria-hidden="true" />
+            {state.mode === 'notes' ? 'Notes' : 'Chords'}
+          </span>
+          <span title="Measure count">
+            <Ruler size={15} aria-hidden="true" />
+            {activeScore ? `${insights.measureCount} m.` : '0 m.'}
+          </span>
+          <span title={activeScore ? 'Pitch range' : 'Parse status'}>
+            <Gauge size={15} aria-hidden="true" />
+            {activeScore ? insights.pitchRange : summarizeErrors(errors)}
+          </span>
           <button
             type="button"
-            className="inspector-toggle"
+            className="inspector-toggle icon-button"
             onClick={() => setIsInspectorOpen((current) => !current)}
             aria-expanded={isInspectorOpen}
             aria-controls="score-inspector"
+            aria-label={isInspectorOpen ? 'Close inspector' : 'Open inspector'}
+            title={isInspectorOpen ? 'Close inspector' : 'Open inspector'}
           >
-            Inspector
+            {isInspectorOpen ? <PanelRightClose size={17} aria-hidden="true" /> : <PanelRightOpen size={17} aria-hidden="true" />}
           </button>
         </div>
       </header>
@@ -525,7 +627,7 @@ export function App() {
             onSelectExample={handleSelectExample}
           />
 
-          <SectionCard title="Generate Notes From Text">
+          <SectionCard title="Text To Notes">
             <label className="visually-hidden" htmlFor="note-generation-prompt">
               Text idea
             </label>
@@ -538,7 +640,7 @@ export function App() {
                 setNoteGenerationPrompt(event.target.value)
                 setNoteGenerationMessage(null)
               }}
-              placeholder="A quiet four-bar cello-like line that grows louder, then settles into a warm final note."
+              placeholder="Beginner flute solo, folk-jazz color, gentle crescendo."
             />
             <div className="studio-actions">
               <button
@@ -547,17 +649,19 @@ export function App() {
                 onClick={generateNotesFromText}
                 disabled={isGeneratingNotes}
               >
-                {isGeneratingNotes ? 'Generating...' : 'Generate Notes'}
+                <WandSparkles size={16} aria-hidden="true" />
+                {isGeneratingNotes ? 'Generating...' : 'Generate'}
               </button>
               <a className="inline-help-link" href="#/help">
-                Syntax Help
+                <CircleHelp size={16} aria-hidden="true" />
+                Help
               </a>
             </div>
             {noteGenerationMessage ? <p className="server-message">{noteGenerationMessage}</p> : null}
           </SectionCard>
 
-          <SectionCard title="Studio Intelligence">
-            <label className="editor-label" htmlFor="assistant-prompt">
+          <SectionCard title="AI Studio">
+            <label className="visually-hidden" htmlFor="assistant-prompt">
               Direction
             </label>
             <textarea
@@ -570,16 +674,20 @@ export function App() {
             />
             <div className="studio-actions">
               <button type="button" className="secondary-button" onClick={() => runAssist('analyze')} disabled={isAssisting}>
-                Analyze Key
+                <Search size={16} aria-hidden="true" />
+                Analyze
               </button>
               <button type="button" className="secondary-button" onClick={() => runAssist('generate')} disabled={isAssisting}>
-                Generate Idea
+                <Sparkles size={16} aria-hidden="true" />
+                Idea
               </button>
               <button type="button" className="secondary-button" onClick={saveCurrentProject} disabled={isSaving}>
-                Save Project
+                <Save size={16} aria-hidden="true" />
+                Save
               </button>
               <button type="button" className="ghost-button" onClick={refreshProjects}>
-                Load Recent
+                <FolderOpen size={16} aria-hidden="true" />
+                Recent
               </button>
             </div>
             {serverMessage ? <p className="server-message">{serverMessage}</p> : null}

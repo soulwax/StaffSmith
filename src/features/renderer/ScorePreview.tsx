@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { ChevronLeft, ChevronRight, Copy, Download, Printer } from 'lucide-react'
 import { SectionCard } from '../../components/SectionCard'
 import './ScorePreview.css'
 
@@ -158,16 +159,19 @@ export function ScorePreview({
   }
 
   return (
-    <SectionCard title="Score Preview" className="score-preview-card">
+    <SectionCard title="Score" className="score-preview-card">
       <div className="preview-toolbar" aria-label="Score preview actions">
-        <button type="button" onClick={onCopyMusicXml} disabled={!musicXml}>
-          Copy XML
+        <button type="button" onClick={onCopyMusicXml} disabled={!musicXml} aria-label="Copy MusicXML" title="Copy MusicXML">
+          <Copy size={16} aria-hidden="true" />
+          XML
         </button>
-        <button type="button" onClick={onDownloadMusicXml} disabled={!musicXml}>
-          Download XML
+        <button type="button" onClick={onDownloadMusicXml} disabled={!musicXml} aria-label="Download MusicXML" title="Download MusicXML">
+          <Download size={16} aria-hidden="true" />
+          XML
         </button>
-        <button type="button" onClick={onPrintScore} disabled={!musicXml}>
-          Print / PDF
+        <button type="button" onClick={onPrintScore} disabled={!musicXml} aria-label="Print or save PDF" title="Print or save PDF">
+          <Printer size={16} aria-hidden="true" />
+          PDF
         </button>
       </div>
       {renderError && renderError.musicXml === musicXml ? (
@@ -192,14 +196,14 @@ export function ScorePreview({
         </div>
       </div>
       <div className="page-controls" aria-label="Score page controls">
-        <button type="button" onClick={goToPreviousPage} disabled={!musicXml || pageIndex === 0}>
-          Previous
+        <button type="button" onClick={goToPreviousPage} disabled={!musicXml || pageIndex === 0} aria-label="Previous page" title="Previous page">
+          <ChevronLeft size={17} aria-hidden="true" />
         </button>
         <span>
           Page {musicXml ? pageIndex + 1 : 0} / {musicXml ? pageCount : 0}
         </span>
-        <button type="button" onClick={goToNextPage} disabled={!musicXml || pageIndex >= pageCount - 1}>
-          Next
+        <button type="button" onClick={goToNextPage} disabled={!musicXml || pageIndex >= pageCount - 1} aria-label="Next page" title="Next page">
+          <ChevronRight size={17} aria-hidden="true" />
         </button>
       </div>
     </SectionCard>
