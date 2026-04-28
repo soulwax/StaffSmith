@@ -2,6 +2,13 @@
 
 All notable StaffSmith changes will be documented in this file.
 
+## 2026-04-28 - Core Test Coverage
+
+### Added
+
+- Vitest test runner with focused coverage for parser behavior, MusicXML export, score insights, and Gemini availability checks.
+- `pnpm test` script for running the core regression suite.
+
 ## 2026-04-28 - Gemini Availability Light
 
 ### Added
