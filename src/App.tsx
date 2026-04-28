@@ -40,6 +40,7 @@ import { copyText, downloadTextFile, toSafeFilename } from './lib/fileActions'
 import { getScoreInsights } from './music/analysis/scoreInsights'
 import type { InputMode, NotePitch, ParseError, ParseResult, Score } from './music/model/types'
 import { scoreToMusicXml } from './music/musicxml/scoreToMusicXml'
+import { DEFAULT_PART_LAYOUT_PRESET, type PartLayoutPresetId } from './music/musicxml/sheetOptions'
 import { parseScoreInput } from './music/parser'
 
 type RenderState = {
@@ -57,6 +58,7 @@ type LocalDraft = {
   input: string
   assistantPrompt: string
   noteGenerationPrompt: string
+  partLayoutPresetId: PartLayoutPresetId
   analysis: ComposerAssistResult | null
 }
 
@@ -233,13 +235,18 @@ function getCurrentView(): AppView {
   return 'workspace'
 }
 
-function renderInput(mode: InputMode, input: string, title = 'Untitled sketch'): RenderState {
+function renderInput(
+  mode: InputMode,
+  input: string,
+  title = 'Untitled sketch',
+  partLayoutPresetId: PartLayoutPresetId = DEFAULT_PART_LAYOUT_PRESET,
+): RenderState {
   const parseResult = parseScoreInput(mode, input)
   const musicXml = parseResult.ok
     ? scoreToMusicXml(parseResult.value, {
       title,
       staffLabel: '',
-      density: 'compact',
+      partLayoutPreset: partLayoutPresetId,
       showTempo: true,
     })
     : null
@@ -387,6 +394,9 @@ function loadLocalDraft(): LocalDraft | null {
       noteGenerationPrompt: typeof draft.noteGenerationPrompt === 'string' && draft.noteGenerationPrompt.trim()
         ? draft.noteGenerationPrompt
         : DEFAULT_NOTE_GENERATION_PROMPT,
+      partLayoutPresetId: typeof draft.partLayoutPresetId === 'string'
+        ? draft.partLayoutPresetId as PartLayoutPresetId
+        : DEFAULT_PART_LAYOUT_PRESET,
       analysis: draft.analysis ?? null,
     }
   } catch {
@@ -408,6 +418,7 @@ export function App() {
     initialDraft?.mode ?? initialExample.mode,
     initialDraft?.input ?? initialExample.input,
     initialDraft?.projectTitle ?? 'Untitled sketch',
+    initialDraft?.partLayoutPresetId ?? DEFAULT_PART_LAYOUT_PRESET,
   ))
   const [view, setView] = useState<AppView>(() => getCurrentView())
   const [projectId, setProjectId] = useState<string | null>(initialDraft?.projectId ?? null)
@@ -415,6 +426,9 @@ export function App() {
   const [projects, setProjects] = useState<SavedProject[]>([])
   const [assistantPrompt, setAssistantPrompt] = useState(initialDraft?.assistantPrompt ?? '')
   const [noteGenerationPrompt, setNoteGenerationPrompt] = useState(initialDraft?.noteGenerationPrompt ?? DEFAULT_NOTE_GENERATION_PROMPT)
+  const [partLayoutPresetId, setPartLayoutPresetId] = useState<PartLayoutPresetId>(
+    initialDraft?.partLayoutPresetId ?? DEFAULT_PART_LAYOUT_PRESET,
+  )
   const [analysis, setAnalysis] = useState<ComposerAssistResult | null>(initialDraft?.analysis ?? null)
   const [isAssisting, setIsAssisting] = useState(false)
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false)
@@ -499,24 +513,30 @@ export function App() {
       input: state.input,
       assistantPrompt,
       noteGenerationPrompt,
+      partLayoutPresetId,
       analysis,
     }
 
     window.localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(draft))
-  }, [analysis, assistantPrompt, noteGenerationPrompt, projectId, projectTitle, state.input, state.mode])
+  }, [analysis, assistantPrompt, noteGenerationPrompt, partLayoutPresetId, projectId, projectTitle, state.input, state.mode])
 
   const updateDraft = (mode: InputMode, input: string) => {
-    setState(renderInput(mode, input, projectTitle))
+    setState(renderInput(mode, input, projectTitle, partLayoutPresetId))
     setServerMessage(null)
   }
 
   const handleRender = (mode: InputMode, input: string) => {
-    setState(renderInput(mode, input, projectTitle))
+    setState(renderInput(mode, input, projectTitle, partLayoutPresetId))
   }
 
   const handleProjectTitleChange = (title: string) => {
     setProjectTitle(title)
-    setState((current) => renderInput(current.mode, current.input, title))
+    setState((current) => renderInput(current.mode, current.input, title, partLayoutPresetId))
+  }
+
+  const handlePartLayoutPresetChange = (presetId: PartLayoutPresetId) => {
+    setPartLayoutPresetId(presetId)
+    setState((current) => renderInput(current.mode, current.input, projectTitle, presetId))
   }
 
   const handleSelectExample = (exampleId: string) => {
@@ -675,6 +695,7 @@ export function App() {
         input: state.input,
         score: activeScore,
         musicXml: state.musicXml,
+        partLayoutPresetId,
         analysis,
       }, null, 2),
       'application/json;charset=utf-8',
@@ -973,6 +994,8 @@ export function App() {
           <ScorePreview
             musicXml={state.musicXml}
             title={projectTitle}
+            partLayoutPresetId={partLayoutPresetId}
+            onPartLayoutPresetChange={handlePartLayoutPresetChange}
             onCopyMusicXml={copyMusicXml}
             onDownloadMusicXml={downloadMusicXml}
             onPrintScore={printScore}
