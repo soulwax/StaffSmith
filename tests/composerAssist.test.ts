@@ -115,4 +115,23 @@ describe('composer assist normalization', () => {
     expect(result.summary).toContain('local beginner flute fallback')
     expect(globalThis.fetch).toHaveBeenCalledTimes(1)
   })
+
+  it('rejects unsupported generated durations before they reach the editor', async () => {
+    mockGeminiJson({
+      summary: 'Contains an unsupported dotted duration.',
+      keyCenter: 'C Major',
+      suggestedMode: 'notes',
+      generatedInput: 'C4 q E4 h. G4 q',
+      notes: [],
+    })
+
+    const result = await runComposerAssist({
+      task: 'generate',
+      mode: 'notes',
+      input: 'C4 q E4 q G4 h',
+      prompt: 'A flute solo for beginners, in the style of jethro tull jazz',
+    })
+
+    expect(result.generatedInput).toBe('mp [airy flute] D5 q, F5 q, A5 h | < G5 q, A5 q, B5 q, A5 q | > G5 q, F5 q, E5 q, D5 q')
+  })
 })

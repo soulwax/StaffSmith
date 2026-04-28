@@ -11,6 +11,7 @@ All notable StaffSmith changes will be documented in this file.
 - API routes now use deployment-safe `.js` import specifiers for Vercel's ESM serverless runtime.
 - Gemini output validation no longer imports the full browser parser tree inside the serverless function bundle.
 - Composer generation now uses only `gemini-3.1-flash-lite-preview` and returns a parseable local flute fallback if that pinned model is temporarily unavailable.
+- AI-generated note text is now rejected before it reaches the editor when it uses unsupported duration tokens such as dotted values.
 
 ## 2026-04-28 - AI Structured Response Fix
 

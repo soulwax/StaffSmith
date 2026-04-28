@@ -416,7 +416,26 @@ function isLikelyParseableStaffSmithInput(mode: InputMode, input: string) {
     return tokens.some((token) => token !== '|' && token !== ',' && !isDirectionToken(token))
   }
 
-  return tokens.some((token) => /^[A-Ga-g](?:#|b)?\d+$/.test(token))
+  let noteCount = 0
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index]
+    if (!token || token === '|' || token === ',' || isDirectionToken(token)) {
+      continue
+    }
+
+    if (!/^[A-Ga-g](?:#|b)?\d+$/.test(token)) {
+      return false
+    }
+
+    noteCount += 1
+    const duration = tokens[index + 1]
+    if (duration && DURATION_VALUES.has(duration)) {
+      index += 1
+    }
+  }
+
+  return noteCount > 0
 }
 
 function isDirectionToken(token: string) {
