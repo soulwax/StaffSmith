@@ -7,6 +7,7 @@ import {
   FilePlus2,
   FolderOpen,
   Gauge,
+  Info,
   LayoutDashboard,
   LoaderCircle,
   Music2,
@@ -21,6 +22,7 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import './app.css'
 import { SectionCard } from './components/SectionCard'
+import { AboutPage } from './features/about/AboutPage'
 import { ChangelogPage } from './features/changelog/ChangelogPage'
 import { EditorPanel } from './features/editor/EditorPanel'
 import { EXAMPLES } from './features/editor/examples'
@@ -68,7 +70,7 @@ type GeminiUiStatus = GeminiStatusResponse & {
   state: 'checking' | 'available' | 'unavailable'
 }
 
-type AppView = 'workspace' | 'help' | 'changelog'
+type AppView = 'workspace' | 'help' | 'changelog' | 'about'
 
 type StudioToneAccent = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'neutral'
 
@@ -222,6 +224,10 @@ function getCurrentView(): AppView {
 
   if (window.location.hash === '#/changelog') {
     return 'changelog'
+  }
+
+  if (window.location.hash === '#/about') {
+    return 'about'
   }
 
   return 'workspace'
@@ -748,6 +754,14 @@ export function App() {
           >
             <ScrollText size={17} aria-hidden="true" />
           </a>
+          <a
+            className={view === 'about' ? 'is-active' : ''}
+            href="#/about"
+            aria-label="About"
+            title="About"
+          >
+            <Info size={17} aria-hidden="true" />
+          </a>
         </nav>
         <div className="workspace-metrics" aria-label="Current score summary">
           <span
@@ -788,6 +802,10 @@ export function App() {
       {view === 'help' ? (
         <main className="help-layout">
           <SyntaxHelp />
+        </main>
+      ) : view === 'about' ? (
+        <main className="help-layout">
+          <AboutPage />
         </main>
       ) : view === 'changelog' ? (
         <main className="help-layout">
