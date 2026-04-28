@@ -1,4 +1,8 @@
-import { fail } from './http'
+import { fail } from './http.js'
+
+declare const process: {
+  env: Partial<Record<'DATABASE_URL' | 'DATABASE_URL_UNPOOLED' | 'GEMINI_API_KEY', string>>
+}
 
 export function requireEnv(name: 'DATABASE_URL' | 'DATABASE_URL_UNPOOLED' | 'GEMINI_API_KEY'): string {
   const value = process.env[name]

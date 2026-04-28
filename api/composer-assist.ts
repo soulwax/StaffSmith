@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import type { ComposerAssistRequest } from '../src/lib/apiTypes'
-import { runComposerAssist } from './_lib/gemini'
-import { fail, handleError, methodNotAllowed, readJsonBody, sendJson } from './_lib/http'
+import type { ComposerAssistRequest } from '../src/lib/apiTypes.js'
+import { runComposerAssist } from './_lib/gemini.js'
+import { fail, handleError, methodNotAllowed, readJsonBody, sendJson } from './_lib/http.js'
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   try {

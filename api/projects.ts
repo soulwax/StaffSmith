@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import type { SaveProjectRequest } from '../src/lib/apiTypes'
-import { handleError, methodNotAllowed, readJsonBody, sendJson } from './_lib/http'
-import { listProjects, saveProject } from './_lib/db'
+import type { SaveProjectRequest } from '../src/lib/apiTypes.js'
+import { handleError, methodNotAllowed, readJsonBody, sendJson } from './_lib/http.js'
+import { listProjects, saveProject } from './_lib/db.js'
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   try {

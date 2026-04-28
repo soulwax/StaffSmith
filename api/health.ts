@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { requireEnv } from './_lib/env'
-import { handleError, methodNotAllowed, sendJson } from './_lib/http'
+import { requireEnv } from './_lib/env.js'
+import { handleError, methodNotAllowed, sendJson } from './_lib/http.js'
 
 export default function handler(request: VercelRequest, response: VercelResponse) {
   try {

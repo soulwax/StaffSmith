@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import type { GeminiStatusResponse } from '../src/lib/apiTypes'
-import { checkGeminiAvailability } from './_lib/gemini'
-import { methodNotAllowed, sendJson } from './_lib/http'
+import type { GeminiStatusResponse } from '../src/lib/apiTypes.js'
+import { checkGeminiAvailability } from './_lib/gemini.js'
+import { methodNotAllowed, sendJson } from './_lib/http.js'
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (request.method !== 'GET') {

@@ -1,9 +1,8 @@
-import type { ComposerAssistRequest, ComposerAssistResult, GeminiStatusResponse } from '../../src/lib/apiTypes'
-import { STAFFSMITH_AI_SYNTAX_GUIDE } from '../../src/music/parser/syntaxGuide'
-import { parseScoreInput } from '../../src/music/parser'
-import type { InputMode } from '../../src/music/model/types'
-import { getGeminiApiKey } from './env'
-import { fail } from './http'
+import type { ComposerAssistRequest, ComposerAssistResult, GeminiStatusResponse } from '../../src/lib/apiTypes.js'
+import { STAFFSMITH_AI_SYNTAX_GUIDE } from '../../src/music/parser/syntaxGuide.js'
+import type { InputMode } from '../../src/music/model/types.js'
+import { getGeminiApiKey } from './env.js'
+import { fail } from './http.js'
 
 const GEMINI_MODEL = 'gemini-2.5-flash'
 const DEFAULT_GENERATED_NOTATION = 'mp [airy flute] D5 q, F5 q, A5 h | < G5 q, A5 q, B5 q, A5 q | > G5 q, F5 q, E5 q, D5 q'
@@ -160,7 +159,7 @@ function coerceGeneratedInput(value: unknown, payload: ComposerAssistRequest, mo
       continue
     }
 
-    if (parseScoreInput(mode, normalized).ok) {
+    if (isLikelyParseableStaffSmithInput(mode, normalized)) {
       return normalized
     }
   }
@@ -382,4 +381,21 @@ function coerceNotes(value: unknown) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+function isLikelyParseableStaffSmithInput(mode: InputMode, input: string) {
+  const tokens = input.match(/\[[^\]]+\]|\||,|[^\s|,]+/g) ?? []
+  if (tokens.length === 0) {
+    return false
+  }
+
+  if (mode === 'chords') {
+    return tokens.some((token) => token !== '|' && token !== ',' && !isDirectionToken(token))
+  }
+
+  return tokens.some((token) => /^[A-Ga-g](?:#|b)?\d+$/.test(token))
+}
+
+function isDirectionToken(token: string) {
+  return /^(pp|p|mp|mf|f|ff|dolce|legato|staccato|tenuto|cantabile|espressivo|rit\.?|accel\.?|a-tempo|tempo|<|>|cresc\.?|crescendo|dim\.?|decresc\.?|diminuendo|\[[^\]]+\])$/i.test(token)
 }

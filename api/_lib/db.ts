@@ -1,8 +1,8 @@
 import { neon } from '@neondatabase/serverless'
-import type { ComposerAssistResult, SavedProject, SaveProjectRequest } from '../../src/lib/apiTypes'
-import type { InputMode } from '../../src/music/model/types'
-import { getDatabaseUrl, getUnpooledDatabaseUrl } from './env'
-import { fail } from './http'
+import type { ComposerAssistResult, SavedProject, SaveProjectRequest } from '../../src/lib/apiTypes.js'
+import type { InputMode } from '../../src/music/model/types.js'
+import { getDatabaseUrl, getUnpooledDatabaseUrl } from './env.js'
+import { fail } from './http.js'
 
 type SqlClient = ReturnType<typeof neon>
 

@@ -2,6 +2,13 @@
 
 All notable StaffSmith changes will be documented in this file.
 
+## 2026-04-28 - Vercel Function Import Fix
+
+### Fixed
+
+- API routes now use deployment-safe `.js` import specifiers for Vercel's ESM serverless runtime.
+- Gemini output validation no longer imports the full browser parser tree inside the serverless function bundle.
+
 ## 2026-04-28 - AI Structured Response Fix
 
 ### Fixed
