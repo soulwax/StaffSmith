@@ -281,10 +281,7 @@ export function ScorePreview({
       <div className="preview-toolbar" aria-label="Score preview actions">
         <div className="preview-toolbar__controls">
           <label className="preview-range-control">
-            <span className="preview-control__meta">
-              <span className="preview-control__label">Note size</span>
-              <span className="preview-control__value">{noteScale}%</span>
-            </span>
+            <span className="preview-control__label">Size</span>
             <input
               type="range"
               min="75"
@@ -295,13 +292,11 @@ export function ScorePreview({
               aria-label="Adjust note preview size"
               disabled={!musicXml}
             />
+            <span className="preview-control__value" aria-hidden="true">{noteScale}%</span>
           </label>
 
           <label className="preview-range-control">
-            <span className="preview-control__meta">
-              <span className="preview-control__label">Line spacing</span>
-              <span className="preview-control__value">{systemSpacing}%</span>
-            </span>
+            <span className="preview-control__label">Spacing</span>
             <input
               type="range"
               min="80"
@@ -312,10 +307,11 @@ export function ScorePreview({
               aria-label="Adjust spacing between notation lines"
               disabled={!musicXml}
             />
+            <span className="preview-control__value" aria-hidden="true">{systemSpacing}%</span>
           </label>
 
           <label className="preview-select-control">
-            <span className="preview-control__label">Measures / line</span>
+            <span className="preview-control__label">Wrap</span>
             <select
               value={measuresPerLine}
               onChange={(event) => setMeasuresPerLine(Number(event.target.value))}
@@ -337,7 +333,7 @@ export function ScorePreview({
               onChange={(event) => setShowMeasureNumbers(event.target.checked)}
               disabled={!musicXml}
             />
-            Bar numbers
+            Bars
           </label>
 
           <label className="preview-toggle-control">
@@ -352,29 +348,46 @@ export function ScorePreview({
 
           <button
             type="button"
-            className="preview-utility-button"
+            className="preview-utility-button preview-icon-button"
             onClick={handleResetLayout}
             disabled={!musicXml}
             aria-label="Reset score preview layout"
             title="Reset score preview layout"
           >
             <RotateCcw size={15} aria-hidden="true" />
-            Reset
           </button>
         </div>
 
         <div className="preview-toolbar__actions">
-          <button type="button" onClick={onCopyMusicXml} disabled={!musicXml} aria-label="Copy MusicXML" title="Copy MusicXML">
+          <button
+            type="button"
+            className="preview-icon-button"
+            onClick={onCopyMusicXml}
+            disabled={!musicXml}
+            aria-label="Copy MusicXML"
+            title="Copy MusicXML"
+          >
             <Copy size={16} aria-hidden="true" />
-            Copy XML
           </button>
-          <button type="button" onClick={onDownloadMusicXml} disabled={!musicXml} aria-label="Download MusicXML" title="Download MusicXML">
+          <button
+            type="button"
+            className="preview-icon-button"
+            onClick={onDownloadMusicXml}
+            disabled={!musicXml}
+            aria-label="Download MusicXML"
+            title="Download MusicXML"
+          >
             <Download size={16} aria-hidden="true" />
-            Export XML
           </button>
-          <button type="button" onClick={onPrintScore} disabled={!musicXml} aria-label="Print or save PDF" title="Print or save PDF">
+          <button
+            type="button"
+            className="preview-icon-button"
+            onClick={onPrintScore}
+            disabled={!musicXml}
+            aria-label="Print or save PDF"
+            title="Print or save PDF"
+          >
             <Printer size={16} aria-hidden="true" />
-            Print PDF
           </button>
         </div>
       </div>

@@ -6,26 +6,23 @@
 .score-preview-card .section-card__content {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  height: calc(100vh - 170px);
+  height: calc(100vh - 160px);
   min-height: 0;
 }
 
 .preview-toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px 12px;
-  margin-bottom: 8px;
+  gap: 6px 8px;
+  margin-bottom: 6px;
 }
 
 .preview-toolbar__controls,
 .preview-toolbar__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-}
-
-.preview-toolbar__controls {
-  align-items: stretch;
+  align-items: flex-start;
+  gap: 6px;
 }
 
 .preview-toolbar__actions {
@@ -36,16 +33,17 @@
 .preview-select-control select {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 6px 9px;
+  gap: 5px;
+  min-height: 28px;
+  padding: 4px 7px;
   border: 1px solid rgba(28, 126, 152, 0.16);
-  border-radius: 8px;
+  border-radius: 7px;
   background: rgba(255, 255, 255, 0.86);
   color: #273c4a;
   cursor: pointer;
   font: inherit;
   font-weight: 700;
+  font-size: 0.8rem;
 }
 
 .preview-toolbar button:disabled,
@@ -61,66 +59,72 @@
 .preview-toggle-control {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 32px;
-  padding: 6px 9px;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 7px;
   border: 1px solid rgba(28, 126, 152, 0.16);
-  border-radius: 8px;
+  border-radius: 7px;
   background: rgba(255, 255, 255, 0.86);
   color: #273c4a;
 }
 
 .preview-range-control {
-  min-width: min(100%, 196px);
-  justify-content: space-between;
-}
-
-.preview-control__meta {
-  display: grid;
-  gap: 1px;
+  min-width: min(100%, 158px);
 }
 
 .preview-control__label {
   color: #455563;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .preview-control__value {
   color: #172027;
-  font-size: 0.82rem;
+  min-width: 34px;
+  font-size: 0.74rem;
   font-weight: 800;
+  text-align: right;
 }
 
 .preview-range-control input[type="range"] {
-  width: 84px;
+  width: 62px;
+  flex: 0 0 auto;
   accent-color: #1b8e9f;
 }
 
 .preview-select-control {
-  gap: 10px;
+  gap: 8px;
 }
 
 .preview-select-control select {
-  min-width: 102px;
+  min-width: 78px;
+  padding-right: 24px;
 }
 
 .preview-toggle-control {
-  gap: 7px;
-  font-size: 0.84rem;
-  font-weight: 750;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .preview-toggle-control input {
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
   margin: 0;
   accent-color: #1b8e9f;
 }
 
 .preview-utility-button {
   background: rgba(245, 249, 251, 0.96);
+}
+
+.preview-icon-button {
+  justify-content: center;
+  width: 28px;
+  min-width: 28px;
+  padding: 0;
 }
 
 .preview-placeholder {
@@ -138,8 +142,8 @@
   place-items: start center;
   overflow: auto;
   min-height: 0;
-  padding: 10px;
-  border-radius: 8px;
+  padding: 8px;
+  border-radius: 7px;
   background:
     linear-gradient(90deg, rgba(30, 150, 170, 0.08) 1px, transparent 1px),
     linear-gradient(180deg, rgba(30, 150, 170, 0.07) 1px, transparent 1px),
@@ -254,7 +258,7 @@
   }
 
   .preview-surface {
-    padding: 12px;
+    padding: 10px;
   }
 
   .a4-page {
@@ -287,7 +291,7 @@
   }
 
   .preview-range-control input[type="range"] {
-    width: 100px;
+    width: 92px;
   }
 }
 
