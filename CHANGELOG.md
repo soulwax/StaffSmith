@@ -6,7 +6,9 @@ All notable StaffSmith changes will be documented in this file.
 
 ### Added
 
-- Composer now includes interactive notation building blocks for notes, rests, durations, octaves, accidentals, chord roots, chord qualities, progressions, dynamics, and expressions.
+- Composer now includes a colorful smart notation board for notes, rests, durations, octaves, accidentals, chord roots, chord qualities, progressions, dynamics, and expressions.
+- Smart note/rest insertion now adds barlines when a token would overflow or complete a 4/4 measure.
+- Gemini generation rules and validation now know the same smart composer assumptions: complete measures, explicit rests for missing beats, and barlines before overflow.
 - Score preview now offers musician-facing part layout categories: Orchestral Solo, Standard Part, and For Children's Songs.
 - Note mode now supports explicit rests with `R` or `rest`, including durations such as `R w` and `rest q`.
 - MusicXML export now includes professional part-layout defaults for A4 / 9x12 pages, mirrored inside/outside margins, notation font hints, system spacing, and print system/page break hints.

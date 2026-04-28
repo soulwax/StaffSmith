@@ -94,6 +94,7 @@ Accepted syntax:
 - bar separators with `|`
 - durations: `w`, `h`, `q`, `8`
 - rests: `R` or `rest`, with optional duration such as `R w` or `rest q`
+- the Composer board inserts barlines automatically when a note/rest would overflow a 4/4 measure or complete one
 - dynamics: `pp`, `p`, `mp`, `mf`, `f`, `ff`
 - expression words: `dolce`, `legato`, `staccato`, `tenuto`, `cantabile`, `espressivo`, `rit.`, `accel.`
 - custom expression text: `[like_this]`
@@ -125,6 +126,7 @@ Rules:
 
 - Up to four chord symbols per measure are supported in the MVP.
 - Chord durations are distributed per measure using simple lead-sheet timing.
+- The Composer board includes root, quality, and progression buttons for common lead-sheet entry.
 
 ## Working Examples
 

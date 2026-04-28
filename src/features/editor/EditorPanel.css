@@ -72,14 +72,17 @@
 
 .editor-builder {
   display: grid;
-  gap: 8px;
+  gap: 9px;
   margin-bottom: 10px;
-  padding: 9px;
-  border: 1px solid rgba(28, 126, 152, 0.14);
+  padding: 10px;
+  border: 1px solid rgba(28, 126, 152, 0.18);
   border-radius: 8px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(242, 254, 255, 0.88));
-  box-shadow: 0 10px 24px rgba(36, 103, 122, 0.06);
+    linear-gradient(135deg, rgba(255, 118, 83, 0.1), rgba(31, 177, 196, 0.12)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(243, 254, 255, 0.9));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 12px 28px rgba(36, 103, 122, 0.08);
 }
 
 .builder-row {
@@ -96,6 +99,10 @@
   align-content: start;
   gap: 5px;
   min-width: 0;
+  padding: 7px;
+  border: 1px solid rgba(28, 126, 152, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.66);
 }
 
 .builder-group--octave,
@@ -103,6 +110,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  align-content: flex-start;
 }
 
 .builder-group--octave strong {
@@ -116,7 +124,8 @@
 }
 
 .builder-label {
-  color: #4e606d;
+  width: 100%;
+  color: #40515e;
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -154,8 +163,9 @@
   min-width: 0;
   min-height: 28px;
   padding: 5px 8px;
-  border: 1px solid rgba(28, 126, 152, 0.16);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(28, 126, 152, 0.17);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 252, 253, 0.92));
   color: #253541;
   font: inherit;
   font-size: 0.78rem;
@@ -169,9 +179,34 @@
 
 .editor-builder button.is-active {
   border-color: rgba(217, 85, 47, 0.34);
-  background: rgba(255, 244, 225, 0.98);
+  background:
+    linear-gradient(135deg, rgba(255, 222, 99, 0.42), rgba(255, 255, 255, 0.98));
   color: #182016;
   box-shadow: 0 7px 15px rgba(162, 129, 36, 0.12);
+}
+
+.pitch-grid button:nth-child(1),
+.chord-root-grid button:nth-child(1),
+.chord-root-grid button:nth-child(8) {
+  border-color: rgba(217, 85, 47, 0.22);
+}
+
+.pitch-grid button:nth-child(3),
+.chord-root-grid button:nth-child(5),
+.chord-root-grid button:nth-child(10) {
+  border-color: rgba(242, 182, 75, 0.28);
+}
+
+.pitch-grid button:nth-child(5),
+.chord-root-grid button:nth-child(3),
+.chord-root-grid button:nth-child(12) {
+  border-color: rgba(71, 157, 84, 0.24);
+}
+
+.pitch-grid button:nth-child(7),
+.chord-root-grid button:nth-child(6),
+.chord-root-grid button:nth-child(11) {
+  border-color: rgba(31, 177, 196, 0.28);
 }
 
 .builder-icon-button {

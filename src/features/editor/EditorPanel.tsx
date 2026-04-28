@@ -2,6 +2,7 @@ import { Minus, Music2, Play, Plus, SquareStack } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { SectionCard } from '../../components/SectionCard'
 import type { DurationSymbol, InputMode, ParseError } from '../../music/model/types'
+import { DURATION_UNITS } from '../../music/theory/duration'
 import type { ExamplePreset } from './examples'
 import './EditorPanel.css'
 
@@ -28,7 +29,7 @@ const DURATIONS: Array<{ label: string, value: DurationSymbol }> = [
   { label: 'Eighth', value: '8' },
 ]
 const DYNAMICS = ['pp', 'p', 'mp', 'mf', 'f', 'ff'] as const
-const EXPRESSIONS = ['dolce', 'legato', 'staccato', 'tenuto'] as const
+const EXPRESSIONS = ['dolce', 'legato', 'staccato', 'tenuto', 'cantabile', 'espressivo', 'rit.', 'accel.'] as const
 const CHORD_ROOTS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'] as const
 const CHORD_QUALITIES = [
   { label: 'maj', value: '' },
@@ -38,12 +39,17 @@ const CHORD_QUALITIES = [
   { label: '7', value: '7' },
   { label: 'dim', value: 'dim' },
   { label: 'aug', value: 'aug' },
+  { label: 'sus2', value: 'sus2' },
+  { label: 'sus4', value: 'sus4' },
 ] as const
 const CHORD_PROGRESSIONS = [
   { label: 'ii V I', value: 'Dm7 | G7 | Cmaj7' },
   { label: 'I vi ii V', value: 'Cmaj7 | Am7 | Dm7 | G7' },
   { label: '12-bar start', value: 'C7 | F7 | C7 | C7' },
+  { label: 'minor i VI VII', value: 'Am | F | G | Am' },
 ] as const
+const FULL_MEASURE_UNITS = 8
+const RHYTHM_TOKEN_PATTERN = /[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|w|h|q|8|\S+/g
 
 function joinToken(input: string, token: string, mode: InputMode) {
   const trimmedToken = token.trim()
@@ -67,6 +73,45 @@ function joinToken(input: string, token: string, mode: InputMode) {
   return `${trimmedInput}${separator}${trimmedToken}`.trimStart()
 }
 
+function isDurationToken(value: string): value is DurationSymbol {
+  return value === 'w' || value === 'h' || value === 'q' || value === '8'
+}
+
+function getCurrentMeasureUnits(input: string) {
+  const currentMeasure = input.split('|').at(-1) ?? ''
+  const tokens = currentMeasure.match(RHYTHM_TOKEN_PATTERN) ?? []
+  let units = 0
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index] ?? ''
+    const isPitch = /^[A-Ga-g](?:#|b)?\d+$/.test(token)
+    const isRest = /^r(?:est)?$/i.test(token)
+    if (!isPitch && !isRest) {
+      continue
+    }
+
+    const maybeDuration = tokens[index + 1]
+    if (maybeDuration && isDurationToken(maybeDuration)) {
+      units += DURATION_UNITS[maybeDuration]
+      index += 1
+    } else {
+      units += DURATION_UNITS.q
+    }
+  }
+
+  return units
+}
+
+function makeSmartRhythmToken(input: string, token: string, duration: DurationSymbol, hasTrailingSource: boolean) {
+  const currentUnits = getCurrentMeasureUnits(input)
+  const tokenUnits = DURATION_UNITS[duration]
+  const needsLeadingBar = currentUnits > 0 && currentUnits + tokenUnits > FULL_MEASURE_UNITS
+  const nextUnits = needsLeadingBar ? tokenUnits : currentUnits + tokenUnits
+  const needsClosingBar = !hasTrailingSource && nextUnits === FULL_MEASURE_UNITS
+
+  return `${needsLeadingBar ? '| ' : ''}${token}${needsClosingBar ? ' |' : ''}`
+}
+
 export function EditorPanel({
   examples,
   input,
@@ -83,10 +128,11 @@ export function EditorPanel({
   const [chordRoot, setChordRoot] = useState<(typeof CHORD_ROOTS)[number]>('C')
   const [chordQuality, setChordQuality] = useState<(typeof CHORD_QUALITIES)[number]['value']>('maj7')
 
-  const insertToken = (token: string, nextMode = mode) => {
+  const insertToken = (token: string, nextMode = mode, smartRhythm?: { duration: DurationSymbol }) => {
     const textarea = textareaRef.current
     if (!textarea) {
-      onDraftChange(nextMode, joinToken(input, token, nextMode))
+      const smartToken = smartRhythm ? makeSmartRhythmToken(input, token, smartRhythm.duration, false) : token
+      onDraftChange(nextMode, joinToken(input, smartToken, nextMode))
       return
     }
 
@@ -94,7 +140,8 @@ export function EditorPanel({
     const selectionEnd = textarea.selectionEnd
     const before = input.slice(0, selectionStart)
     const after = input.slice(selectionEnd)
-    const nextBefore = joinToken(before, token, nextMode)
+    const smartToken = smartRhythm ? makeSmartRhythmToken(before, token, smartRhythm.duration, after.trim().length > 0) : token
+    const nextBefore = joinToken(before, smartToken, nextMode)
     const needsTrailingSpace = after.length > 0 && !/^\s/.test(after)
     const nextInput = `${nextBefore}${needsTrailingSpace ? ' ' : ''}${after}`
     const nextCursor = nextBefore.length + (needsTrailingSpace ? 1 : 0)
@@ -124,11 +171,11 @@ export function EditorPanel({
   }
 
   const insertNote = (step: (typeof NOTE_STEPS)[number]) => {
-    insertToken(`${step}${accidental}${octave} ${duration}`, 'notes')
+    insertToken(`${step}${accidental}${octave} ${duration}`, 'notes', { duration })
   }
 
   const insertRest = () => {
-    insertToken(`R ${duration}`, 'notes')
+    insertToken(`R ${duration}`, 'notes', { duration })
   }
 
   const insertChord = () => {

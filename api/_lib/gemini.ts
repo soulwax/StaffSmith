@@ -275,6 +275,13 @@ function buildEventToken(value: unknown): string | null {
     return direction
   }
 
+  const kind = textValue(value.kind)?.toLowerCase()
+  const hasRest = kind === 'rest' || value.rest === true
+  if (hasRest) {
+    const duration = durationToken(value.duration) ?? 'q'
+    return `R ${duration}`
+  }
+
   const pitch = pitchToken(value.pitch)
     ?? pitchToken(value.note)
     ?? pitchToken(value)
@@ -396,6 +403,7 @@ function isLikelyParseableStaffSmithInput(mode: InputMode, input: string) {
   }
 
   let noteCount = 0
+  let rhythmCount = 0
   let measureUnits = 0
 
   for (let index = 0; index < tokens.length; index += 1) {
@@ -416,11 +424,16 @@ function isLikelyParseableStaffSmithInput(mode: InputMode, input: string) {
       continue
     }
 
-    if (!/^[A-Ga-g](?:#|b)?\d+$/.test(token)) {
+    const isNote = /^[A-Ga-g](?:#|b)?\d+$/.test(token)
+    const isRest = /^r(?:est)?$/i.test(token)
+    if (!isNote && !isRest) {
       return false
     }
 
-    noteCount += 1
+    if (isNote) {
+      noteCount += 1
+    }
+    rhythmCount += 1
     const nextToken = tokens[index + 1]
     let durationKey = 'q'
     if (nextToken && DURATION_VALUES.has(nextToken)) {
@@ -434,7 +447,7 @@ function isLikelyParseableStaffSmithInput(mode: InputMode, input: string) {
     return false
   }
 
-  return noteCount > 0
+  return rhythmCount > 0 && (noteCount > 0 || /(?:^|[\s|,])r(?:est)?(?:\s|$)/i.test(input))
 }
 
 function isDirectionToken(token: string) {

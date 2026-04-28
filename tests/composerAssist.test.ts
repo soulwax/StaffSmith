@@ -158,4 +158,23 @@ describe('composer assist normalization', () => {
 
     expect(result.generatedInput).toBe(GEMINI_CONFIG.fallbackNotation)
   })
+
+  it('accepts generated rests now that the composer board can insert them', async () => {
+    mockGeminiJson({
+      summary: 'Phrase with a clear breath.',
+      keyCenter: 'C major',
+      suggestedMode: 'notes',
+      generatedInput: 'mf C4 h, R h | G4 w',
+      notes: ['Uses a half-rest breath before the held note.'],
+    })
+
+    const result = await runComposerAssist({
+      task: 'generate',
+      mode: 'notes',
+      input: 'C4 q E4 q G4 h',
+      prompt: 'Leave a little space before the final note.',
+    })
+
+    expect(result.generatedInput).toBe('mf C4 h, R h | G4 w')
+  })
 })

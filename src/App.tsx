@@ -663,7 +663,7 @@ export function App() {
           task: 'generate',
           mode: 'notes',
           input: state.input,
-          prompt: `Generate StaffSmith notes mode notation from this text. Use only supported StaffSmith syntax. Prefer compact 4/4 measures with useful dynamics and expression tokens when appropriate.\n\n${prompt}`,
+          prompt: `Generate StaffSmith notes mode notation from this text. Use only supported StaffSmith syntax. Prefer compact complete 4/4 measures, insert | before a measure would overflow, and use explicit rests for missing beats. Add useful dynamics and expression tokens when appropriate.\n\n${prompt}`,
         }),
       }, 'Note generation failed.')
 
