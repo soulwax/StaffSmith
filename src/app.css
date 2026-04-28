@@ -22,15 +22,15 @@
 }
 
 .brand-mark {
-  display: inline-grid;
+  display: block;
   width: 30px;
   height: 30px;
   flex: 0 0 30px;
-  place-items: center;
   border: 1px solid rgba(27, 52, 44, 0.18);
   border-radius: 8px;
   background: rgba(255, 255, 252, 0.98);
   color: #d65c2f;
+  object-fit: cover;
   box-shadow: 0 10px 24px rgba(36, 103, 122, 0.08);
 }
 
