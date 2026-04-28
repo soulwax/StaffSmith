@@ -56,6 +56,10 @@ function computeBeams(events: ScoreEvent[]): Map<string, BeamMark> {
     if (!isRhythmicEvent(event)) {
       continue
     }
+    if (event.kind !== 'note') {
+      flush()
+      continue
+    }
     if (event.duration === '8') {
       run.push(event.id)
     } else {
