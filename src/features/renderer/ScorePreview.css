@@ -200,9 +200,10 @@
 }
 
 .score-engraving {
-  width: calc(100% * var(--score-engraving-scale, 1));
-  max-width: none;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
+  overflow: hidden;
 }
 
 .score-engraving svg {

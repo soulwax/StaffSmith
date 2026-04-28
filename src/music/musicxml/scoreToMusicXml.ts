@@ -16,6 +16,7 @@ import { DEFAULT_SHEET_OPTIONS, getClefDefinition, getDensityScale, getPartLayou
 
 const FULL_MEASURE_UNITS = 8
 const STAFF_HEIGHT_TENTHS = 40
+const ORCHESTRAL_SOLO_STAFF_MM = 4.9
 const LONG_SILENCE_CUE_THRESHOLD = 12
 const MIN_PAGE_TURN_REST_MEASURES = 4
 
@@ -104,7 +105,7 @@ ${creatorXml}    ${subtitle ? `<miscellaneous><miscellaneous-field name="subtitl
   </identification>
   <defaults>
     <scaling>
-      <millimeters>7</millimeters>
+      <millimeters>${formatDecimal(getStaffHeightMm(sheetOptions))}</millimeters>
       <tenths>${Math.round(40 / getDensityScale(sheetOptions.density))}</tenths>
     </scaling>
     <music-font font-family="Bravura, Maestro, Petaluma, Finale Maestro" />
@@ -363,6 +364,10 @@ ${pitch.alter !== 0 ? `          <alter>${pitch.alter}</alter>\n` : ''}         
 
 function getTenthsPerMm(options: ScoreSheetOptions): number {
   return Math.round(STAFF_HEIGHT_TENTHS / getDensityScale(options.density)) / 7
+}
+
+function getStaffHeightMm(options: ScoreSheetOptions): number {
+  return options.partLayoutPreset === 'orchestral-solo' ? ORCHESTRAL_SOLO_STAFF_MM : 7
 }
 
 function toTenths(valueMm: number, tenthsPerMm: number): string {

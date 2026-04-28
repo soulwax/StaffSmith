@@ -17,13 +17,14 @@ All notable StaffSmith changes will be documented in this file.
 
 ### Changed
 
-- Orchestral Solo now uses standard 7 mm part scaling with tighter system spacing and 6-measure systems so it fits more music per page.
+- Orchestral Solo now shrinks the part content by 30%, with tighter system spacing and 6-measure systems so it fits more music per page.
 - Layout presets now drive both the on-screen preview and exported MusicXML instead of exposing raw size, spacing, or wrap percentages.
 - Page-turn planning now prefers rest passages of at least 4 measures, then section changes, before falling back to the target page length.
 - Eighth-note beaming now breaks across rests instead of joining note beams through silent beats.
 
 ### Fixed
 
+- For Children's Songs preview no longer overflows past the page edge when using larger notation.
 - Vercel builds no longer fail under `exactOptionalPropertyTypes` when a measure layout plan has no cue pitch.
 
 ## 0.1.1 - 2026-04-29 - AI Syntax Hardening

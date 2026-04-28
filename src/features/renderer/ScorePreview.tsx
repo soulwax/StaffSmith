@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
+import { useCallback, useDeferredValue, useEffect, useRef, useState, type PointerEvent } from 'react'
 import { ChevronLeft, ChevronRight, Copy, Download, Printer, RotateCcw } from 'lucide-react'
 import { SectionCard } from '../../components/SectionCard'
 import {
@@ -152,7 +152,7 @@ export function ScorePreview({
         }
 
         const zoomableDisplay = osmd as ZoomableDisplay
-        applyZoom(zoomableDisplay, BASE_PREVIEW_ZOOM)
+        applyZoom(zoomableDisplay, BASE_PREVIEW_ZOOM * (deferredPartLayoutPreset.previewNoteScale / 100))
         osmd.render()
         updateRenderedPages(true)
         setRenderError(null)
@@ -213,10 +213,6 @@ export function ScorePreview({
     setShowTitle(true)
     setShowMeasureNumbers(true)
   }
-
-  const engravingStyle = {
-    '--score-engraving-scale': `${partLayoutPreset.previewNoteScale / 100}`,
-  } as CSSProperties
 
   return (
     <SectionCard title="Score" className="score-preview-card">
@@ -325,7 +321,7 @@ export function ScorePreview({
               <h2>{title || 'Untitled sketch'}</h2>
             </header>
           ) : null}
-          <div className="score-engraving" ref={containerRef} style={engravingStyle} />
+          <div className="score-engraving" ref={containerRef} />
         </div>
       </div>
       <div className="page-controls" aria-label="Score page controls">

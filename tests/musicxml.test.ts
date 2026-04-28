@@ -3,7 +3,7 @@ import { parseScoreInput } from '../src/music/parser'
 import { scoreToMusicXml } from '../src/music/musicxml/scoreToMusicXml'
 
 describe('MusicXML export', () => {
-  it('emits professional part page settings, 7mm scaling, and no default staff label', () => {
+  it('emits compact orchestral solo page settings, 30% smaller scaling, and no default staff label', () => {
     const result = parseScoreInput('notes', 'C4 q E4 q G4 h')
     expect(result.ok).toBe(true)
 
@@ -22,6 +22,7 @@ describe('MusicXML export', () => {
     expect(xml).toContain('<right-margin>57.14</right-margin>')
     expect(xml).toContain('<system-distance>57.14</system-distance>')
     expect(xml).toContain('<music-font font-family="Bravura, Maestro, Petaluma, Finale Maestro" />')
+    expect(xml).toContain('<millimeters>4.9</millimeters>')
     expect(xml).toContain('<tenths>40</tenths>')
     expect(xml).toContain('<part-name></part-name>')
     expect(xml).toContain('<per-minute>96</per-minute>')
