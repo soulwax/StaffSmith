@@ -6,6 +6,7 @@ All notable StaffSmith changes will be documented in this file.
 
 ### Added
 
+- Composer now includes interactive notation building blocks for notes, rests, durations, octaves, accidentals, chord roots, chord qualities, progressions, dynamics, and expressions.
 - Score preview now offers musician-facing part layout categories: Orchestral Solo, Standard Part, and For Children's Songs.
 - Note mode now supports explicit rests with `R` or `rest`, including durations such as `R w` and `rest q`.
 - MusicXML export now includes professional part-layout defaults for A4 / 9x12 pages, mirrored inside/outside margins, notation font hints, system spacing, and print system/page break hints.
@@ -16,6 +17,10 @@ All notable StaffSmith changes will be documented in this file.
 - Layout presets now drive both the on-screen preview and exported MusicXML instead of exposing raw size, spacing, or wrap percentages.
 - Page-turn planning now prefers rest passages of at least 4 measures, then section changes, before falling back to the target page length.
 - Eighth-note beaming now breaks across rests instead of joining note beams through silent beats.
+
+### Fixed
+
+- Vercel builds no longer fail under `exactOptionalPropertyTypes` when a measure layout plan has no cue pitch.
 
 ## 0.1.1 - 2026-04-29 - AI Syntax Hardening
 

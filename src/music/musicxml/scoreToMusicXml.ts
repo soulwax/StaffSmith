@@ -153,7 +153,7 @@ function buildLayoutPlan(score: Score, options: ScoreSheetOptions): Map<number, 
       plan.set(index, {
         newSystem: newPage ? false : newSystem,
         newPage,
-        cuePitch,
+        ...(cuePitch ? { cuePitch } : {}),
       })
     }
   })
