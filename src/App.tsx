@@ -38,6 +38,8 @@ type LocalDraft = {
 }
 
 const AUTOSAVE_KEY = 'staffsmith:draft:v2'
+const API_TIMEOUT_MS = 45_000
+const API_PREFLIGHT_TIMEOUT_MS = 3_000
 
 type AppView = 'workspace' | 'help' | 'changelog'
 
@@ -79,6 +81,72 @@ function summarizeErrors(errors: ParseError[]): string {
   }
 
   return `${errors.length} parse error${errors.length === 1 ? '' : 's'} found.`
+}
+
+async function fetchJson<T>(url: string, init: RequestInit, fallbackMessage: string): Promise<T> {
+  if (url.startsWith('/api/') && url !== '/api/health') {
+    await assertApiAvailable(fallbackMessage)
+  }
+
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), API_TIMEOUT_MS)
+
+  try {
+    const response = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    })
+    const contentType = response.headers.get('content-type') ?? ''
+
+    if (!contentType.includes('application/json')) {
+      throw new Error(`${fallbackMessage} API is not returning JSON. In local development, run pnpm dev:full so Vercel API routes are available.`)
+    }
+
+    const body = await response.json() as T & ApiErrorResponse
+    if (!response.ok) {
+      throw new Error(body.error || fallbackMessage)
+    }
+
+    return body
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error(`${fallbackMessage} timed out. In local development, run pnpm dev:full so the API route is available.`)
+    }
+
+    throw error
+  } finally {
+    window.clearTimeout(timeoutId)
+  }
+}
+
+async function assertApiAvailable(fallbackMessage: string) {
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), API_PREFLIGHT_TIMEOUT_MS)
+
+  try {
+    const response = await fetch('/api/health', {
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    })
+    const contentType = response.headers.get('content-type') ?? ''
+
+    if (!contentType.includes('application/json')) {
+      throw new Error(`${fallbackMessage} API is not running. In local development, use pnpm dev:full instead of pnpm dev so Vercel API routes are available.`)
+    }
+
+    if (!response.ok) {
+      const body = await response.json() as ApiErrorResponse
+      throw new Error(body.error || fallbackMessage)
+    }
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error(`${fallbackMessage} API health check timed out. In local development, use pnpm dev:full so Vercel API routes are available.`)
+    }
+
+    throw error
+  } finally {
+    window.clearTimeout(timeoutId)
+  }
 }
 
 const initialExample = EXAMPLES[0] ?? {
@@ -132,7 +200,9 @@ export function App() {
   const [isAssisting, setIsAssisting] = useState(false)
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isInspectorOpen, setIsInspectorOpen] = useState(false)
   const [serverMessage, setServerMessage] = useState<string | null>(null)
+  const [noteGenerationMessage, setNoteGenerationMessage] = useState<string | null>(null)
 
   const activeScore = state.parseResult.ok ? state.parseResult.value : null
   const warnings = state.parseResult.warnings
@@ -188,7 +258,7 @@ export function App() {
     setServerMessage(null)
 
     try {
-      const response = await fetch('/api/composer-assist', {
+      const body = await fetchJson<{ result?: ComposerAssistResult }>('/api/composer-assist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -197,13 +267,11 @@ export function App() {
           input: state.input,
           prompt: assistantPrompt,
         }),
-      })
+      }, 'Composer assistant failed.')
 
-      const body = await response.json() as { result?: ComposerAssistResult } & ApiErrorResponse
-      if (!response.ok || !body.result) {
-        throw new Error(body.error || 'Composer assistant failed.')
+      if (!body.result) {
+        throw new Error('Composer assistant failed.')
       }
-
       setAnalysis(body.result)
       if (task === 'generate') {
         updateDraft(body.result.suggestedMode, body.result.generatedInput)
@@ -232,17 +300,15 @@ export function App() {
         payload.id = projectId
       }
 
-      const response = await fetch('/api/projects', {
+      const body = await fetchJson<{ project?: SavedProject }>('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      })
+      }, 'Project could not be saved.')
 
-      const body = await response.json() as { project?: SavedProject } & ApiErrorResponse
-      if (!response.ok || !body.project) {
-        throw new Error(body.error || 'Project could not be saved.')
+      if (!body.project) {
+        throw new Error('Project could not be saved.')
       }
-
       setProjectId(body.project.id)
       setProjectTitle(body.project.title)
       setProjects((current) => [body.project!, ...current.filter((project) => project.id !== body.project!.id)])
@@ -258,11 +324,7 @@ export function App() {
     setServerMessage(null)
 
     try {
-      const response = await fetch('/api/projects')
-      const body = await response.json() as ProjectListResponse & ApiErrorResponse
-      if (!response.ok) {
-        throw new Error(body.error || 'Projects could not be loaded.')
-      }
+      const body = await fetchJson<ProjectListResponse>('/api/projects', {}, 'Projects could not be loaded.')
 
       setProjects(body.projects)
       setServerMessage(body.projects.length > 0 ? 'Projects loaded.' : 'No saved projects yet.')
@@ -292,15 +354,16 @@ export function App() {
   const generateNotesFromText = async () => {
     const prompt = noteGenerationPrompt.trim()
     if (!prompt) {
-      setServerMessage('Describe the notes you want first.')
+      setNoteGenerationMessage('Describe the notes you want first.')
       return
     }
 
     setIsGeneratingNotes(true)
     setServerMessage(null)
+    setNoteGenerationMessage('Generating StaffSmith note syntax...')
 
     try {
-      const response = await fetch('/api/composer-assist', {
+      const body = await fetchJson<{ result?: ComposerAssistResult }>('/api/composer-assist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -309,18 +372,17 @@ export function App() {
           input: state.input,
           prompt: `Generate StaffSmith notes mode notation from this text. Use only supported StaffSmith syntax. Prefer compact 4/4 measures with useful dynamics and expression tokens when appropriate.\n\n${prompt}`,
         }),
-      })
+      }, 'Note generation failed.')
 
-      const body = await response.json() as { result?: ComposerAssistResult } & ApiErrorResponse
-      if (!response.ok || !body.result) {
-        throw new Error(body.error || 'Note generation failed.')
+      if (!body.result) {
+        throw new Error('Note generation failed.')
       }
-
       setAnalysis(body.result)
       updateDraft('notes', body.result.generatedInput)
+      setNoteGenerationMessage('Generated notes from text.')
       setServerMessage('Generated notes from text.')
     } catch (error) {
-      setServerMessage(error instanceof Error ? error.message : 'Note generation failed.')
+      setNoteGenerationMessage(error instanceof Error ? error.message : 'Note generation failed.')
     } finally {
       setIsGeneratingNotes(false)
     }
@@ -430,6 +492,15 @@ export function App() {
           <span>{state.mode === 'notes' ? 'Notes' : 'Chords'}</span>
           <span>{activeScore ? `${insights.measureCount} measures` : 'No score'}</span>
           <span>{activeScore ? insights.pitchRange : summarizeErrors(errors)}</span>
+          <button
+            type="button"
+            className="inspector-toggle"
+            onClick={() => setIsInspectorOpen((current) => !current)}
+            aria-expanded={isInspectorOpen}
+            aria-controls="score-inspector"
+          >
+            Inspector
+          </button>
         </div>
       </header>
 
@@ -463,7 +534,10 @@ export function App() {
               className="generation-textarea"
               rows={2}
               value={noteGenerationPrompt}
-              onChange={(event) => setNoteGenerationPrompt(event.target.value)}
+              onChange={(event) => {
+                setNoteGenerationPrompt(event.target.value)
+                setNoteGenerationMessage(null)
+              }}
               placeholder="A quiet four-bar cello-like line that grows louder, then settles into a warm final note."
             />
             <div className="studio-actions">
@@ -479,6 +553,7 @@ export function App() {
                 Syntax Help
               </a>
             </div>
+            {noteGenerationMessage ? <p className="server-message">{noteGenerationMessage}</p> : null}
           </SectionCard>
 
           <SectionCard title="Studio Intelligence">
@@ -533,80 +608,6 @@ export function App() {
               </div>
             ) : null}
           </SectionCard>
-
-          <div className="inspector-grid">
-            <SectionCard title="Status" tone={errors.length > 0 ? 'danger' : 'success'}>
-              <p className="status-line">{summarizeErrors(errors)}</p>
-              <p className="muted">Last render: {state.lastUpdated}</p>
-              {activeScore ? (
-                <dl className="score-stats">
-                  <div>
-                    <dt>Measures</dt>
-                    <dd>{activeScore.measures.length}</dd>
-                  </div>
-                  <div>
-                    <dt>Events</dt>
-                    <dd>{activeScore.metadata.totalEvents}</dd>
-                  </div>
-                  <div>
-                    <dt>Time</dt>
-                    <dd>
-                      {activeScore.metadata.beats}/{activeScore.metadata.beatType}
-                    </dd>
-                  </div>
-                </dl>
-              ) : null}
-              {warnings.length > 0 ? (
-                <ul className="compact-list">
-                  {warnings.map((warning) => (
-                    <li key={warning}>{warning}</li>
-                  ))}
-                </ul>
-              ) : null}
-            </SectionCard>
-
-            <SectionCard title="Score Intelligence">
-              <dl className="score-stats score-stats--stacked">
-                <div>
-                  <dt>Range</dt>
-                  <dd>{insights.pitchRange}</dd>
-                </div>
-                <div>
-                  <dt>Density</dt>
-                  <dd>{insights.density}</dd>
-                </div>
-                <div>
-                  <dt>Durations</dt>
-                  <dd>{insights.topDurations}</dd>
-                </div>
-                <div>
-                  <dt>Harmony</dt>
-                  <dd>{insights.chordPalette}</dd>
-                </div>
-              </dl>
-            </SectionCard>
-
-            <SectionCard title="Parse Details">
-              {errors.length > 0 ? (
-                <ul className="error-list">
-                  {errors.map((error) => (
-                    <li key={`${error.index}-${error.message}`}>
-                      <strong>
-                        Line {error.line}, Col {error.column}
-                      </strong>{' '}
-                      {error.message}
-                      {error.token ? <span className="muted"> Token: {error.token}</span> : null}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="muted">
-                  Parsed successfully. StaffSmith generated canonical MusicXML ready for preview or
-                  future export features.
-                </p>
-              )}
-            </SectionCard>
-          </div>
         </div>
 
         <div className="preview-column">
@@ -618,6 +619,88 @@ export function App() {
             onPrintScore={printScore}
           />
         </div>
+        <aside
+          id="score-inspector"
+          className={isInspectorOpen ? 'inspector-sidebar is-open' : 'inspector-sidebar'}
+          aria-label="Score inspector"
+        >
+          <div className="inspector-sidebar__header">
+            <h2>Inspector</h2>
+            <button type="button" className="ghost-button" onClick={() => setIsInspectorOpen(false)}>
+              Close
+            </button>
+          </div>
+          <SectionCard title="Status" tone={errors.length > 0 ? 'danger' : 'success'}>
+            <p className="status-line">{summarizeErrors(errors)}</p>
+            <p className="muted">Last render: {state.lastUpdated}</p>
+            {activeScore ? (
+              <dl className="score-stats score-stats--compact">
+                <div>
+                  <dt>Measures</dt>
+                  <dd>{activeScore.measures.length}</dd>
+                </div>
+                <div>
+                  <dt>Events</dt>
+                  <dd>{activeScore.metadata.totalEvents}</dd>
+                </div>
+                <div>
+                  <dt>Time</dt>
+                  <dd>
+                    {activeScore.metadata.beats}/{activeScore.metadata.beatType}
+                  </dd>
+                </div>
+              </dl>
+            ) : null}
+            {warnings.length > 0 ? (
+              <ul className="compact-list">
+                {warnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            ) : null}
+          </SectionCard>
+
+          <SectionCard title="Score Intelligence">
+            <dl className="score-stats score-stats--stacked">
+              <div>
+                <dt>Range</dt>
+                <dd>{insights.pitchRange}</dd>
+              </div>
+              <div>
+                <dt>Density</dt>
+                <dd>{insights.density}</dd>
+              </div>
+              <div>
+                <dt>Durations</dt>
+                <dd>{insights.topDurations}</dd>
+              </div>
+              <div>
+                <dt>Harmony</dt>
+                <dd>{insights.chordPalette}</dd>
+              </div>
+            </dl>
+          </SectionCard>
+
+          <SectionCard title="Parse Details">
+            {errors.length > 0 ? (
+              <ul className="error-list">
+                {errors.map((error) => (
+                  <li key={`${error.index}-${error.message}`}>
+                    <strong>
+                      Line {error.line}, Col {error.column}
+                    </strong>{' '}
+                    {error.message}
+                    {error.token ? <span className="muted"> Token: {error.token}</span> : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted">
+                Parsed successfully. StaffSmith generated canonical MusicXML ready for preview and export.
+              </p>
+            )}
+          </SectionCard>
+        </aside>
       </main>
       )}
     </div>

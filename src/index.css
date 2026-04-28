@@ -40,9 +40,16 @@ body,
   min-height: 100%;
 }
 
+html,
 body {
   min-width: 320px;
   color: inherit;
+  background:
+    radial-gradient(circle at 13% 10%, rgba(255, 201, 86, 0.55) 0 12%, transparent 29%),
+    radial-gradient(circle at 90% 4%, rgba(80, 220, 200, 0.52) 0 13%, transparent 32%),
+    linear-gradient(135deg, rgba(255, 119, 83, 0.22) 0%, transparent 28%),
+    linear-gradient(225deg, rgba(160, 224, 43, 0.26) 0%, transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f5fffb 45%, #fff8e8 100%);
 }
 
 button,

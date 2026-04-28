@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import { SectionCard } from '../../components/SectionCard'
 import './ScorePreview.css'
 
@@ -29,8 +29,23 @@ export function ScorePreview({
   onPrintScore,
 }: ScorePreviewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const dragStartRef = useRef<number | null>(null)
   const renderIdRef = useRef(0)
   const [renderError, setRenderError] = useState<RenderError | null>(null)
+  const [pageIndex, setPageIndex] = useState(0)
+  const [pageCount, setPageCount] = useState(1)
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) {
+      return
+    }
+
+    const pages = Array.from(container.querySelectorAll('svg'))
+    pages.forEach((page, index) => {
+      page.style.display = index === pageIndex ? 'block' : 'none'
+    })
+  }, [pageIndex, pageCount])
 
   useEffect(() => {
     const container = containerRef.current
@@ -90,6 +105,9 @@ export function ScorePreview({
         }
 
         osmd.render()
+        const renderedPages = renderTarget.querySelectorAll('svg')
+        setPageCount(Math.max(1, renderedPages.length))
+        setPageIndex(0)
         setRenderError(null)
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown renderer error.'
@@ -107,6 +125,37 @@ export function ScorePreview({
       }
     }
   }, [musicXml])
+
+  const goToPreviousPage = () => {
+    setPageIndex((current) => Math.max(0, current - 1))
+  }
+
+  const goToNextPage = () => {
+    setPageIndex((current) => Math.min(pageCount - 1, current + 1))
+  }
+
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    dragStartRef.current = event.clientX
+  }
+
+  const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    const dragStart = dragStartRef.current
+    dragStartRef.current = null
+    if (dragStart === null) {
+      return
+    }
+
+    const delta = event.clientX - dragStart
+    if (Math.abs(delta) < 48) {
+      return
+    }
+
+    if (delta < 0) {
+      goToNextPage()
+    } else {
+      goToPreviousPage()
+    }
+  }
 
   return (
     <SectionCard title="Score Preview" className="score-preview-card">
@@ -129,13 +178,29 @@ export function ScorePreview({
           <p>Render a valid input to preview staff notation.</p>
         </div>
       ) : null}
-      <div className="preview-surface" aria-label="A4 score page">
+      <div
+        className="preview-surface"
+        aria-label="A4 score page"
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+      >
         <div className="a4-page">
           <header className="score-title-block">
             <h2>{title || 'Untitled sketch'}</h2>
           </header>
           <div className="score-engraving" ref={containerRef} />
         </div>
+      </div>
+      <div className="page-controls" aria-label="Score page controls">
+        <button type="button" onClick={goToPreviousPage} disabled={!musicXml || pageIndex === 0}>
+          Previous
+        </button>
+        <span>
+          Page {musicXml ? pageIndex + 1 : 0} / {musicXml ? pageCount : 0}
+        </span>
+        <button type="button" onClick={goToNextPage} disabled={!musicXml || pageIndex >= pageCount - 1}>
+          Next
+        </button>
       </div>
     </SectionCard>
   )

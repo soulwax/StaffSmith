@@ -62,8 +62,8 @@
 
 .editor-textarea {
   width: 100%;
-  min-height: 320px;
-  height: clamp(320px, 40vh, 560px);
+  min-height: 240px;
+  height: clamp(240px, 28vh, 360px);
   resize: vertical;
   padding: 16px;
   border-radius: 8px;

@@ -2,6 +2,27 @@
 
 All notable StaffSmith changes will be documented in this file.
 
+## 2026-04-28 - Composer Assist Feedback Fix
+
+### Fixed
+
+- Note generation now shows status and error messages directly in the "Generate Notes From Text" section.
+- API calls now time out with an actionable local-development message instead of appearing to do nothing when Vercel API routes are not running.
+- Composer AI prompting now converts named artist or band references into broad musical traits rather than direct style imitation.
+
+## 2026-04-28 - Paged Workspace Refinement
+
+### Added
+
+- Closeable right-side Inspector drawer for Status, Score Intelligence, and Parse Details.
+- Fitted score page viewer with bottom Previous / Next controls.
+- Drag/swipe navigation across rendered score pages.
+
+### Changed
+
+- Score diagnostics no longer consume the main composer workspace.
+- Score preview no longer relies on an internal scrolling sheet surface for normal page viewing.
+
 ## 2026-04-28 - Current State
 
 ### Added

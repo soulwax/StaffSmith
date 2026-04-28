@@ -118,11 +118,34 @@
   box-shadow: 0 10px 24px rgba(27, 52, 44, 0.06);
 }
 
+.inspector-toggle {
+  min-height: 32px;
+  padding: 7px 10px;
+  border: 1px solid rgba(28, 126, 152, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  color: #273c4a;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 750;
+  box-shadow: 0 10px 24px rgba(27, 52, 44, 0.06);
+}
+
+.inspector-toggle[aria-expanded="true"] {
+  border-color: rgba(20, 148, 168, 0.34);
+  background: rgba(226, 252, 255, 0.96);
+  color: #0f4754;
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(360px, 0.66fr) minmax(0, 1.34fr);
   gap: 18px;
-  min-height: calc(100vh - 88px);
+  height: calc(100vh - 88px);
+  min-height: 620px;
+  overflow: hidden;
+  position: relative;
 }
 
 .help-layout {
@@ -140,12 +163,6 @@
 
 .preview-column {
   min-width: 0;
-}
-
-.inspector-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
 }
 
 .compact-list,
@@ -379,6 +396,62 @@
   font-size: 0.94rem;
 }
 
+.score-stats--compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.inspector-sidebar {
+  position: fixed;
+  top: 82px;
+  right: 18px;
+  z-index: 20;
+  display: grid;
+  gap: 12px;
+  width: min(380px, calc(100vw - 28px));
+  max-height: calc(100vh - 104px);
+  padding: 12px;
+  border: 1px solid rgba(28, 126, 152, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 24px 60px rgba(36, 103, 122, 0.24);
+  opacity: 0;
+  overflow: auto;
+  pointer-events: none;
+  transform: translateX(calc(100% + 24px));
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.inspector-sidebar.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.inspector-sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.inspector-sidebar__header h2 {
+  margin: 0;
+  color: #243746;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.inspector-sidebar .section-card__header {
+  padding-top: 12px;
+}
+
+.inspector-sidebar .section-card__content {
+  padding-bottom: 12px;
+}
+
 @media (max-width: 1100px) {
   .app-shell {
     padding: 14px;
@@ -405,12 +478,13 @@
 
   .layout {
     grid-template-columns: 1fr;
+    height: auto;
     min-height: auto;
+    overflow: visible;
   }
 }
 
 @media (max-width: 700px) {
-  .inspector-grid,
   .score-stats {
     grid-template-columns: 1fr;
   }

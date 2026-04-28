@@ -71,6 +71,7 @@ Generation rules:
 - keep generatedInput directly parseable by StaffSmith
 - for natural-language note generation, prefer suggestedMode "notes"
 - include useful notation tokens from the syntax when the user asks for mood, dynamics, articulation, or intensity
+- if the user names an artist or band, translate that into broad musical traits instead of imitating the named artist directly
 - keep notes concise and practical
 
 Task: ${payload.task}
