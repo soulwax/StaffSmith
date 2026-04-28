@@ -2,6 +2,14 @@
 
 All notable StaffSmith changes will be documented in this file.
 
+## 2026-04-28 - AI Structured Response Fix
+
+### Fixed
+
+- Gemini object-shaped API errors no longer render as `[object Object]` in the Text To Notes status area.
+- Structured Gemini note responses with `measures`, `events`, `notes`, `pitch`, and `duration` fields are converted into StaffSmith notation.
+- Note generation now falls back to a valid beginner flute phrase instead of reusing the old composer input when Gemini returns an unusable format.
+
 ## 2026-04-28 - AI Note Generation Guard
 
 ### Fixed

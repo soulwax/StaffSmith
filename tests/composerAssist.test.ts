@@ -61,4 +61,43 @@ describe('composer assist normalization', () => {
     expect(result.summary).toBe('Beginner flute phrase with bright folk-jazz color.')
     expect(result.notes).toEqual(['Playable beginner range.', 'Uses crescendo and diminuendo.'])
   })
+
+  it('converts structured note objects into StaffSmith notation', async () => {
+    mockGeminiJson({
+      summary: 'Structured beginner flute idea.',
+      keyCenter: 'D minor',
+      suggestedMode: 'notes',
+      generatedInput: {
+        measures: [
+          {
+            directions: [{ kind: 'direction', dynamic: 'mp' }],
+            notes: [
+              { pitch: { step: 'D', octave: 5 }, duration: 'q' },
+              { pitch: { step: 'F', octave: 5 }, duration: 'q' },
+              { pitch: { step: 'A', octave: 5 }, duration: 'h' },
+            ],
+          },
+          {
+            events: [
+              { kind: 'direction', directionKind: 'hairpin', value: 'crescendo' },
+              { pitch: 'G5', duration: 'q' },
+              { pitch: 'A5', duration: 'q' },
+              { pitch: 'B5', duration: 'q' },
+              { pitch: 'A5', duration: 'q' },
+            ],
+          },
+        ],
+      },
+      notes: [],
+    })
+
+    const result = await runComposerAssist({
+      task: 'generate',
+      mode: 'notes',
+      input: 'C4 q E4 q G4 h',
+      prompt: 'A flute solo for beginners, in the style of jethro tull jazz',
+    })
+
+    expect(result.generatedInput).toBe('mp D5 q F5 q A5 h | < G5 q A5 q B5 q A5 q')
+  })
 })

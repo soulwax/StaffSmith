@@ -131,7 +131,7 @@ async function fetchJson<T>(url: string, init: RequestInit, fallbackMessage: str
 
     const body = await response.json() as T & ApiErrorResponse
     if (!response.ok) {
-      throw new Error(body.error || fallbackMessage)
+      throw new Error(getApiErrorMessage(body, fallbackMessage))
     }
 
     return body
@@ -144,6 +144,37 @@ async function fetchJson<T>(url: string, init: RequestInit, fallbackMessage: str
   } finally {
     window.clearTimeout(timeoutId)
   }
+}
+
+function getApiErrorMessage(body: Partial<ApiErrorResponse>, fallbackMessage: string) {
+  return coerceMessage(body.error, fallbackMessage)
+}
+
+function getErrorMessage(error: unknown, fallbackMessage: string) {
+  if (error instanceof Error) {
+    return coerceMessage(error.message, fallbackMessage)
+  }
+
+  return coerceMessage(error, fallbackMessage)
+}
+
+function coerceMessage(value: unknown, fallbackMessage: string): string {
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    return trimmed && trimmed !== '[object Object]' ? trimmed : fallbackMessage
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    for (const key of ['message', 'error', 'detail', 'details']) {
+      const nestedValue = (value as Record<string, unknown>)[key]
+      const nestedMessage = coerceMessage(nestedValue, '')
+      if (nestedMessage) {
+        return nestedMessage
+      }
+    }
+  }
+
+  return fallbackMessage
 }
 
 async function assertApiAvailable(fallbackMessage: string) {
@@ -163,7 +194,7 @@ async function assertApiAvailable(fallbackMessage: string) {
 
     if (!response.ok) {
       const body = await response.json() as ApiErrorResponse
-      throw new Error(body.error || fallbackMessage)
+      throw new Error(getApiErrorMessage(body, fallbackMessage))
     }
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
@@ -276,7 +307,7 @@ export function App() {
 
         const body = await response.json() as GeminiStatusResponse & ApiErrorResponse
         if (!response.ok) {
-          throw new Error(body.error || 'Gemini status check failed.')
+          throw new Error(getApiErrorMessage(body, 'Gemini status check failed.'))
         }
 
         if (isMounted) {
@@ -290,7 +321,7 @@ export function App() {
           setGeminiStatus({
             available: false,
             checkedAt: new Date().toISOString(),
-            message: error instanceof Error ? error.message : 'Gemini status check failed.',
+            message: getErrorMessage(error, 'Gemini status check failed.'),
             model: 'gemini-2.5-flash',
             state: 'unavailable',
           })
@@ -368,7 +399,7 @@ export function App() {
         updateDraft(body.result.suggestedMode, body.result.generatedInput)
       }
     } catch (error) {
-      setServerMessage(error instanceof Error ? error.message : 'Composer assistant failed.')
+      setServerMessage(getErrorMessage(error, 'Composer assistant failed.'))
     } finally {
       setIsAssisting(false)
     }
@@ -405,7 +436,7 @@ export function App() {
       setProjects((current) => [body.project!, ...current.filter((project) => project.id !== body.project!.id)])
       setServerMessage('Project saved.')
     } catch (error) {
-      setServerMessage(error instanceof Error ? error.message : 'Project could not be saved.')
+      setServerMessage(getErrorMessage(error, 'Project could not be saved.'))
     } finally {
       setIsSaving(false)
     }
@@ -420,7 +451,7 @@ export function App() {
       setProjects(body.projects)
       setServerMessage(body.projects.length > 0 ? 'Projects loaded.' : 'No saved projects yet.')
     } catch (error) {
-      setServerMessage(error instanceof Error ? error.message : 'Projects could not be loaded.')
+      setServerMessage(getErrorMessage(error, 'Projects could not be loaded.'))
     }
   }
 
@@ -473,7 +504,7 @@ export function App() {
       setNoteGenerationMessage('Generated notes from text.')
       setServerMessage('Generated notes from text.')
     } catch (error) {
-      setNoteGenerationMessage(error instanceof Error ? error.message : 'Note generation failed.')
+      setNoteGenerationMessage(getErrorMessage(error, 'Note generation failed.'))
     } finally {
       setIsGeneratingNotes(false)
     }

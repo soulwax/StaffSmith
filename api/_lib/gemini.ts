@@ -6,6 +6,8 @@ import { getGeminiApiKey } from './env'
 import { fail } from './http'
 
 const GEMINI_MODEL = 'gemini-2.5-flash'
+const DEFAULT_GENERATED_NOTATION = 'mp [airy flute] D5 q, F5 q, A5 h | < G5 q, A5 q, B5 q, A5 q | > G5 q, F5 q, E5 q, D5 q'
+const DURATION_VALUES = new Set(['w', 'h', 'q', '8'])
 
 type LooseComposerAssistResult = Omit<Partial<ComposerAssistResult>, 'generatedInput' | 'notes'> & {
   generatedInput?: unknown
@@ -113,6 +115,8 @@ ${STAFFSMITH_AI_SYNTAX_GUIDE}
 
 Generation rules:
 - keep generatedInput directly parseable by StaffSmith
+- generatedInput must be a single plain StaffSmith notation string, not an object, array, markdown block, or JSON structure
+- do not return nested notes, measures, events, pitch objects, or token objects inside generatedInput
 - for natural-language note generation, prefer suggestedMode "notes"
 - include useful notation tokens from the syntax when the user asks for mood, dynamics, articulation, or intensity
 - if the user names an artist or band, translate that into broad musical traits instead of imitating the named artist directly
@@ -146,7 +150,9 @@ function normalizeAssistResult(
 
 function coerceGeneratedInput(value: unknown, payload: ComposerAssistRequest, mode: InputMode) {
   const candidates = collectNotationCandidates(value)
-  const fallback = collectNotationCandidates(payload.input)
+  const fallback = payload.task === 'generate'
+    ? [DEFAULT_GENERATED_NOTATION]
+    : collectNotationCandidates(payload.input)
 
   for (const candidate of [...candidates, ...fallback]) {
     const normalized = candidate.trim()
@@ -168,14 +174,17 @@ function collectNotationCandidates(value: unknown): string[] {
   }
 
   if (Array.isArray(value)) {
+    const structuredMeasure = buildMeasureNotation(value)
     const directStringItems = value.filter((item): item is string => typeof item === 'string')
     return [
+      ...(structuredMeasure ? [structuredMeasure] : []),
       ...(directStringItems.length > 0 ? [directStringItems.join(' ')] : []),
       ...value.flatMap(collectNotationCandidates),
     ]
   }
 
   if (isRecord(value)) {
+    const structuredNotation = buildStructuredNotation(value)
     const preferredKeys = [
       'generatedInput',
       'input',
@@ -189,10 +198,158 @@ function collectNotationCandidates(value: unknown): string[] {
       'measures',
     ]
 
-    return preferredKeys.flatMap((key) => collectNotationCandidates(value[key]))
+    return [
+      ...(structuredNotation ? [structuredNotation] : []),
+      ...preferredKeys.flatMap((key) => collectNotationCandidates(value[key])),
+    ]
   }
 
   return []
+}
+
+function buildStructuredNotation(value: Record<string, unknown>): string | null {
+  const measures = arrayValue(value.measures) ?? arrayValue(value.bars)
+  if (measures) {
+    const measureText = measures
+      .map((measure) => {
+        if (typeof measure === 'string') {
+          return measure
+        }
+
+        if (Array.isArray(measure)) {
+          return buildMeasureNotation(measure)
+        }
+
+        if (isRecord(measure)) {
+          return buildMeasureNotation([
+            ...(arrayValue(measure.directions) ?? []),
+            ...(arrayValue(measure.events) ?? []),
+            ...(arrayValue(measure.notes) ?? []),
+          ])
+        }
+
+        return null
+      })
+      .filter((measure): measure is string => Boolean(measure))
+
+    return measureText.length > 0 ? measureText.join(' | ') : null
+  }
+
+  const events = arrayValue(value.events) ?? arrayValue(value.notes)
+  if (events) {
+    return buildMeasureNotation(events)
+  }
+
+  const eventToken = buildEventToken(value)
+  return eventToken
+}
+
+function buildMeasureNotation(events: unknown[]): string | null {
+  const tokens = events
+    .map(buildEventToken)
+    .filter((token): token is string => Boolean(token))
+
+  return tokens.length > 0 ? tokens.join(' ') : null
+}
+
+function buildEventToken(value: unknown): string | null {
+  if (typeof value === 'string') {
+    return value.trim() || null
+  }
+
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const explicitText = textValue(value.notation)
+    ?? textValue(value.staffsmith)
+    ?? textValue(value.staffSmith)
+    ?? textValue(value.token)
+  if (explicitText) {
+    return explicitText
+  }
+
+  const direction = directionToken(value)
+  if (direction) {
+    return direction
+  }
+
+  const pitch = pitchToken(value.pitch)
+    ?? pitchToken(value.note)
+    ?? pitchToken(value)
+  if (!pitch) {
+    return null
+  }
+
+  const duration = durationToken(value.duration) ?? 'q'
+  return `${pitch} ${duration}`
+}
+
+function directionToken(value: Record<string, unknown>) {
+  const kind = textValue(value.kind)?.toLowerCase()
+  const directionKind = textValue(value.directionKind)?.toLowerCase()
+  const valueText = textValue(value.value)?.toLowerCase()
+  const dynamic = textValue(value.dynamic)?.toLowerCase()
+  const expression = textValue(value.expression)?.toLowerCase()
+  const text = textValue(value.text)?.toLowerCase()
+  const directionText = text ?? dynamic ?? expression
+
+  if (kind !== 'direction' && !directionKind && !valueText && !dynamic && !expression) {
+    return null
+  }
+
+  if (directionKind === 'hairpin' || valueText === 'crescendo' || valueText === 'diminuendo') {
+    return valueText === 'diminuendo' || directionText === 'dim.' || directionText === 'diminuendo' ? '>' : '<'
+  }
+
+  return directionText
+}
+
+function pitchToken(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const normalized = value.trim()
+    return /^[A-Ga-g](?:#|b)?\d+$/.test(normalized) ? normalized : null
+  }
+
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const scientific = textValue(value.scientific)
+  if (scientific) {
+    return pitchToken(scientific)
+  }
+
+  const step = textValue(value.step)?.toUpperCase()
+  const octave = numberOrText(value.octave)
+  const alter = Number(value.alter ?? 0)
+  if (!step || !/^[A-G]$/.test(step) || !octave) {
+    return null
+  }
+
+  const accidental = alter === 1 ? '#' : alter === -1 ? 'b' : ''
+  return `${step}${accidental}${octave}`
+}
+
+function durationToken(value: unknown) {
+  const duration = numberOrText(value)
+  return duration && DURATION_VALUES.has(duration) ? duration : null
+}
+
+function arrayValue(value: unknown): unknown[] | null {
+  return Array.isArray(value) ? value : null
+}
+
+function textValue(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null
+}
+
+function numberOrText(value: unknown): string | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value)
+  }
+
+  return textValue(value)
 }
 
 function coerceText(value: unknown, fallback: string) {
