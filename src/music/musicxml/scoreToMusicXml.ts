@@ -590,15 +590,15 @@ function renderDirectionEvent(event: DirectionEvent, remainingMeasureUnits: numb
         <direction-type>
           <wedge type="${wedgeType}" number="1" />
         </direction-type>
+        <direction-type>
+          <words>${escapeXml(event.text)}</words>
+        </direction-type>
       </direction>
       <direction placement="below">
         <direction-type>
           <wedge type="stop" number="1" />
         </direction-type>
         <offset>${remainingMeasureUnits}</offset>
-        <direction-type>
-          <words>${escapeXml(event.text)}</words>
-        </direction-type>
       </direction>`
   }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseScoreInput } from '../src/music/parser'
 import { scoreToMusicXml } from '../src/music/musicxml/scoreToMusicXml'
+import { EXAMPLES } from '../src/features/editor/examples'
 
 describe('MusicXML export', () => {
   it('emits compact orchestral solo page settings, 30% smaller scaling, and no default staff label', () => {
@@ -82,8 +83,26 @@ describe('MusicXML export', () => {
 
     expect(xml).toContain('<mf />')
     expect(xml).toContain('<words>warm tone</words>')
-    expect(xml).toContain('<wedge type="crescendo" />')
-    expect(xml).toContain('<wedge type="diminuendo" />')
+    expect(xml).toContain('<wedge type="crescendo" number="1" />')
+    expect(xml).toContain('<wedge type="diminuendo" number="1" />')
+    expect(xml).toContain('<wedge type="stop" number="1" />')
+    expect(xml).toContain('<offset>32</offset>')
+  })
+
+  it('serializes the bundled composer solo example with closed hairpins', () => {
+    const example = EXAMPLES.find((preset) => preset.id === 'notes-woodwinds')
+    expect(example).toBeDefined()
+
+    const result = parseScoreInput('notes', example?.input ?? '')
+    expect(result.ok).toBe(true)
+
+    const xml = scoreToMusicXml(result.value)
+    const wedgeStarts = xml.match(/<wedge type="(?:crescendo|diminuendo)" number="1" \/>/g) ?? []
+    const wedgeStops = xml.match(/<wedge type="stop" number="1" \/>/g) ?? []
+
+    expect(result.value.measures).toHaveLength(32)
+    expect(wedgeStarts.length).toBeGreaterThan(0)
+    expect(wedgeStops).toHaveLength(wedgeStarts.length)
   })
 
   it('serializes fast durations, pauses, standard beat beaming, and slurs', () => {

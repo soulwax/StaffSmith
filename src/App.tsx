@@ -1,7 +1,7 @@
 import {
   ArrowRight,
-  Bot,
   CircleHelp,
+  Computer,
   Copy,
   Download,
   FilePlus2,
@@ -790,8 +790,8 @@ export function App() {
           >
             {geminiStatus.state === 'checking'
               ? <LoaderCircle size={15} aria-hidden="true" />
-              : <Bot size={15} aria-hidden="true" />}
-            Gemini
+              : <Computer size={15} aria-hidden="true" />}
+            API
           </span>
           <span title="Input mode">
             <Music2 size={15} aria-hidden="true" />
@@ -1003,7 +1003,9 @@ export function App() {
             </button>
           </div>
           <SectionCard title="Status" tone={errors.length > 0 ? 'danger' : 'success'}>
-            <p className="status-line">{summarizeErrors(errors)}</p>
+            <p className={errors.length > 0 ? 'status-line status-line--error' : 'status-line'}>
+              {summarizeErrors(errors)}
+            </p>
             <p className="muted">Last render: {state.lastUpdated}</p>
             {activeScore ? (
               <dl className="score-stats score-stats--compact">
@@ -1062,7 +1064,7 @@ export function App() {
                       Line {error.line}, Col {error.column}
                     </strong>{' '}
                     {error.message}
-                    {error.token ? <span className="muted"> Token: {error.token}</span> : null}
+                    {error.token ? <span className="parse-error-token"> Token: {error.token}</span> : null}
                   </li>
                 ))}
               </ul>
