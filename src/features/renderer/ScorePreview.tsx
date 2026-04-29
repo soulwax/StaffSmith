@@ -37,6 +37,7 @@ type ZoomableDisplay = {
 }
 
 const BASE_PREVIEW_ZOOM = 0.84
+const MIN_ENGRAVING_WIDTH = 720
 const UNTITLED_SCORE_TITLE = 'Untitled sketch'
 
 function applyZoom(display: ZoomableDisplay, zoom: number) {
@@ -168,7 +169,7 @@ function getAvailableRenderWidth(container: HTMLElement, renderTarget?: HTMLElem
   for (const source of widthSources) {
     const width = source?.getBoundingClientRect().width ?? 0
     if (width > 0) {
-      return Math.floor(width)
+      return Math.max(MIN_ENGRAVING_WIDTH, Math.floor(width))
     }
   }
 
@@ -201,6 +202,20 @@ function waitForRenderTargetWidth(container: HTMLElement, renderTarget: HTMLElem
 
     checkFrame(0)
   })
+}
+
+function fitRenderedScoreToPage(container: HTMLElement, renderTarget: HTMLElement, renderTargetWidth: number) {
+  const pageBody = container.querySelector<HTMLElement>('.score-page__body')
+  const availableWidth = pageBody?.getBoundingClientRect().width ?? renderTargetWidth
+  const scale = Math.min(1, availableWidth / renderTargetWidth)
+  const renderedPage = getRenderedPageSvgs(renderTarget)[0]
+  const renderedHeight = renderedPage?.getBoundingClientRect().height
+    ?? renderTarget.scrollHeight
+    ?? renderTarget.getBoundingClientRect().height
+
+  renderTarget.style.transform = scale < 1 ? `scale(${scale})` : ''
+  renderTarget.style.transformOrigin = 'top left'
+  renderTarget.style.height = scale < 1 ? `${renderedHeight}px` : ''
 }
 
 export function ScorePreview({
@@ -332,6 +347,7 @@ export function ScorePreview({
           return
         }
 
+        fitRenderedScoreToPage(container, renderTarget, renderTargetWidth)
         updateRenderedPages(true)
         setRenderError(null)
       } catch (error) {
