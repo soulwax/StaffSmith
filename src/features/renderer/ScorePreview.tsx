@@ -291,7 +291,6 @@ export function ScorePreview({
           drawPartNames: false,
           drawPartAbbreviations: false,
           backend: 'svg',
-          pageFormat: 'A4 P',
           newPageFromXML: true,
           newSystemFromXML: true,
         })
