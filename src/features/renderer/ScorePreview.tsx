@@ -97,8 +97,22 @@ function updateVisibleScorePage(container: HTMLElement | null, pageIndex: number
   })
 }
 
+function getRenderedPageSvgs(renderTarget: HTMLElement) {
+  const directPages = Array.from(renderTarget.children).filter(
+    (child): child is SVGSVGElement => child instanceof SVGSVGElement,
+  )
+
+  if (directPages.length > 0) {
+    return directPages
+  }
+
+  return Array.from(renderTarget.querySelectorAll<SVGSVGElement>('svg')).filter(
+    (svg) => !svg.parentElement?.closest('svg'),
+  )
+}
+
 function replaceRenderTargetWithPages(container: HTMLElement, renderTarget: HTMLElement, showTitle: boolean, title: string) {
-  const renderedPages = Array.from(renderTarget.querySelectorAll<SVGSVGElement>('svg'))
+  const renderedPages = getRenderedPageSvgs(renderTarget)
 
   if (renderedPages.length === 0) {
     container.replaceChildren(renderTarget)
@@ -112,6 +126,83 @@ function replaceRenderTargetWithPages(container: HTMLElement, renderTarget: HTML
   container.replaceChildren(fragment)
 
   return renderedPages.length
+}
+
+function hasRenderedSvgContent(renderTarget: HTMLElement) {
+  return getRenderedPageSvgs(renderTarget).some((svg) => svg.childElementCount > 0)
+}
+
+function waitForRenderedSvgContent(renderTarget: HTMLElement, shouldCancel: () => boolean) {
+  const maxFrames = 30
+
+  return new Promise<boolean>((resolve) => {
+    const checkFrame = (frame: number) => {
+      if (shouldCancel()) {
+        resolve(false)
+        return
+      }
+
+      if (hasRenderedSvgContent(renderTarget)) {
+        resolve(true)
+        return
+      }
+
+      if (frame >= maxFrames) {
+        resolve(false)
+        return
+      }
+
+      window.requestAnimationFrame(() => checkFrame(frame + 1))
+    }
+
+    checkFrame(0)
+  })
+}
+
+function getAvailableRenderWidth(container: HTMLElement) {
+  const widthSources = [
+    container,
+    container.parentElement,
+    container.closest<HTMLElement>('.preview-surface'),
+    container.closest<HTMLElement>('.score-preview-card'),
+  ]
+
+  for (const source of widthSources) {
+    const width = source?.getBoundingClientRect().width ?? 0
+    if (width > 0) {
+      return Math.max(640, Math.floor(width - 16))
+    }
+  }
+
+  return 768
+}
+
+function waitForRenderTargetWidth(container: HTMLElement, shouldCancel: () => boolean) {
+  const maxFrames = 30
+
+  return new Promise<number>((resolve) => {
+    const checkFrame = (frame: number) => {
+      if (shouldCancel()) {
+        resolve(0)
+        return
+      }
+
+      const width = getAvailableRenderWidth(container)
+      if (width > 0) {
+        resolve(width)
+        return
+      }
+
+      if (frame >= maxFrames) {
+        resolve(768)
+        return
+      }
+
+      window.requestAnimationFrame(() => checkFrame(frame + 1))
+    }
+
+    checkFrame(0)
+  })
 }
 
 export function ScorePreview({
@@ -181,7 +272,18 @@ export function ScorePreview({
 
         const renderTarget = document.createElement('div')
         renderTarget.className = 'preview-render-target'
+        renderTarget.style.width = `${getAvailableRenderWidth(container)}px`
+        renderTarget.style.maxWidth = '100%'
         container.replaceChildren(renderTarget)
+        const renderTargetWidth = await waitForRenderTargetWidth(
+          container,
+          () => cancelled || renderId !== renderIdRef.current,
+        )
+        if (cancelled || renderId !== renderIdRef.current) {
+          renderTarget.remove()
+          return
+        }
+        renderTarget.style.width = `${renderTargetWidth}px`
 
         const osmd = new OpenSheetMusicDisplay(renderTarget, {
           autoResize: true,
@@ -214,6 +316,24 @@ export function ScorePreview({
         const zoomableDisplay = osmd as ZoomableDisplay
         applyZoom(zoomableDisplay, BASE_PREVIEW_ZOOM * (deferredPartLayoutPreset.previewNoteScale / 100))
         osmd.render()
+        const hasContent = await waitForRenderedSvgContent(
+          renderTarget,
+          () => cancelled || renderId !== renderIdRef.current,
+        )
+        if (!hasContent) {
+          if (!cancelled && renderId === renderIdRef.current) {
+            setPageCount(Math.max(1, getRenderedPageSvgs(renderTarget).length))
+            setPageIndex(0)
+            setRenderError(null)
+          }
+          return
+        }
+
+        if (cancelled || renderId !== renderIdRef.current) {
+          renderTarget.remove()
+          return
+        }
+
         replaceRenderTargetWithPages(container, renderTarget, showTitle, title)
         updateRenderedPages(true)
         setRenderError(null)
