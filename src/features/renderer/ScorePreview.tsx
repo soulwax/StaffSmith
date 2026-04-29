@@ -168,7 +168,7 @@ function getAvailableRenderWidth(container: HTMLElement, renderTarget?: HTMLElem
   for (const source of widthSources) {
     const width = source?.getBoundingClientRect().width ?? 0
     if (width > 0) {
-      return Math.max(360, Math.floor(width))
+      return Math.floor(width)
     }
   }
 
