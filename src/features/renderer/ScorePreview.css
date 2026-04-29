@@ -229,7 +229,21 @@
 
 .score-engraving .preview-render-target {
   width: 100%;
+  height: 100%;
   justify-self: stretch;
+  align-self: stretch;
+}
+
+.score-engraving .preview-render-target > div {
+  width: 100%;
+  height: 100%;
+}
+
+.score-engraving .preview-render-target svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0 auto;
 }
 
 .score-engraving {
@@ -443,6 +457,17 @@
 
   .score-page:not([data-active="true"]) {
     display: flex;
+  }
+
+  .score-engraving .preview-render-target > svg {
+    display: block !important;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .score-engraving .preview-render-target > svg:last-child {
+    break-after: auto;
+    page-break-after: auto;
   }
 
   .score-page:last-child {

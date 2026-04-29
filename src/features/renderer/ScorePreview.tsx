@@ -64,24 +64,26 @@ function createScoreTitleBlock(title: string) {
   return titleBlock
 }
 
-function createScorePage(svg: SVGSVGElement, pageIndex: number, showTitle: boolean, title: string) {
+function createScorePageShell(showTitle: boolean, title: string) {
   const page = document.createElement('article')
-  page.className = pageIndex === 0 && showTitle ? 'score-page score-page--with-title' : 'score-page'
-  page.dataset.pageIndex = String(pageIndex)
-  page.dataset.active = pageIndex === 0 ? 'true' : 'false'
-  page.setAttribute('aria-label', `Score page ${pageIndex + 1}`)
-  page.setAttribute('aria-hidden', pageIndex === 0 ? 'false' : 'true')
+  page.className = showTitle ? 'score-page score-page--with-title' : 'score-page'
+  page.dataset.pageIndex = '0'
+  page.dataset.active = 'true'
+  page.setAttribute('aria-label', 'Score page')
+  page.setAttribute('aria-hidden', 'false')
 
-  if (pageIndex === 0 && showTitle) {
+  if (showTitle) {
     page.append(createScoreTitleBlock(title))
   }
 
   const pageBody = document.createElement('div')
   pageBody.className = 'score-page__body'
-  pageBody.append(svg)
+  const renderTarget = document.createElement('div')
+  renderTarget.className = 'preview-render-target'
+  pageBody.append(renderTarget)
   page.append(pageBody)
 
-  return page
+  return { page, renderTarget }
 }
 
 function updateVisibleScorePage(container: HTMLElement | null, pageIndex: number) {
@@ -89,11 +91,20 @@ function updateVisibleScorePage(container: HTMLElement | null, pageIndex: number
     return
   }
 
-  const pages = Array.from(container.querySelectorAll<HTMLElement>('.score-page'))
+  const titleBlock = container.querySelector<HTMLElement>('.score-title-block')
+  if (titleBlock) {
+    titleBlock.hidden = pageIndex !== 0
+  }
+
+  const renderTarget = container.querySelector<HTMLElement>('.preview-render-target')
+  const pages = renderTarget ? getRenderedPageSvgs(renderTarget) : []
   pages.forEach((page, index) => {
     const isActive = index === pageIndex
+    const pageWrapper = page.parentElement && page.parentElement !== renderTarget ? page.parentElement : page
     page.dataset.active = isActive ? 'true' : 'false'
     page.setAttribute('aria-hidden', isActive ? 'false' : 'true')
+    page.style.display = 'block'
+    pageWrapper.style.display = isActive ? 'block' : 'none'
   })
 }
 
@@ -109,23 +120,6 @@ function getRenderedPageSvgs(renderTarget: HTMLElement) {
   return Array.from(renderTarget.querySelectorAll<SVGSVGElement>('svg')).filter(
     (svg) => !svg.parentElement?.closest('svg'),
   )
-}
-
-function replaceRenderTargetWithPages(container: HTMLElement, renderTarget: HTMLElement, showTitle: boolean, title: string) {
-  const renderedPages = getRenderedPageSvgs(renderTarget)
-
-  if (renderedPages.length === 0) {
-    container.replaceChildren(renderTarget)
-    return 0
-  }
-
-  const fragment = document.createDocumentFragment()
-  renderedPages.forEach((svg, index) => {
-    fragment.append(createScorePage(svg, index, showTitle, title))
-  })
-  container.replaceChildren(fragment)
-
-  return renderedPages.length
 }
 
 function hasRenderedSvgContent(renderTarget: HTMLElement) {
@@ -159,8 +153,12 @@ function waitForRenderedSvgContent(renderTarget: HTMLElement, shouldCancel: () =
   })
 }
 
-function getAvailableRenderWidth(container: HTMLElement) {
+function getAvailableRenderWidth(container: HTMLElement, renderTarget?: HTMLElement) {
   const widthSources = [
+    renderTarget,
+    renderTarget?.parentElement,
+    container.querySelector<HTMLElement>('.score-page__body'),
+    container.querySelector<HTMLElement>('.score-page'),
     container,
     container.parentElement,
     container.closest<HTMLElement>('.preview-surface'),
@@ -170,14 +168,14 @@ function getAvailableRenderWidth(container: HTMLElement) {
   for (const source of widthSources) {
     const width = source?.getBoundingClientRect().width ?? 0
     if (width > 0) {
-      return Math.max(640, Math.floor(width - 16))
+      return Math.max(360, Math.floor(width))
     }
   }
 
   return 768
 }
 
-function waitForRenderTargetWidth(container: HTMLElement, shouldCancel: () => boolean) {
+function waitForRenderTargetWidth(container: HTMLElement, renderTarget: HTMLElement, shouldCancel: () => boolean) {
   const maxFrames = 30
 
   return new Promise<number>((resolve) => {
@@ -187,7 +185,7 @@ function waitForRenderTargetWidth(container: HTMLElement, shouldCancel: () => bo
         return
       }
 
-      const width = getAvailableRenderWidth(container)
+      const width = getAvailableRenderWidth(container, renderTarget)
       if (width > 0) {
         resolve(width)
         return
@@ -232,7 +230,8 @@ export function ScorePreview({
       return
     }
 
-    const renderedPages = container.querySelectorAll('.score-page')
+    const renderTarget = container.querySelector<HTMLElement>('.preview-render-target')
+    const renderedPages = renderTarget ? getRenderedPageSvgs(renderTarget) : []
     const nextPageCount = Math.max(1, renderedPages.length)
     setPageCount(nextPageCount)
     setPageIndex((current) => {
@@ -270,13 +269,13 @@ export function ScorePreview({
           return
         }
 
-        const renderTarget = document.createElement('div')
-        renderTarget.className = 'preview-render-target'
-        renderTarget.style.width = `${getAvailableRenderWidth(container)}px`
+        const { page, renderTarget } = createScorePageShell(showTitle, title)
+        renderTarget.style.width = '100%'
         renderTarget.style.maxWidth = '100%'
-        container.replaceChildren(renderTarget)
+        container.replaceChildren(page)
         const renderTargetWidth = await waitForRenderTargetWidth(
           container,
+          renderTarget,
           () => cancelled || renderId !== renderIdRef.current,
         )
         if (cancelled || renderId !== renderIdRef.current) {
@@ -286,7 +285,7 @@ export function ScorePreview({
         renderTarget.style.width = `${renderTargetWidth}px`
 
         const osmd = new OpenSheetMusicDisplay(renderTarget, {
-          autoResize: true,
+          autoResize: false,
           drawTitle: false,
           drawPartNames: false,
           drawPartAbbreviations: false,
@@ -333,7 +332,6 @@ export function ScorePreview({
           return
         }
 
-        replaceRenderTargetWithPages(container, renderTarget, showTitle, title)
         updateRenderedPages(true)
         setRenderError(null)
       } catch (error) {

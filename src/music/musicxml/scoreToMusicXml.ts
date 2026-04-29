@@ -465,22 +465,16 @@ function renderTempo(tempoBpm: number): string {
 }
 
 function renderMeasureContents(measure: Measure, beams: Map<string, BeamMark>): string {
-  let currentOffsetUnits = 0
   const contents: string[] = []
 
   for (const event of measure.events) {
-    const remainingUnits = Math.max(DURATION_UNITS.q, FULL_MEASURE_UNITS - currentOffsetUnits)
-    contents.push(renderEvent(event, beams, remainingUnits))
-
-    if (isRhythmicEvent(event)) {
-      currentOffsetUnits += DURATION_UNITS[event.duration]
-    }
+    contents.push(renderEvent(event, beams))
   }
 
   return contents.join('\n')
 }
 
-function renderEvent(event: ScoreEvent, beams: Map<string, BeamMark>, remainingMeasureUnits: number): string {
+function renderEvent(event: ScoreEvent, beams: Map<string, BeamMark>): string {
   if (event.kind === 'note') {
     return renderNoteEvent(event, beams.get(event.id))
   }
@@ -493,7 +487,7 @@ function renderEvent(event: ScoreEvent, beams: Map<string, BeamMark>, remainingM
     return renderChordEvent(event)
   }
 
-  return renderDirectionEvent(event, remainingMeasureUnits)
+  return renderDirectionEvent(event)
 }
 
 function renderNoteEvent(event: NoteEvent, beamMark: BeamMark | undefined): string {
@@ -572,7 +566,7 @@ ${event.helperPitch.alter !== 0 ? `          <alter>${event.helperPitch.alter}</
       </note>`
 }
 
-function renderDirectionEvent(event: DirectionEvent, remainingMeasureUnits: number): string {
+function renderDirectionEvent(event: DirectionEvent): string {
   if (event.directionKind === 'dynamic') {
     return `      <direction placement="below">
         <direction-type>
@@ -584,21 +578,12 @@ function renderDirectionEvent(event: DirectionEvent, remainingMeasureUnits: numb
   }
 
   if (event.directionKind === 'hairpin') {
-    const wedgeType = event.value ?? 'crescendo'
+    const label = event.value === 'diminuendo' ? 'dim.' : 'cresc.'
 
     return `      <direction placement="below">
         <direction-type>
-          <wedge type="${wedgeType}" number="1" />
+          <words font-style="italic">${label}</words>
         </direction-type>
-        <direction-type>
-          <words>${escapeXml(event.text)}</words>
-        </direction-type>
-      </direction>
-      <direction placement="below">
-        <direction-type>
-          <wedge type="stop" number="1" />
-        </direction-type>
-        <offset>${remainingMeasureUnits}</offset>
       </direction>`
   }
 

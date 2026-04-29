@@ -76,7 +76,7 @@ describe('MusicXML export', () => {
     expect(childrenXml).toContain('<measure number="25">\n      <print new-page="yes" />')
   })
 
-  it('serializes printable dynamics, expressions, and hairpins', () => {
+  it('serializes printable dynamics, expressions, and hairpin labels', () => {
     const result = parseScoreInput('notes', 'mf [warm tone] < C4 q D4 q > E4 h')
     expect(result.ok).toBe(true)
 
@@ -84,13 +84,12 @@ describe('MusicXML export', () => {
 
     expect(xml).toContain('<mf />')
     expect(xml).toContain('<words>warm tone</words>')
-    expect(xml).toContain('<wedge type="crescendo" number="1" />')
-    expect(xml).toContain('<wedge type="diminuendo" number="1" />')
-    expect(xml).toContain('<wedge type="stop" number="1" />')
-    expect(xml).toContain('<offset>32</offset>')
+    expect(xml).toContain('<words font-style="italic">cresc.</words>')
+    expect(xml).toContain('<words font-style="italic">dim.</words>')
+    expect(xml).not.toContain('<wedge')
   })
 
-  it('serializes the bundled composer solo example with closed hairpins', () => {
+  it('serializes the bundled composer solo example with OSMD-safe hairpin labels', () => {
     const example = EXAMPLES.find((preset) => preset.id === 'notes-woodwinds')
     expect(example).toBeDefined()
 
@@ -98,12 +97,11 @@ describe('MusicXML export', () => {
     expect(result.ok).toBe(true)
 
     const xml = scoreToMusicXml(result.value)
-    const wedgeStarts = xml.match(/<wedge type="(?:crescendo|diminuendo)" number="1" \/>/g) ?? []
-    const wedgeStops = xml.match(/<wedge type="stop" number="1" \/>/g) ?? []
+    const hairpinLabels = xml.match(/<words font-style="italic">(?:cresc\.|dim\.)<\/words>/g) ?? []
 
     expect(result.value.measures).toHaveLength(32)
-    expect(wedgeStarts.length).toBeGreaterThan(0)
-    expect(wedgeStops).toHaveLength(wedgeStarts.length)
+    expect(hairpinLabels.length).toBeGreaterThan(0)
+    expect(xml).not.toContain('<wedge')
   })
 
   it('serializes fast durations, pauses, standard beat beaming, and slurs', () => {
