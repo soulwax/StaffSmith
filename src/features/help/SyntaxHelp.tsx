@@ -58,6 +58,12 @@ export function SyntaxHelp() {
           {HAIRPIN_TOKENS.map((entry) => <code key={entry}>{entry}</code>)}
         </div>
         <div>
+          <h3>Tempo</h3>
+          <p>Set BPM at the very start of the input (20–300).</p>
+          <code>@tempo=120</code>
+          <code>@tempo=72</code>
+        </div>
+        <div>
           <h3>Bars</h3>
           <p>Separate measures with a bar line.</p>
           <code>|</code>
