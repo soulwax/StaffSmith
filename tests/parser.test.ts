@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { parseScoreInput } from '../src/music/parser'
 import { isRhythmicEvent } from '../src/music/model/types'
+import { parseScoreInput } from '../src/music/parser'
 
 describe('StaffSmith parser', () => {
   it('parses compact note notation with dynamics, expression text, and hairpins', () => {
@@ -82,6 +82,10 @@ describe('StaffSmith parser', () => {
       duration: 'q',
     })
     expect(result.value.measures[0]?.events[4]).toMatchObject({
+      kind: 'note',
+      duration: '32',
+    })
+    expect(result.value.measures[0]?.events[5]).toMatchObject({
       kind: 'note',
       duration: '32',
     })
