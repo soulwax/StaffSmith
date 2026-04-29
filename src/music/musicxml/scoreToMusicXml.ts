@@ -77,14 +77,8 @@ function computeBeams(events: ScoreEvent[]): Map<string, BeamMark> {
       beatUnits = 0
     }
 
-    if (beatUnits === 0 && run.length > 0) {
-      flush()
-    }
-
-    if (isBeamable) {
-      run.push(event.id)
-      beatUnits += eventUnits
-    }
+    run.push(event.id)
+    beatUnits += eventUnits
 
     if (beatUnits >= DURATION_UNITS.q) {
       flush()
