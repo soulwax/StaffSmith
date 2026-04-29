@@ -68,7 +68,9 @@ function createScorePage(svg: SVGSVGElement, pageIndex: number, showTitle: boole
   const page = document.createElement('article')
   page.className = pageIndex === 0 && showTitle ? 'score-page score-page--with-title' : 'score-page'
   page.dataset.pageIndex = String(pageIndex)
+  page.dataset.active = pageIndex === 0 ? 'true' : 'false'
   page.setAttribute('aria-label', `Score page ${pageIndex + 1}`)
+  page.setAttribute('aria-hidden', pageIndex === 0 ? 'false' : 'true')
 
   if (pageIndex === 0 && showTitle) {
     page.append(createScoreTitleBlock(title))
@@ -80,6 +82,19 @@ function createScorePage(svg: SVGSVGElement, pageIndex: number, showTitle: boole
   page.append(pageBody)
 
   return page
+}
+
+function updateVisibleScorePage(container: HTMLElement | null, pageIndex: number) {
+  if (!container) {
+    return
+  }
+
+  const pages = Array.from(container.querySelectorAll<HTMLElement>('.score-page'))
+  pages.forEach((page, index) => {
+    const isActive = index === pageIndex
+    page.dataset.active = isActive ? 'true' : 'false'
+    page.setAttribute('aria-hidden', isActive ? 'false' : 'true')
+  })
 }
 
 function replaceRenderTargetWithPages(container: HTMLElement, renderTarget: HTMLElement, showTitle: boolean, title: string) {
@@ -109,10 +124,8 @@ export function ScorePreview({
   onPrintScore,
 }: ScorePreviewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const previewSurfaceRef = useRef<HTMLDivElement | null>(null)
   const dragStartRef = useRef<number | null>(null)
   const renderIdRef = useRef(0)
-  const scrollFrameRef = useRef<number | null>(null)
   const [renderError, setRenderError] = useState<RenderError | null>(null)
   const [pageIndex, setPageIndex] = useState(0)
   const [pageCount, setPageCount] = useState(1)
@@ -131,63 +144,16 @@ export function ScorePreview({
     const renderedPages = container.querySelectorAll('.score-page')
     const nextPageCount = Math.max(1, renderedPages.length)
     setPageCount(nextPageCount)
-    setPageIndex((current) => (resetPage ? 0 : Math.min(current, nextPageCount - 1)))
-    if (resetPage) {
-      previewSurfaceRef.current?.scrollTo({ top: 0, left: 0 })
-    }
-  }, [])
-
-  const scrollToPage = useCallback((index: number, behavior: ScrollBehavior = 'smooth') => {
-    const container = containerRef.current
-    const page = container?.querySelector<HTMLElement>(`.score-page[data-page-index="${index}"]`)
-    if (!page) {
-      return
-    }
-
-    page.scrollIntoView({ block: 'start', inline: 'nearest', behavior })
-  }, [])
-
-  const updateCurrentPageFromScroll = useCallback(() => {
-    const surface = previewSurfaceRef.current
-    if (!surface) {
-      return
-    }
-
-    const pages = Array.from(surface.querySelectorAll<HTMLElement>('.score-page'))
-    if (pages.length === 0) {
-      return
-    }
-
-    const surfaceRect = surface.getBoundingClientRect()
-    const referenceY = surfaceRect.top + Math.min(surfaceRect.height * 0.35, 180)
-    const closestPage = pages
-      .map((page, index) => {
-        const rect = page.getBoundingClientRect()
-        const distance = referenceY >= rect.top && referenceY <= rect.bottom
-          ? 0
-          : Math.min(Math.abs(referenceY - rect.top), Math.abs(referenceY - rect.bottom))
-
-        return { index, distance }
-      })
-      .sort((a, b) => a.distance - b.distance)[0]
-
-    if (!closestPage) {
-      return
-    }
-
-    setPageIndex((current) => (current === closestPage.index ? current : closestPage.index))
-  }, [])
-
-  const handlePreviewScroll = () => {
-    if (scrollFrameRef.current !== null) {
-      return
-    }
-
-    scrollFrameRef.current = window.requestAnimationFrame(() => {
-      scrollFrameRef.current = null
-      updateCurrentPageFromScroll()
+    setPageIndex((current) => {
+      const nextPageIndex = resetPage ? 0 : Math.min(current, nextPageCount - 1)
+      updateVisibleScorePage(container, nextPageIndex)
+      return nextPageIndex
     })
-  }
+  }, [])
+
+  useEffect(() => {
+    updateVisibleScorePage(containerRef.current, pageIndex)
+  }, [pageIndex, pageCount])
 
   useEffect(() => {
     const container = containerRef.current
@@ -223,7 +189,7 @@ export function ScorePreview({
           drawPartNames: false,
           drawPartAbbreviations: false,
           backend: 'svg',
-          pageFormat: 'A4_P',
+          pageFormat: 'A4 P',
           newPageFromXML: true,
           newSystemFromXML: true,
         })
@@ -268,27 +234,40 @@ export function ScorePreview({
     }
   }, [deferredPartLayoutPreset, deferredShowMeasureNumbers, musicXml, showTitle, title, updateRenderedPages])
 
-  useEffect(() => () => {
-    if (scrollFrameRef.current !== null) {
-      window.cancelAnimationFrame(scrollFrameRef.current)
-    }
-  }, [])
-
   const goToPreviousPage = () => {
-    setPageIndex((current) => {
-      const nextPage = Math.max(0, current - 1)
-      scrollToPage(nextPage)
-      return nextPage
-    })
+    setPageIndex((current) => Math.max(0, current - 1))
   }
 
   const goToNextPage = () => {
-    setPageIndex((current) => {
-      const nextPage = Math.min(pageCount - 1, current + 1)
-      scrollToPage(nextPage)
-      return nextPage
-    })
+    setPageIndex((current) => Math.min(pageCount - 1, current + 1))
   }
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target
+      const isTextEntry = target instanceof HTMLInputElement
+        || target instanceof HTMLTextAreaElement
+        || target instanceof HTMLSelectElement
+        || (target instanceof HTMLElement && target.isContentEditable)
+
+      if (!musicXml || isTextEntry) {
+        return
+      }
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        goToPreviousPage()
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        goToNextPage()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  })
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     dragStartRef.current = event.clientX
@@ -421,8 +400,7 @@ export function ScorePreview({
       <div
         className="preview-surface"
         aria-label="A4 score pages"
-        ref={previewSurfaceRef}
-        onScroll={handlePreviewScroll}
+        tabIndex={0}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
       >

@@ -149,7 +149,7 @@
 
 .preview-surface {
   display: block;
-  overflow: auto;
+  overflow: hidden;
   min-height: 0;
   padding: 8px;
   border-radius: 7px;
@@ -163,6 +163,11 @@
   user-select: none;
 }
 
+.preview-surface:focus-visible {
+  outline: 2px solid rgba(25, 155, 140, 0.26);
+  outline-offset: 2px;
+}
+
 .score-page-stack {
   display: grid;
   justify-items: center;
@@ -170,6 +175,10 @@
   width: 100%;
   max-width: 100%;
   min-height: 0;
+}
+
+.score-page:not([data-active="true"]) {
+  display: none;
 }
 
 .score-page {
@@ -216,6 +225,11 @@
 .score-engraving .preview-render-target,
 .score-page__body {
   min-height: 0;
+}
+
+.score-engraving .preview-render-target {
+  width: 100%;
+  justify-self: stretch;
 }
 
 .score-engraving {
@@ -412,6 +426,7 @@
   }
 
   .score-page {
+    display: flex;
     width: 100%;
     aspect-ratio: auto;
     height: calc(297mm - 24mm);
@@ -424,6 +439,10 @@
     background: #fff;
     break-after: page;
     page-break-after: always;
+  }
+
+  .score-page:not([data-active="true"]) {
+    display: flex;
   }
 
   .score-page:last-child {
