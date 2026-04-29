@@ -465,7 +465,7 @@ function isLikelyParseableStaffSmithInput(mode: InputMode, input: string) {
       durationKey = nextToken
       index += 1
     }
-    measureUnits += DURATION_UNITS[durationKey] ?? DURATION_UNITS.q
+    measureUnits += DURATION_UNITS[durationKey] ?? 8
   }
 
   if (measureUnits > MAX_MEASURE_UNITS || openSlurs !== 0 || pendingSlurStart) {
