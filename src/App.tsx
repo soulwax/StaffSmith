@@ -248,6 +248,7 @@ function renderInput(
       staffLabel: '',
       partLayoutPreset: partLayoutPresetId,
       showTempo: true,
+      ...(parseResult.value.metadata.tempoBpm !== undefined && { tempoBpm: parseResult.value.metadata.tempoBpm }),
     })
     : null
 
@@ -663,7 +664,7 @@ export function App() {
           task: 'generate',
           mode: 'notes',
           input: state.input,
-          prompt: `Generate StaffSmith notes mode notation from this text. Use only documented StaffSmith notes syntax. First priority is strong note choice and intentional rests/pauses; markings are secondary. Prefer compact complete 4/4 measures, insert | before a measure would overflow, and use explicit rests or pauses for missing beats. Supported durations are w, h, q, 8, 16, and 32; render fast material with clean orchestral-style beat grouping. Use spaced slur parentheses for smooth note transitions, and use dynamics, hairpins, chromatic pitches, wider contours, and bracketed performance text when they make the music more vivid.\n\n${prompt}`,
+          prompt: `Generate StaffSmith notes mode notation from this text. Use only documented StaffSmith notes syntax. First priority is strong note choice and intentional rests/pauses; markings are secondary. If the user asks for a full piece, complete composition, beginning-to-end composition, or long solo, do not return a tiny sketch: aim for at least 24 complete measures, and use 48-96 measures when the prompt invites something expansive. Treat phrases like "up to 8096 notes" as permission to be generous within the response budget, not as a reason to stay short. The result should feel professionally engraved: balanced 4- or 8-measure phrase groups, bracketed section labels, readable breath pauses, clean 4/4 beat grouping, and fast passages that sit inside the beat. Prefer compact complete 4/4 measures, insert | before a measure would overflow, and use explicit rests or pauses for missing beats. Supported durations are w, h, q, 8, 16, and 32. Use fast 16/32 material as featured freestyle segments, ornaments, pickups, transitions, and phrase peaks, not as unreadable filler. Use bracketed section labels such as [intro], [theme], [freestyle], [return], [finale], [coda], plus spaced slur parentheses, dynamics, hairpins, chromatic pitches, wider contours, and bracketed performance text when they make the music more vivid.\n\n${prompt}`,
         }),
       }, 'Note generation failed.')
 
@@ -843,132 +844,123 @@ export function App() {
             onSelectExample={handleSelectExample}
           />
 
-          <SectionCard title="Text To Notes">
-            <label className="visually-hidden" htmlFor="note-generation-prompt">
-              Text idea
-            </label>
-            <textarea
-              id="note-generation-prompt"
-              className="generation-textarea"
-              rows={2}
-              value={noteGenerationPrompt}
-              onChange={(event) => {
-                setNoteGenerationPrompt(event.target.value)
-                setNoteGenerationMessage(null)
-              }}
-              placeholder="Beginner flute solo, folk-jazz color, gentle crescendo."
-            />
-            <div className="studio-actions">
-              <button
-                type="button"
-                className="subtle-button"
-                onClick={generateNotesFromText}
-                disabled={isGeneratingNotes}
-              >
-                <ArrowRight size={16} aria-hidden="true" />
-                {isGeneratingNotes ? 'Generating...' : 'Generate'}
-              </button>
-              <a className="inline-help-link" href="#/help">
-                <CircleHelp size={16} aria-hidden="true" />
-                Help
-              </a>
-            </div>
-            {noteGenerationMessage ? <p className="server-message">{noteGenerationMessage}</p> : null}
-          </SectionCard>
-
-          <SectionCard title="Smart Studio" className="smart-studio-card">
-            <div className="studio-signal-strip" aria-label="Smart Studio score signals">
-              <span className="studio-signal-pill">
-                {formatModeLabel(state.mode)}
-              </span>
-              <span className="studio-signal-pill studio-signal-pill--muted">
-                {insights.density}
-              </span>
-              <span className="studio-signal-pill studio-signal-pill--muted">
-                {insights.pitchRange}
-              </span>
-              {analysis ? (
-                <span className={`studio-signal-pill studio-signal-pill--tone studio-tone-tag--${getToneAccent(analysis.keyCenter)}`}>
-                  {analysis.keyCenter}
-                </span>
-              ) : null}
-            </div>
-
-            <div className="studio-tag-deck" aria-label="Current tonal palette">
-              {studioPalette.toneTags.length > 0 ? (
-                studioPalette.toneTags.map((tag) => (
-                  <span key={tag.key} className={`studio-tone-tag studio-tone-tag--${tag.accent}`}>
-                    {tag.label}
-                  </span>
-                ))
-              ) : (
-                <span className="studio-empty-line">Render or analyze to build a tonal palette.</span>
-              )}
-            </div>
-
-            {studioPalette.harmonyTags.length > 0 ? (
-              <div className="studio-harmony-strip" aria-label="Harmony palette">
-                {studioPalette.harmonyTags.map((tag) => (
-                  <span key={tag.key} className={`studio-harmony-tag studio-tone-tag--${tag.accent}`}>
-                    {tag.label}
-                  </span>
-                ))}
+          <SectionCard title="AI Studio" className="ai-studio-card">
+            <div className="ai-studio-section">
+              <span className="ai-studio-label">Generate from idea</span>
+              <label className="visually-hidden" htmlFor="note-generation-prompt">Text idea</label>
+              <textarea
+                id="note-generation-prompt"
+                className="generation-textarea"
+                rows={2}
+                value={noteGenerationPrompt}
+                onChange={(event) => {
+                  setNoteGenerationPrompt(event.target.value)
+                  setNoteGenerationMessage(null)
+                }}
+                placeholder="Beginner flute solo, folk-jazz color, gentle crescendo."
+              />
+              <div className="studio-actions">
+                <button
+                  type="button"
+                  className="subtle-button"
+                  onClick={generateNotesFromText}
+                  disabled={isGeneratingNotes}
+                >
+                  <ArrowRight size={16} aria-hidden="true" />
+                  {isGeneratingNotes ? 'Generating...' : 'Generate'}
+                </button>
+                <a className="inline-help-link" href="#/help">
+                  <CircleHelp size={16} aria-hidden="true" />
+                  Help
+                </a>
               </div>
-            ) : null}
-
-            <label className="visually-hidden" htmlFor="assistant-prompt">
-              Direction
-            </label>
-            <textarea
-              id="assistant-prompt"
-              className="assistant-textarea assistant-textarea--studio"
-              rows={2}
-              value={assistantPrompt}
-              onChange={(event) => setAssistantPrompt(event.target.value)}
-              placeholder="Ask for a folk-rock variation, a clearer key center, or a four-bar continuation."
-            />
-            <div className="studio-actions studio-actions--smart">
-              <button type="button" className="secondary-button" onClick={() => runAssist('analyze')} disabled={isAssisting}>
-                <Search size={16} aria-hidden="true" />
-                Analyze
-              </button>
-              <button type="button" className="secondary-button" onClick={() => runAssist('generate')} disabled={isAssisting}>
-                <Sparkles size={16} aria-hidden="true" />
-                Idea
-              </button>
-              <button type="button" className="secondary-button" onClick={saveCurrentProject} disabled={isSaving}>
-                <Save size={16} aria-hidden="true" />
-                Save
-              </button>
-              <button type="button" className="ghost-button" onClick={refreshProjects}>
-                <FolderOpen size={16} aria-hidden="true" />
-                Recent
-              </button>
+              {noteGenerationMessage ? <p className="studio-status-message">{noteGenerationMessage}</p> : null}
             </div>
 
-            {serverMessage ? <p className="studio-status-message">{serverMessage}</p> : null}
+            <div className="ai-studio-section">
+              <span className="ai-studio-label">Refine &amp; analyze</span>
 
-            <div className="studio-briefing" aria-label="Assistant briefing">
-              {analysis ? (
-                <p className="studio-summary">
-                  <strong>{analysis.keyCenter}</strong> {analysis.summary}
-                </p>
-              ) : (
-                <p className="studio-empty-line">
-                  Analyze the current sketch to surface key center, phrasing ideas, harmonic color, and continuation cues.
-                </p>
-              )}
-
-              {studioInsightTags.length > 0 ? (
-                <div className="studio-insight-tags">
-                  {studioInsightTags.map((tag) => (
-                    <span key={tag.key} className={`studio-insight-tag studio-insight-tag--${tag.tone}`}>
-                      {tag.label}
-                    </span>
-                  ))}
+              {studioPalette.toneTags.length > 0 ? (
+                <div className="studio-signal-row" aria-label="Score signals">
+                  <div className="studio-signal-strip">
+                    <span className="studio-signal-pill">{formatModeLabel(state.mode)}</span>
+                    <span className="studio-signal-pill studio-signal-pill--muted">{insights.density}</span>
+                    <span className="studio-signal-pill studio-signal-pill--muted">{insights.pitchRange}</span>
+                    {analysis ? (
+                      <span className={`studio-signal-pill studio-signal-pill--tone studio-tone-tag--${getToneAccent(analysis.keyCenter)}`}>
+                        {analysis.keyCenter}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="studio-tag-deck" aria-label="Tonal palette">
+                    {studioPalette.toneTags.map((tag) => (
+                      <span key={tag.key} className={`studio-tone-tag studio-tone-tag--${tag.accent}`}>
+                        {tag.label}
+                      </span>
+                    ))}
+                  </div>
+                  {studioPalette.harmonyTags.length > 0 ? (
+                    <div className="studio-harmony-strip" aria-label="Harmony palette">
+                      {studioPalette.harmonyTags.map((tag) => (
+                        <span key={tag.key} className={`studio-harmony-tag studio-tone-tag--${tag.accent}`}>
+                          {tag.label}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
+
+              <label className="visually-hidden" htmlFor="assistant-prompt">Direction</label>
+              <textarea
+                id="assistant-prompt"
+                className="assistant-textarea"
+                rows={2}
+                value={assistantPrompt}
+                onChange={(event) => setAssistantPrompt(event.target.value)}
+                placeholder="Ask for a folk-rock variation, a clearer key center, or a four-bar continuation."
+              />
+              <div className="studio-actions studio-actions--smart">
+                <button type="button" className="secondary-button" onClick={() => runAssist('analyze')} disabled={isAssisting}>
+                  <Search size={16} aria-hidden="true" />
+                  Analyze
+                </button>
+                <button type="button" className="secondary-button" onClick={() => runAssist('generate')} disabled={isAssisting}>
+                  <Sparkles size={16} aria-hidden="true" />
+                  Idea
+                </button>
+                <button type="button" className="secondary-button" onClick={saveCurrentProject} disabled={isSaving}>
+                  <Save size={16} aria-hidden="true" />
+                  Save
+                </button>
+                <button type="button" className="ghost-button" onClick={refreshProjects}>
+                  <FolderOpen size={16} aria-hidden="true" />
+                  Recent
+                </button>
+              </div>
             </div>
+
+            {(analysis || serverMessage) ? (
+              <div className="ai-studio-section ai-studio-section--results">
+                {serverMessage ? <p className="studio-status-message">{serverMessage}</p> : null}
+                {analysis ? (
+                  <>
+                    <p className="studio-summary">
+                      <strong>{analysis.keyCenter}</strong> {analysis.summary}
+                    </p>
+                    {studioInsightTags.length > 0 ? (
+                      <div className="studio-insight-tags">
+                        {studioInsightTags.map((tag) => (
+                          <span key={tag.key} className={`studio-insight-tag studio-insight-tag--${tag.tone}`}>
+                            {tag.label}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
+              </div>
+            ) : null}
 
             {projects.length > 0 ? (
               <div className="project-list project-list--studio" aria-label="Recent saved projects">

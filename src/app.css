@@ -23,9 +23,10 @@
 
 .brand-mark {
   display: block;
-  width: 30px;
-  height: 30px;
-  flex: 0 0 30px;
+  width: 60px;
+  height: 60px;
+  flex: 0 0 60px;
+  margin-block: -15px;
   border: 1px solid rgba(27, 52, 44, 0.18);
   border-radius: 8px;
   background: rgba(255, 255, 252, 0.98);
@@ -379,9 +380,44 @@
   font-weight: 650;
 }
 
-.smart-studio-card .section-card__content {
+.smart-studio-card .section-card__content,
+.ai-studio-card .section-card__content {
   display: grid;
-  gap: 10px;
+  gap: 0;
+}
+
+.ai-studio-section {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(28, 126, 152, 0.1);
+}
+
+.ai-studio-section:first-child {
+  padding-top: 0;
+}
+
+.ai-studio-section:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.ai-studio-section--results {
+  gap: 6px;
+}
+
+.ai-studio-label {
+  display: block;
+  color: #40515e;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.studio-signal-row {
+  display: grid;
+  gap: 5px;
 }
 
 .studio-signal-strip,

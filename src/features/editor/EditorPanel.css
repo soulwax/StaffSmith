@@ -103,7 +103,7 @@
 }
 
 .builder-row--expression-console {
-  grid-template-columns: minmax(150px, 0.8fr) minmax(260px, 1.4fr);
+  grid-template-columns: minmax(150px, 0.8fr) minmax(260px, 1.4fr) minmax(90px, 0.5fr);
 }
 
 .builder-group {
@@ -118,7 +118,8 @@
 }
 
 .builder-group--octave,
-.builder-group--tools {
+.builder-group--tools,
+.builder-group--tempo {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -136,7 +137,8 @@
   flex: 1 1 42px;
 }
 
-.builder-group--octave strong {
+.builder-group--octave strong,
+.builder-bpm {
   display: inline-grid;
   min-width: 24px;
   min-height: 24px;
@@ -145,6 +147,24 @@
   background: rgba(255, 255, 255, 0.9);
   color: #172027;
   font-size: 0.78rem;
+}
+
+.builder-bpm {
+  min-width: 34px;
+}
+
+.builder-bpm--default {
+  color: #78909c;
+}
+
+.builder-bpm-unit {
+  width: 100%;
+  margin-top: 2px;
+  color: #40515e;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 .builder-label {

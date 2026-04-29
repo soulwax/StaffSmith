@@ -12,10 +12,13 @@ All notable StaffSmith changes will be documented in this file.
 - MusicXML export now emits standard short-note types, nested beams for fast runs, and MusicXML slur notations.
 - Note mode now supports `32` thirty-second durations, MusicXML exports 8 divisions per quarter, and short notes are beamed in clean 4/4 beat groups.
 - AI generation now weights notes and pauses first, then uses richer StaffSmith syntax such as 16/32-note figures, chromatic pitches, slurs, and bracketed performance text when musically useful.
+- AI generation now treats full-piece requests as long multi-section notation, with at least 24 measures expected for complete pieces and 48-96 measures allowed for expansive prompts.
+- The local Gemini fallback is now a 32-measure professionally sectioned flute solo instead of a short sketch.
 
 ### Changed
 
 - The internal 4/4 rhythm grid now uses thirty-second-note units so smart bar insertion and incomplete-measure padding understand faster durations.
+- Long AI output guidance now stresses professional engraving: phrase groups, section labels, breath pauses, and readable fast passages.
 
 ## 0.1.2 - 2026-04-29 - Engraved Part Layouts
 

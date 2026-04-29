@@ -37,8 +37,14 @@ export const EXOTIC_EXPRESSION_EXAMPLES = ['[flutter]', '[sul pont.]', '[snap pi
 
 export const STAFFSMITH_AI_SYNTAX_GUIDE = `StaffSmith syntax guide:
 - Return generatedInput as plain StaffSmith notation only, never markdown.
+- Optional tempo prefix at the very start: @tempo=NNN where NNN is an integer from 20 to 300 BPM, e.g. @tempo=120 C4 q, D4 q...
 - Generation priority order: 1) clear notes and intentional rests/pauses, 2) correct 4/4 rhythm, 3) expressive color such as slurs, dynamics, hairpins, and bracketed performance text.
 - Notes and pauses must carry the composition. Do not rely on dynamics or words to compensate for weak note choices.
+- Full-piece requests should become real multi-section pieces, not tiny sketches. Use bracketed section labels like [intro], [theme], [freestyle], [return], [finale], and [coda] when helpful.
+- For a complete solo or beginning-to-end composition, aim for at least 24 measures unless the user asks for something short; 48-96 measures is acceptable when the prompt invites a long piece.
+- If the user says "up to" a very large note count, treat that as permission to write generously within the response budget.
+- Long output should still feel professionally engraved: clear 4- or 8-measure phrase groups, readable breath pauses, section changes, clean 4/4 beat grouping, and fast passages placed where a player can understand them.
+- Avoid walls of unbroken short notes. Use 16/32-note writing for featured freestyle segments, ornaments, pickups, transitions, and climactic phrase peaks.
 - Notes mode uses pitch+octave and optional duration: C4 q, F#3 h, Bb5 8, G5 16, A5 32.
 - R, rest, or pause creates an explicit rest/pause and can take a duration: R w, rest q, pause 8.
 - Notes require octave numbers. Valid durations are w, h, q, 8, 16, 32. Omitted durations default to q.

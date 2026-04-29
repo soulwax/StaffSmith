@@ -79,6 +79,7 @@ export interface Score {
     beats: number
     beatType: number
     totalEvents: number
+    tempoBpm?: number
   }
   measures: Measure[]
 }

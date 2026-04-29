@@ -51,6 +51,22 @@ const CHORD_PROGRESSIONS = [
   { label: 'minor i VI VII', value: 'Am | F | G | Am' },
 ] as const
 const RHYTHM_TOKEN_PATTERN = /,|\(|\)|[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|pause|w|h|q|8|16|32|\S+/gi
+const TEMPO_RE = /^@tempo=(\d+)\s*/i
+
+function parseBpmFromInput(input: string): number | null {
+  const match = input.match(TEMPO_RE)
+  if (!match) {
+    return null
+  }
+  const parsed = parseInt(match[1] ?? '', 10)
+  return Number.isFinite(parsed) ? Math.max(20, Math.min(300, parsed)) : null
+}
+
+function setBpmInInput(input: string, bpm: number): string {
+  const match = input.match(TEMPO_RE)
+  const rest = match ? input.slice(match[0].length) : input
+  return `@tempo=${bpm}${rest ? ` ${rest}` : ''}`
+}
 
 function joinToken(input: string, token: string, mode: InputMode) {
   const trimmedToken = token.trim()
@@ -185,6 +201,14 @@ export function EditorPanel({
 
   const changeOctave = (step: number) => {
     setOctave((current) => Math.max(1, Math.min(8, current + step)))
+  }
+
+  const parsedBpm = parseBpmFromInput(input)
+  const bpm = parsedBpm ?? 96
+
+  const changeBpm = (step: number) => {
+    const next = Math.max(20, Math.min(300, bpm + step))
+    onDraftChange(mode, setBpmInInput(input, next))
   }
 
   return (
@@ -370,6 +394,20 @@ export function EditorPanel({
               <button type="button" onClick={() => insertToken('(')}>slur start</button>
               <button type="button" onClick={() => insertToken(')')}>slur end</button>
             </div>
+          </div>
+
+          <div className="builder-group builder-group--tempo">
+            <span className="builder-label">Tempo</span>
+            <button type="button" className="builder-icon-button" onClick={() => changeBpm(-4)} aria-label="Slower">
+              <Minus size={14} aria-hidden="true" />
+            </button>
+            <strong className={parsedBpm === null ? 'builder-bpm builder-bpm--default' : 'builder-bpm'}>
+              {bpm}
+            </strong>
+            <button type="button" className="builder-icon-button" onClick={() => changeBpm(4)} aria-label="Faster">
+              <Plus size={14} aria-hidden="true" />
+            </button>
+            <span className="builder-bpm-unit">BPM</span>
           </div>
         </div>
       </div>

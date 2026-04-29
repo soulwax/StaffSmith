@@ -111,6 +111,8 @@ Rules:
 - Fast values are intended for clean beat-grouped gestures, ornaments, flourishes, and serious orchestral-style short-note writing.
 - Measures currently assume 4/4.
 - Full-measure rest runs are used by the MusicXML export for page-turn and long-silence cue placement.
+- Long generated note pieces are supported as multi-section 4/4 notation with bracketed labels such as `[intro]`, `[theme]`, `[freestyle]`, `[return]`, `[finale]`, and `[coda]`.
+- For professional readability, longer fast passages should be shaped into phrase groups with breath pauses and clean beat grouping rather than uninterrupted walls of short notes.
 
 ### Chords mode
 

@@ -114,6 +114,9 @@ describe('composer assist normalization', () => {
     })
 
     expect(result.generatedInput).toBe(GEMINI_CONFIG.fallbackNotation)
+    expect(result.generatedInput.split('|')).toHaveLength(32)
+    expect(result.generatedInput).toContain('[freestyle]')
+    expect(result.generatedInput).toContain('[finale]')
     expect(result.summary).toContain('local beginner flute fallback')
     expect(globalThis.fetch).toHaveBeenCalledTimes(1)
   })
@@ -229,5 +232,7 @@ describe('composer assist normalization', () => {
     expect(STAFFSMITH_AI_SYNTAX_GUIDE).toContain('( C4 q, D4 q, E4 h )')
     expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('durations w/h/q/8/16/32')
     expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('notes and intentional rests/pauses')
+    expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('at least 24 measures')
+    expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('professionally engraved music')
   })
 })
