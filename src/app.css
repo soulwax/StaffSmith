@@ -23,16 +23,19 @@
 
 .brand-mark {
   display: block;
-  width: 60px;
-  height: 60px;
-  flex: 0 0 60px;
-  margin-block: -15px;
+  width: 45px;
+  height: 45px;
+  flex: 0 0 45px;
+  margin-block: -8px;
   border: 1px solid rgba(27, 52, 44, 0.18);
-  border-radius: 8px;
+  border-radius: 10px;
   background: rgba(255, 255, 252, 0.98);
   color: #d65c2f;
   object-fit: cover;
-  box-shadow: 0 10px 24px rgba(36, 103, 122, 0.08);
+  box-shadow:
+    0 0 0 3px rgba(255, 246, 188, 0.82),
+    0 8px 22px rgba(214, 92, 47, 0.18),
+    0 0 24px rgba(255, 247, 164, 0.42);
 }
 
 .brand-lockup h1 {
