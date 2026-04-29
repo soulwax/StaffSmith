@@ -417,7 +417,7 @@ function renderMeasure(
   const beams = computeBeams(measure.events)
   const print = renderPrint(layout)
   const cueOverlay = layout?.cuePitch ? renderCueOverlay(layout.cuePitch) : ''
-  const contents = measure.events.map((event) => renderEvent(event, beams)).join('\n')
+  const contents = renderMeasureContents(measure, beams)
   const measureUnits = measure.events
     .filter(isRhythmicEvent)
     .reduce((sum, event) => sum + DURATION_UNITS[event.duration], 0)
@@ -464,7 +464,23 @@ function renderTempo(tempoBpm: number): string {
       </direction>`
 }
 
-function renderEvent(event: ScoreEvent, beams: Map<string, BeamMark>): string {
+function renderMeasureContents(measure: Measure, beams: Map<string, BeamMark>): string {
+  let currentOffsetUnits = 0
+  const contents: string[] = []
+
+  for (const event of measure.events) {
+    const remainingUnits = Math.max(DURATION_UNITS.q, FULL_MEASURE_UNITS - currentOffsetUnits)
+    contents.push(renderEvent(event, beams, remainingUnits))
+
+    if (isRhythmicEvent(event)) {
+      currentOffsetUnits += DURATION_UNITS[event.duration]
+    }
+  }
+
+  return contents.join('\n')
+}
+
+function renderEvent(event: ScoreEvent, beams: Map<string, BeamMark>, remainingMeasureUnits: number): string {
   if (event.kind === 'note') {
     return renderNoteEvent(event, beams.get(event.id))
   }
@@ -477,7 +493,7 @@ function renderEvent(event: ScoreEvent, beams: Map<string, BeamMark>): string {
     return renderChordEvent(event)
   }
 
-  return renderDirectionEvent(event)
+  return renderDirectionEvent(event, remainingMeasureUnits)
 }
 
 function renderNoteEvent(event: NoteEvent, beamMark: BeamMark | undefined): string {
@@ -556,7 +572,7 @@ ${event.helperPitch.alter !== 0 ? `          <alter>${event.helperPitch.alter}</
       </note>`
 }
 
-function renderDirectionEvent(event: DirectionEvent): string {
+function renderDirectionEvent(event: DirectionEvent, remainingMeasureUnits: number): string {
   if (event.directionKind === 'dynamic') {
     return `      <direction placement="below">
         <direction-type>
@@ -572,8 +588,14 @@ function renderDirectionEvent(event: DirectionEvent): string {
 
     return `      <direction placement="below">
         <direction-type>
-          <wedge type="${wedgeType}" />
+          <wedge type="${wedgeType}" number="1" />
         </direction-type>
+      </direction>
+      <direction placement="below">
+        <direction-type>
+          <wedge type="stop" number="1" />
+        </direction-type>
+        <offset>${remainingMeasureUnits}</offset>
         <direction-type>
           <words>${escapeXml(event.text)}</words>
         </direction-type>
