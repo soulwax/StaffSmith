@@ -13,8 +13,8 @@ export const EXAMPLES: ExamplePreset[] = [
     id: 'notes-flute-phrase',
     label: 'Airy Flute Phrase',
     mode: 'notes',
-    description: 'Four-bar D minor melody with hairpins, slurs, sixteenths, and a held final note.',
-    input: 'mp [airy flute] ( D5 q, F5 q, A5 8, G5 8 ) A5 16, B5 16, A5 8 | < D5 8, E5 8, F5 8, G5 8, A5 q, D5 q | > A5 q, G5 q, F5 q, E5 q | D5 w',
+    description: 'Four-bar D minor melody with hairpins, slurs, thirty-seconds, and a held final note.',
+    input: 'mp [airy flute] ( D5 q, F5 q, A5 8, G5 16, A5 16, B5 q ) | < pause 8, D5 32, E5 32, F5 16, G5 q, A5 q, D5 q | > A5 q, G5 q, F5 q, E5 q | D5 w',
   },
   {
     id: 'notes-bars',

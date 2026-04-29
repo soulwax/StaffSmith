@@ -9,11 +9,13 @@ All notable StaffSmith changes will be documented in this file.
 - Note mode now supports sixteenth durations with `16`, readable `pause` rest syntax, and slur parentheses for smooth note-to-note transitions.
 - Composer, Syntax Help, README examples, and Gemini prompts now teach the same sixteenth-note, pause, and slur syntax.
 - Gemini syntax guidance now explicitly enumerates parser-supported expression aliases, hairpin aliases, and chord families so AI output stays aligned with StaffSmith syntax.
-- MusicXML export now emits 4 divisions per quarter note, sixteenth note types, second-level beams for sixteenth runs, and MusicXML slur notations.
+- MusicXML export now emits standard short-note types, nested beams for fast runs, and MusicXML slur notations.
+- Note mode now supports `32` thirty-second durations, MusicXML exports 8 divisions per quarter, and short notes are beamed in clean 4/4 beat groups.
+- AI generation now weights notes and pauses first, then uses richer StaffSmith syntax such as 16/32-note figures, chromatic pitches, slurs, and bracketed performance text when musically useful.
 
 ### Changed
 
-- The internal 4/4 rhythm grid now uses sixteenth-note units so smart bar insertion and incomplete-measure padding understand shorter durations.
+- The internal 4/4 rhythm grid now uses thirty-second-note units so smart bar insertion and incomplete-measure padding understand faster durations.
 
 ## 0.1.2 - 2026-04-29 - Engraved Part Layouts
 

@@ -19,6 +19,7 @@ export function SyntaxHelp() {
           <code>F#3 h</code>
           <code>Bb5 8</code>
           <code>G5 16</code>
+          <code>A5 32</code>
         </div>
         <div>
           <h3>Pauses</h3>

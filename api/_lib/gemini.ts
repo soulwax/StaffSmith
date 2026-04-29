@@ -5,9 +5,9 @@ import { getGeminiApiKey } from './env.js'
 import { GEMINI_CONFIG } from './gemini.config.js'
 import { fail } from './http.js'
 
-const DURATION_VALUES = new Set(['w', 'h', 'q', '8', '16'])
-const DURATION_UNITS: Record<string, number> = { w: 16, h: 8, q: 4, '8': 2, '16': 1 }
-const MAX_MEASURE_UNITS = 16
+const DURATION_VALUES = new Set(['w', 'h', 'q', '8', '16', '32'])
+const DURATION_UNITS: Record<string, number> = { w: 32, h: 16, q: 8, '8': 4, '16': 2, '32': 1 }
+const MAX_MEASURE_UNITS = 32
 
 type LooseComposerAssistResult = Omit<Partial<ComposerAssistResult>, 'generatedInput' | 'notes'> & {
   generatedInput?: unknown

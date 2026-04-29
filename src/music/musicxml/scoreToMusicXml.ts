@@ -40,6 +40,7 @@ const PAGE_SIZES: Record<ScoreSheetOptions['pageFormat'], PageSize> = {
 function computeBeams(events: ScoreEvent[]): Map<string, BeamMark> {
   const beams = new Map<string, BeamMark>()
   let run: string[] = []
+  let beatUnits = 0
 
   const flush = () => {
     if (run.length >= 2) {
@@ -56,14 +57,38 @@ function computeBeams(events: ScoreEvent[]): Map<string, BeamMark> {
     if (!isRhythmicEvent(event)) {
       continue
     }
+
+    const eventUnits = DURATION_UNITS[event.duration]
     if (event.kind !== 'note') {
       flush()
+      beatUnits = (beatUnits + eventUnits) % DURATION_UNITS.q
       continue
     }
-    if (event.duration === '8' || event.duration === '16') {
-      run.push(event.id)
-    } else {
+
+    const isBeamable = event.duration === '8' || event.duration === '16' || event.duration === '32'
+    if (!isBeamable) {
       flush()
+      beatUnits = (beatUnits + eventUnits) % DURATION_UNITS.q
+      continue
+    }
+
+    if (beatUnits + eventUnits > DURATION_UNITS.q) {
+      flush()
+      beatUnits = 0
+    }
+
+    if (beatUnits === 0 && run.length > 0) {
+      flush()
+    }
+
+    if (isBeamable) {
+      run.push(event.id)
+      beatUnits += eventUnits
+    }
+
+    if (beatUnits >= DURATION_UNITS.q) {
+      flush()
+      beatUnits %= DURATION_UNITS.q
     }
   }
   flush()
@@ -408,7 +433,7 @@ function renderMeasure(
   const clef = getClefDefinition(options.clef)
   const attributes = isFirst
     ? `    <attributes>
-      <divisions>4</divisions>
+      <divisions>8</divisions>
       <key>
         <fifths>${options.keyFifths}</fifths>
       </key>
@@ -481,11 +506,14 @@ function renderBeam(event: NoteEvent, beamMark: BeamMark | undefined): string {
     return ''
   }
 
-  const secondaryBeam = event.duration === '16'
+  const secondaryBeam = event.duration === '16' || event.duration === '32'
     ? `\n        <beam number="2">${beamMark}</beam>`
     : ''
+  const tertiaryBeam = event.duration === '32'
+    ? `\n        <beam number="3">${beamMark}</beam>`
+    : ''
 
-  return `\n        <beam number="1">${beamMark}</beam>${secondaryBeam}`
+  return `\n        <beam number="1">${beamMark}</beam>${secondaryBeam}${tertiaryBeam}`
 }
 
 function renderNoteNotations(event: NoteEvent): string {
@@ -581,7 +609,7 @@ function renderRestSequence(units: number): string {
 }
 
 function splitUnits(units: number): number[] {
-  const values = [16, 8, 4, 2, 1]
+  const values = [32, 16, 8, 4, 2, 1]
   const chunks: number[] = []
   let remaining = units
 
@@ -596,21 +624,25 @@ function splitUnits(units: number): number[] {
 }
 
 function toDurationSymbol(units: number) {
-  if (units === 16) {
+  if (units === 32) {
     return 'w'
   }
 
-  if (units === 8) {
+  if (units === 16) {
     return 'h'
   }
 
-  if (units === 4) {
+  if (units === 8) {
     return 'q'
   }
 
-  if (units === 2) {
+  if (units === 4) {
     return '8'
   }
 
-  return '16'
+  if (units === 2) {
+    return '16'
+  }
+
+  return '32'
 }

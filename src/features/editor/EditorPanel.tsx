@@ -28,6 +28,7 @@ const DURATIONS: Array<{ label: string, value: DurationSymbol }> = [
   { label: 'Quarter', value: 'q' },
   { label: 'Eighth', value: '8' },
   { label: '16th', value: '16' },
+  { label: '32nd', value: '32' },
 ]
 const DYNAMICS = ['pp', 'p', 'mp', 'mf', 'f', 'ff'] as const
 const EXPRESSIONS = ['dolce', 'legato', 'staccato', 'tenuto', 'cantabile', 'espressivo', 'rit.', 'accel.'] as const
@@ -49,7 +50,7 @@ const CHORD_PROGRESSIONS = [
   { label: '12-bar start', value: 'C7 | F7 | C7 | C7' },
   { label: 'minor i VI VII', value: 'Am | F | G | Am' },
 ] as const
-const RHYTHM_TOKEN_PATTERN = /,|\(|\)|[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|pause|w|h|q|8|16|\S+/gi
+const RHYTHM_TOKEN_PATTERN = /,|\(|\)|[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|pause|w|h|q|8|16|32|\S+/gi
 
 function joinToken(input: string, token: string, mode: InputMode) {
   const trimmedToken = token.trim()
@@ -397,7 +398,7 @@ export function EditorPanel({
         </button>
         <p className={errors.length > 0 ? 'helper-text helper-text--error' : 'helper-text'}>
           {mode === 'notes'
-            ? 'C4 q, R h, pause q, G4 16, (, ), mf'
+            ? 'C4 q, pause 8, G4 16, A4 32, (, ), mf'
             : 'Cmaj7 | Am7 | Dm7 G7 | Cmaj7'}
         </p>
       </div>

@@ -5,7 +5,7 @@ import { parseScientificPitch } from '../theory/pitch'
 import { parseDirectionToken } from './notation'
 import { createParseError, tokenize } from './shared'
 
-const NOTE_TOKEN_PATTERN = /\||,|\(|\)|\[[^\]]+\]|[<>]|[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|pause|w|h|q|8|16|\S+/gi
+const NOTE_TOKEN_PATTERN = /\||,|\(|\)|\[[^\]]+\]|[<>]|[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|pause|w|h|q|8|16|32|\S+/gi
 
 export function parseNoteInput(input: string): ParseResult<Score> {
   const score = createEmptyScore('notes')

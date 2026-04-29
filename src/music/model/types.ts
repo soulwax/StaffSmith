@@ -1,8 +1,8 @@
 export type InputMode = 'notes' | 'chords'
 
-export type DurationSymbol = 'w' | 'h' | 'q' | '8' | '16'
+export type DurationSymbol = 'w' | 'h' | 'q' | '8' | '16' | '32'
 
-export type MusicXmlNoteType = 'whole' | 'half' | 'quarter' | 'eighth' | '16th'
+export type MusicXmlNoteType = 'whole' | 'half' | 'quarter' | 'eighth' | '16th' | '32nd'
 
 export type HarmonyKind =
   | 'major'

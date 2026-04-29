@@ -5,7 +5,7 @@ export function createEmptyScore(mode: InputMode): Score {
     metadata: {
       title: 'StaffSmith Draft',
       mode,
-      divisions: 4,
+      divisions: 8,
       beats: 4,
       beatType: 4,
       totalEvents: 0,

@@ -61,8 +61,8 @@ describe('StaffSmith parser', () => {
     })
   })
 
-  it('parses sixteenth notes and slur parentheses for smooth transitions', () => {
-    const result = parseScoreInput('notes', '( C4 8, D4 8, E4 q ) pause q, G4 16, A4 16, B4 8')
+  it('parses fast durations and slur parentheses for smooth transitions', () => {
+    const result = parseScoreInput('notes', '( C4 8, D4 8, E4 q ) pause q, G4 32, A4 32, B4 16, C5 8')
 
     expect(result.ok).toBe(true)
     expect(result.errors).toEqual([])
@@ -82,6 +82,10 @@ describe('StaffSmith parser', () => {
       duration: 'q',
     })
     expect(result.value.measures[0]?.events[4]).toMatchObject({
+      kind: 'note',
+      duration: '32',
+    })
+    expect(result.value.measures[0]?.events[6]).toMatchObject({
       kind: 'note',
       duration: '16',
     })

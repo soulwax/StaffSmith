@@ -89,11 +89,12 @@ Accepted syntax:
 - `C4 q, D4 q, E4 h`
 - `C4 E4 G4 | F4 A4 C5`
 - `C4 h, R h | R w | D4 w`
-- `( C4 8, D4 8, E4 q ) pause q, G4 16, A4 16, B4 8`
+- `( C4 8, D4 8, E4 q ) pause q, G4 32, A4 32, B4 16, C5 8`
+- `pp [flutter] F#5 32, G5 32, A5 16, pause 8, ( Bb5 8, C6 8 )`
 - `mf [dolce] C4 q, E4 q, G4 h`
 - `p C4 E4 G4 | < F4 A4 C5 | > G4 h`
 - bar separators with `|`
-- durations: `w`, `h`, `q`, `8`, `16`
+- durations: `w`, `h`, `q`, `8`, `16`, `32`
 - rests/pauses: `R`, `rest`, or `pause`, with optional duration such as `R w`, `rest q`, or `pause 8`
 - smooth slurs/bows: spaced parentheses around notes, for example `( C4 q, D4 q )`
 - the Composer board inserts barlines automatically when a note/rest would overflow a 4/4 measure or complete one
@@ -106,7 +107,8 @@ Rules:
 
 - Note names require octave numbers.
 - Durations are optional and default to quarter notes.
-- Duration values are `w=4 beats`, `h=2`, `q=1`, `8=0.5`, and `16=0.25`.
+- Duration values are `w=4 beats`, `h=2`, `q=1`, `8=0.5`, `16=0.25`, and `32=0.125`.
+- Fast values are intended for clean beat-grouped gestures, ornaments, flourishes, and serious orchestral-style short-note writing.
 - Measures currently assume 4/4.
 - Full-measure rest runs are used by the MusicXML export for page-turn and long-silence cue placement.
 
@@ -138,7 +140,7 @@ Rules:
 ## Working Examples
 
 - `C4 q, E4 q, G4 h`
-- `( C4 8, D4 8, E4 q ) pause q, G4 16, A4 16, B4 8`
+- `( C4 8, D4 8, E4 q ) pause q, G4 32, A4 32, B4 16, C5 8`
 - `mf [dolce] C4 q, E4 q, G4 h`
 - `p C4 E4 G4 | < F4 A4 C5 | > G4 h`
 - `mf Cmaj7 | < Am7 | Dm7 G7 | p Cmaj7`

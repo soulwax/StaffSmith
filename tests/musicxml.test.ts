@@ -25,7 +25,7 @@ describe('MusicXML export', () => {
     expect(xml).toContain('<music-font font-family="Bravura, Maestro, Petaluma, Finale Maestro" />')
     expect(xml).toContain('<millimeters>4.9</millimeters>')
     expect(xml).toContain('<tenths>40</tenths>')
-    expect(xml).toContain('<divisions>4</divisions>')
+    expect(xml).toContain('<divisions>8</divisions>')
     expect(xml).toContain('<part-name></part-name>')
     expect(xml).toContain('<per-minute>96</per-minute>')
   })
@@ -68,15 +68,17 @@ describe('MusicXML export', () => {
     expect(xml).toContain('<wedge type="diminuendo" />')
   })
 
-  it('serializes sixteenth durations, pauses, and slurs', () => {
-    const result = parseScoreInput('notes', '( C4 8, D4 8, E4 q ) pause q, G4 16, A4 16, B4 8')
+  it('serializes fast durations, pauses, standard beat beaming, and slurs', () => {
+    const result = parseScoreInput('notes', '( C4 8, D4 8, E4 q ) pause q, G4 32, A4 32, B4 16, C5 8')
     expect(result.ok).toBe(true)
 
     const xml = scoreToMusicXml(result.value)
 
+    expect(xml).toContain('<type>32nd</type>')
     expect(xml).toContain('<type>16th</type>')
     expect(xml).toContain('<duration>1</duration>')
     expect(xml).toContain('<rest />')
+    expect(xml).toContain('<beam number="3">begin</beam>')
     expect(xml).toContain('<slur type="start" number="1" />')
     expect(xml).toContain('<slur type="stop" number="1" />')
   })

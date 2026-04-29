@@ -179,12 +179,12 @@ describe('composer assist normalization', () => {
     expect(result.generatedInput).toBe('mf C4 h, R h | G4 w')
   })
 
-  it('accepts generated pauses, sixteenths, and slurs', async () => {
+  it('accepts generated pauses, fast durations, and slurs', async () => {
     mockGeminiJson({
       summary: 'Phrase with a smooth pickup and pause.',
       keyCenter: 'C major',
       suggestedMode: 'notes',
-      generatedInput: '( C4 8, D4 8, E4 q ) pause q, G4 16, A4 16, B4 8',
+      generatedInput: '( C4 8, D4 8, E4 q ) pause q, G4 32, A4 32, B4 16, C5 8',
       notes: ['Uses a slur and short notes before the pause resolves.'],
     })
 
@@ -195,7 +195,7 @@ describe('composer assist normalization', () => {
       prompt: 'Make it smoother with a small pause.',
     })
 
-    expect(result.generatedInput).toBe('( C4 8, D4 8, E4 q ) pause q, G4 16, A4 16, B4 8')
+    expect(result.generatedInput).toBe('( C4 8, D4 8, E4 q ) pause q, G4 32, A4 32, B4 16, C5 8')
   })
 
   it('keeps the AI syntax guide aligned with supported notation tokens', () => {
@@ -205,6 +205,7 @@ describe('composer assist normalization', () => {
       'q',
       '8',
       '16',
+      '32',
       'R',
       'rest',
       'pause',
@@ -226,6 +227,7 @@ describe('composer assist normalization', () => {
     }
 
     expect(STAFFSMITH_AI_SYNTAX_GUIDE).toContain('( C4 q, D4 q, E4 h )')
-    expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('durations w/h/q/8/16')
+    expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('durations w/h/q/8/16/32')
+    expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('notes and intentional rests/pauses')
   })
 })
