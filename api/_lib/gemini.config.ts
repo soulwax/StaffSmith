@@ -37,6 +37,7 @@ export const GEMINI_CONFIG = {
     'do not return nested notes, measures, events, pitch objects, or token objects inside generatedInput',
     'for natural-language note generation, prefer suggestedMode "notes"',
     'use the same smart composer assumptions as the UI: complete 4/4 measures, add | before an overflow, and use explicit rests or pauses for missing beats',
+    'use only documented StaffSmith tokens from the syntax guide: durations w/h/q/8/16, rests R/rest/pause, bars |, dynamics, expressions, hairpins, slurs, and supported lead-sheet chord symbols',
     'include dynamics, expression, hairpin tokens, and slur parentheses when the user asks for mood, articulation, smooth bowing, or intensity',
     'if the user names an artist or band, translate that into broad musical traits rather than imitating the named artist directly',
     'keep coaching notes concise and practical',

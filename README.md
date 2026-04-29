@@ -98,9 +98,9 @@ Accepted syntax:
 - smooth slurs/bows: spaced parentheses around notes, for example `( C4 q, D4 q )`
 - the Composer board inserts barlines automatically when a note/rest would overflow a 4/4 measure or complete one
 - dynamics: `pp`, `p`, `mp`, `mf`, `f`, `ff`
-- expression words: `dolce`, `legato`, `staccato`, `tenuto`, `cantabile`, `espressivo`, `rit.`, `accel.`
+- expression words: `dolce`, `legato`, `staccato`, `tenuto`, `cantabile`, `espressivo`, `rit.`, `accel.`, `a-tempo`, `tempo`
 - custom expression text: `[like_this]`
-- volume changes: `<` or `cresc`, `>` or `dim`
+- volume changes: `<`, `cresc`, or `cresc.`, and `>`, `dim`, `dim.`, `decresc`, `decresc.`, or `diminuendo`
 
 Rules:
 
@@ -121,6 +121,10 @@ Accepted syntax:
 - `D7`
 - `F#dim`
 - `Bbmaj7`
+- `Caug`
+- `Csus`
+- `Csus2`
+- `Csus4`
 - `Cmaj7 | Am7 | Dm7 G7 | Cmaj7`
 - `mf Cmaj7 | < Am7 | Dm7 G7 | p Cmaj7`
 - dynamics, expression text, and volume changes work in chord mode too

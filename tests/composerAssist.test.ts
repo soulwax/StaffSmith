@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runComposerAssist } from '../api/_lib/gemini'
 import { GEMINI_CONFIG } from '../api/_lib/gemini.config'
+import { STAFFSMITH_AI_SYNTAX_GUIDE } from '../src/music/parser/syntaxGuide'
 
 const originalGeminiKey = process.env.GEMINI_API_KEY
 
@@ -195,5 +196,36 @@ describe('composer assist normalization', () => {
     })
 
     expect(result.generatedInput).toBe('( C4 8, D4 8, E4 q ) pause q, G4 16, A4 16, B4 8')
+  })
+
+  it('keeps the AI syntax guide aligned with supported notation tokens', () => {
+    for (const token of [
+      'w',
+      'h',
+      'q',
+      '8',
+      '16',
+      'R',
+      'rest',
+      'pause',
+      'pp',
+      'mp',
+      'ff',
+      'dolce',
+      'staccato',
+      'a-tempo',
+      'cresc.',
+      'decresc.',
+      'diminuendo',
+      'Csus',
+      'Csus2',
+      'Csus4',
+      'Caug',
+    ]) {
+      expect(STAFFSMITH_AI_SYNTAX_GUIDE).toContain(token)
+    }
+
+    expect(STAFFSMITH_AI_SYNTAX_GUIDE).toContain('( C4 q, D4 q, E4 h )')
+    expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('durations w/h/q/8/16')
   })
 })

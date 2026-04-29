@@ -663,7 +663,7 @@ export function App() {
           task: 'generate',
           mode: 'notes',
           input: state.input,
-          prompt: `Generate StaffSmith notes mode notation from this text. Use only supported StaffSmith syntax. Prefer compact complete 4/4 measures, insert | before a measure would overflow, and use explicit rests or pauses for missing beats. Use 16 for sixteenth notes when helpful, spaced slur parentheses for smooth note transitions, and useful dynamics/expression tokens when appropriate.\n\n${prompt}`,
+          prompt: `Generate StaffSmith notes mode notation from this text. Use only documented StaffSmith notes syntax. Prefer compact complete 4/4 measures, insert | before a measure would overflow, and use explicit rests or pauses for missing beats. Supported durations are w, h, q, 8, and 16. Use spaced slur parentheses for smooth note transitions, dynamics, expressions, and hairpins when appropriate.\n\n${prompt}`,
         }),
       }, 'Note generation failed.')
 

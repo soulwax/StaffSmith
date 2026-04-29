@@ -25,10 +25,12 @@ export const EXPRESSION_TOKENS = [
   'espressivo',
   'rit.',
   'accel.',
+  'a-tempo',
+  'tempo',
   '[free text]',
 ] as const
 
-export const HAIRPIN_TOKENS = ['< or cresc', '> or dim'] as const
+export const HAIRPIN_TOKENS = ['<, cresc, cresc.', '>, dim, dim., decresc, decresc.'] as const
 
 export const STAFFSMITH_AI_SYNTAX_GUIDE = `StaffSmith syntax guide:
 - Return generatedInput as plain StaffSmith notation only, never markdown.
@@ -37,6 +39,7 @@ export const STAFFSMITH_AI_SYNTAX_GUIDE = `StaffSmith syntax guide:
 - Notes require octave numbers. Valid durations are w, h, q, 8, 16. Omitted durations default to q.
 - Duration beat values: w=4 beats, h=2 beats, q=1 beat, 8=0.5 beats, 16=0.25 beats.
 - Slurs for smooth/bowed transitions use spaced parentheses around notes: ( C4 q, D4 q, E4 h ). Never attach slurs to rests.
+- Notes, rests, directions, and chord symbols may be separated by spaces or commas.
 - CRITICAL: Each measure between | bars must total EXACTLY 4 beats — never more, never less.
 - Use | as a real barline. Insert it immediately when the next note/rest would overflow 4 beats or when a measure is complete.
 - Do not leave a measure incomplete unless the user specifically asks for a pickup or sketch fragment.
@@ -46,10 +49,11 @@ export const STAFFSMITH_AI_SYNTAX_GUIDE = `StaffSmith syntax guide:
 - Count beats before writing each measure. If the measure would overflow, insert a | and continue.
 - Dynamics may appear before notes or chords: ${DYNAMIC_TOKENS.join(', ')}.
 - Expressions may appear before notes or chords: ${EXPRESSION_TOKENS.join(', ')}.
-- Hairpins / volume changes: < or cresc for louder, > or dim for quieter.
+- Hairpins / volume changes: <, cresc, or cresc. for louder; >, dim, dim., decresc, decresc., or diminuendo for quieter.
 - Custom expression text may be bracketed, for example [dolce] or [warmly].
-- Chords mode uses lead-sheet symbols: C, Cm, Cmaj7, Am7, D7, F#dim, Bbmaj7, Csus2, Csus4.
+- Chords mode uses lead-sheet symbols with optional sharp/flat roots: C, Cm, Cmin, Cmaj7, Am7, D7, F#dim, Bbmaj7, Caug, Csus, Csus2, Csus4.
 - Chord mode supports up to four chord symbols per measure.
+- Chord mode also accepts dynamics, expressions, bracketed custom text, and hairpin tokens before chord symbols.
 - Common chord-builder patterns include ii V I: Dm7 | G7 | Cmaj7, I vi ii V: Cmaj7 | Am7 | Dm7 | G7, and minor i VI VII: Am | F | G | Am.
 - Notes examples: ${NOTE_SYNTAX_EXAMPLES.join(' ; ')}.
 - Chord examples: ${CHORD_SYNTAX_EXAMPLES.join(' ; ')}.`

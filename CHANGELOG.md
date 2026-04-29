@@ -8,6 +8,7 @@ All notable StaffSmith changes will be documented in this file.
 
 - Note mode now supports sixteenth durations with `16`, readable `pause` rest syntax, and slur parentheses for smooth note-to-note transitions.
 - Composer, Syntax Help, README examples, and Gemini prompts now teach the same sixteenth-note, pause, and slur syntax.
+- Gemini syntax guidance now explicitly enumerates parser-supported expression aliases, hairpin aliases, and chord families so AI output stays aligned with StaffSmith syntax.
 - MusicXML export now emits 4 divisions per quarter note, sixteenth note types, second-level beams for sixteenth runs, and MusicXML slur notations.
 
 ### Changed
