@@ -71,7 +71,8 @@ describe('MusicXML export', () => {
       staffLabel: '',
     })
 
-    expect(standardXml).toContain('<measure number="37">\n      <print new-page="yes" />')
+    expect(standardXml).toContain('<measure number="25">\n      <print new-page="yes" />')
+    expect(childrenXml).toContain('<measure number="13">\n      <print new-page="yes" />')
     expect(childrenXml).toContain('<measure number="25">\n      <print new-page="yes" />')
   })
 
@@ -122,13 +123,13 @@ describe('MusicXML export', () => {
 
   it('serializes explicit rests, page-turn breaks, and cue-sized notes for long silence', () => {
     const restRun = Array.from({ length: 13 }, () => 'R w').join(' | ')
-    const opening = Array.from({ length: 36 }, () => 'C4 w').join(' | ')
+    const opening = Array.from({ length: 24 }, () => 'C4 w').join(' | ')
     const result = parseScoreInput('notes', `${opening} | ${restRun} | D4 w`)
     expect(result.ok).toBe(true)
 
     const xml = scoreToMusicXml(result.value)
 
-    expect(xml).toContain('<measure number="37">\n      <print new-page="yes" />')
+    expect(xml).toContain('<measure number="25">\n      <print new-page="yes" />')
     expect(xml).toContain('<rest measure="yes" />')
     expect(xml).toContain('<cue />')
     expect(xml).toContain('<notehead font-size="cue">normal</notehead>')

@@ -223,7 +223,9 @@ export function ScorePreview({
           drawPartNames: false,
           drawPartAbbreviations: false,
           backend: 'svg',
-          pageFormat: 'A4',
+          pageFormat: 'A4_P',
+          newPageFromXML: true,
+          newSystemFromXML: true,
         })
 
         const spacingScale = deferredPartLayoutPreset.previewSystemSpacing / 100
