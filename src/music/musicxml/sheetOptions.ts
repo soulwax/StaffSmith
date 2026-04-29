@@ -15,6 +15,10 @@ export type PartLayoutPreset = {
   measuresPerSystem: number
   systemsPerPageTarget: number
   minimumSystemGapMm: number
+  insideMarginMm?: number
+  outsideMarginMm?: number
+  topMarginMm?: number
+  bottomMarginMm?: number
   previewNoteScale: number
   previewSystemSpacing: number
 }
@@ -50,8 +54,12 @@ export const PART_LAYOUT_PRESETS: PartLayoutPreset[] = [
     label: 'Orchestral Solo',
     density: 'standard',
     measuresPerSystem: 6,
-    systemsPerPageTarget: 10,
+    systemsPerPageTarget: 12,
     minimumSystemGapMm: 3,
+    insideMarginMm: 10,
+    outsideMarginMm: 10,
+    topMarginMm: 10,
+    bottomMarginMm: 10,
     previewNoteScale: 62,
     previewSystemSpacing: 72,
   },

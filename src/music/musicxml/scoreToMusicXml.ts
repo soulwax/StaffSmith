@@ -10,11 +10,10 @@ import {
   type Score,
   type ScoreEvent,
 } from '../model/types'
-import { DURATION_UNITS, MUSICXML_NOTE_TYPE } from '../theory/duration'
+import { DURATION_UNITS, FULL_MEASURE_UNITS, MUSICXML_NOTE_TYPE } from '../theory/duration'
 import { buildPitchClass } from '../theory/pitch'
 import { DEFAULT_SHEET_OPTIONS, getClefDefinition, getDensityScale, getPartLayoutPreset, type ScoreSheetOptions } from './sheetOptions'
 
-const FULL_MEASURE_UNITS = 8
 const STAFF_HEIGHT_TENTHS = 40
 const ORCHESTRAL_SOLO_STAFF_MM = 4.9
 const LONG_SILENCE_CUE_THRESHOLD = 12
@@ -61,7 +60,7 @@ function computeBeams(events: ScoreEvent[]): Map<string, BeamMark> {
       flush()
       continue
     }
-    if (event.duration === '8') {
+    if (event.duration === '8' || event.duration === '16') {
       run.push(event.id)
     } else {
       flush()
@@ -134,13 +133,17 @@ function resolveSheetOptions(options: Partial<ScoreSheetOptions>): ScoreSheetOpt
     measuresPerSystem: options.measuresPerSystem ?? preset.measuresPerSystem,
     systemsPerPageTarget: options.systemsPerPageTarget ?? preset.systemsPerPageTarget,
     minimumSystemGapMm: options.minimumSystemGapMm ?? preset.minimumSystemGapMm,
+    insideMarginMm: options.insideMarginMm ?? preset.insideMarginMm ?? baseOptions.insideMarginMm,
+    outsideMarginMm: options.outsideMarginMm ?? preset.outsideMarginMm ?? baseOptions.outsideMarginMm,
+    topMarginMm: options.topMarginMm ?? preset.topMarginMm ?? baseOptions.topMarginMm,
+    bottomMarginMm: options.bottomMarginMm ?? preset.bottomMarginMm ?? baseOptions.bottomMarginMm,
   }
 }
 
 function buildLayoutPlan(score: Score, options: ScoreSheetOptions): Map<number, MeasureLayoutPlan> {
   const plan = new Map<number, MeasureLayoutPlan>()
   const measuresPerSystem = clampInteger(options.measuresPerSystem, 1, 12)
-  const systemsPerPage = clampInteger(options.systemsPerPageTarget, 8, 10)
+  const systemsPerPage = clampInteger(options.systemsPerPageTarget, 8, 12)
   const measuresPerPage = measuresPerSystem * systemsPerPage
   const pageBreaks = computePageBreaks(score, measuresPerPage)
   const cueMeasures = computeCueMeasures(score)
@@ -351,19 +354,19 @@ function renderCueOverlay(pitch: NotePitch): string {
           <step>${pitch.step}</step>
 ${pitch.alter !== 0 ? `          <alter>${pitch.alter}</alter>\n` : ''}          <octave>${pitch.octave}</octave>
         </pitch>
-        <duration>2</duration>
+        <duration>${DURATION_UNITS.q}</duration>
         <voice>2</voice>
         <type>quarter</type>
         <stem>${stemDirection(pitch.octave)}</stem>
         <notehead font-size="cue">normal</notehead>
       </note>
       <backup>
-        <duration>2</duration>
+        <duration>${DURATION_UNITS.q}</duration>
       </backup>`
 }
 
 function getTenthsPerMm(options: ScoreSheetOptions): number {
-  return Math.round(STAFF_HEIGHT_TENTHS / getDensityScale(options.density)) / 7
+  return Math.round(STAFF_HEIGHT_TENTHS / getDensityScale(options.density)) / getStaffHeightMm(options)
 }
 
 function getStaffHeightMm(options: ScoreSheetOptions): number {
@@ -405,7 +408,7 @@ function renderMeasure(
   const clef = getClefDefinition(options.clef)
   const attributes = isFirst
     ? `    <attributes>
-      <divisions>2</divisions>
+      <divisions>4</divisions>
       <key>
         <fifths>${options.keyFifths}</fifths>
       </key>
@@ -460,7 +463,8 @@ function renderEvent(event: ScoreEvent, beams: Map<string, BeamMark>): string {
 
 function renderNoteEvent(event: NoteEvent, beamMark: BeamMark | undefined): string {
   const stem = event.duration === 'w' ? '' : `\n        <stem>${stemDirection(event.pitch.octave)}</stem>`
-  const beam = beamMark ? `\n        <beam number="1">${beamMark}</beam>` : ''
+  const beam = renderBeam(event, beamMark)
+  const notations = renderNoteNotations(event)
   return `      <note>
         <pitch>
           <step>${event.pitch.step}</step>
@@ -468,8 +472,33 @@ ${event.pitch.alter !== 0 ? `          <alter>${event.pitch.alter}</alter>\n` : 
         </pitch>
         <duration>${DURATION_UNITS[event.duration]}</duration>
         <voice>1</voice>
-        <type>${MUSICXML_NOTE_TYPE[event.duration]}</type>${stem}${beam}
+        <type>${MUSICXML_NOTE_TYPE[event.duration]}</type>${stem}${beam}${notations}
       </note>`
+}
+
+function renderBeam(event: NoteEvent, beamMark: BeamMark | undefined): string {
+  if (!beamMark) {
+    return ''
+  }
+
+  const secondaryBeam = event.duration === '16'
+    ? `\n        <beam number="2">${beamMark}</beam>`
+    : ''
+
+  return `\n        <beam number="1">${beamMark}</beam>${secondaryBeam}`
+}
+
+function renderNoteNotations(event: NoteEvent): string {
+  if (!event.slurStart && !event.slurStop) {
+    return ''
+  }
+
+  const slurs = [
+    event.slurStop ? '          <slur type="stop" number="1" />' : '',
+    event.slurStart ? '          <slur type="start" number="1" />' : '',
+  ].filter(Boolean).join('\n')
+
+  return `\n        <notations>\n${slurs}\n        </notations>`
 }
 
 function renderRestEvent(event: RestEvent): string {
@@ -552,7 +581,7 @@ function renderRestSequence(units: number): string {
 }
 
 function splitUnits(units: number): number[] {
-  const values = [8, 4, 2, 1]
+  const values = [16, 8, 4, 2, 1]
   const chunks: number[] = []
   let remaining = units
 
@@ -567,17 +596,21 @@ function splitUnits(units: number): number[] {
 }
 
 function toDurationSymbol(units: number) {
-  if (units === 8) {
+  if (units === 16) {
     return 'w'
   }
 
-  if (units === 4) {
+  if (units === 8) {
     return 'h'
   }
 
-  if (units === 2) {
+  if (units === 4) {
     return 'q'
   }
 
-  return '8'
+  if (units === 2) {
+    return '8'
+  }
+
+  return '16'
 }

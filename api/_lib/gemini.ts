@@ -5,9 +5,9 @@ import { getGeminiApiKey } from './env.js'
 import { GEMINI_CONFIG } from './gemini.config.js'
 import { fail } from './http.js'
 
-const DURATION_VALUES = new Set(['w', 'h', 'q', '8'])
-const DURATION_UNITS: Record<string, number> = { w: 8, h: 4, q: 2, '8': 1 }
-const MAX_MEASURE_UNITS = 8
+const DURATION_VALUES = new Set(['w', 'h', 'q', '8', '16'])
+const DURATION_UNITS: Record<string, number> = { w: 16, h: 8, q: 4, '8': 2, '16': 1 }
+const MAX_MEASURE_UNITS = 16
 
 type LooseComposerAssistResult = Omit<Partial<ComposerAssistResult>, 'generatedInput' | 'notes'> & {
   generatedInput?: unknown
@@ -290,7 +290,10 @@ function buildEventToken(value: unknown): string | null {
   }
 
   const duration = durationToken(value.duration) ?? 'q'
-  return `${pitch} ${duration}`
+  const noteToken = `${pitch} ${duration}`
+  const slurStart = value.slurStart === true || value.slur === 'start'
+  const slurStop = value.slurStop === true || value.slur === 'stop'
+  return `${slurStart ? '( ' : ''}${noteToken}${slurStop ? ' )' : ''}`
 }
 
 function directionToken(value: Record<string, unknown>) {
@@ -393,7 +396,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isLikelyParseableStaffSmithInput(mode: InputMode, input: string) {
-  const tokens = input.match(/\[[^\]]+\]|\||,|[^\s|,]+/g) ?? []
+  const tokens = input.match(/\[[^\]]+\]|\||,|\(|\)|[^\s|,()]+/g) ?? []
   if (tokens.length === 0) {
     return false
   }
@@ -405,6 +408,9 @@ function isLikelyParseableStaffSmithInput(mode: InputMode, input: string) {
   let noteCount = 0
   let rhythmCount = 0
   let measureUnits = 0
+  let openSlurs = 0
+  let lastEventCanEndSlur = false
+  let pendingSlurStart = false
 
   for (let index = 0; index < tokens.length; index += 1) {
     const token = tokens[index]
@@ -420,19 +426,38 @@ function isLikelyParseableStaffSmithInput(mode: InputMode, input: string) {
       continue
     }
 
+    if (token === '(') {
+      openSlurs += 1
+      pendingSlurStart = true
+      continue
+    }
+
+    if (token === ')') {
+      openSlurs -= 1
+      if (openSlurs < 0 || !lastEventCanEndSlur) {
+        return false
+      }
+      continue
+    }
+
     if (token === ',' || isDirectionToken(token)) {
       continue
     }
 
     const isNote = /^[A-Ga-g](?:#|b)?\d+$/.test(token)
-    const isRest = /^r(?:est)?$/i.test(token)
+    const isRest = /^r(?:est)?$/i.test(token) || /^pause$/i.test(token)
     if (!isNote && !isRest) {
+      return false
+    }
+    if (isRest && pendingSlurStart) {
       return false
     }
 
     if (isNote) {
       noteCount += 1
+      pendingSlurStart = false
     }
+    lastEventCanEndSlur = isNote
     rhythmCount += 1
     const nextToken = tokens[index + 1]
     let durationKey = 'q'
@@ -440,14 +465,14 @@ function isLikelyParseableStaffSmithInput(mode: InputMode, input: string) {
       durationKey = nextToken
       index += 1
     }
-    measureUnits += DURATION_UNITS[durationKey] ?? 2
+    measureUnits += DURATION_UNITS[durationKey] ?? DURATION_UNITS.q
   }
 
-  if (measureUnits > MAX_MEASURE_UNITS) {
+  if (measureUnits > MAX_MEASURE_UNITS || openSlurs !== 0 || pendingSlurStart) {
     return false
   }
 
-  return rhythmCount > 0 && (noteCount > 0 || /(?:^|[\s|,])r(?:est)?(?:\s|$)/i.test(input))
+  return rhythmCount > 0 && (noteCount > 0 || /(?:^|[\s|,])(?:r(?:est)?|pause)(?:\s|$)/i.test(input))
 }
 
 function isDirectionToken(token: string) {

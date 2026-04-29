@@ -1,12 +1,11 @@
 import { createEmptyScore } from '../model/createEmptyScore'
 import { isRhythmicEvent, type Measure, type NoteEvent, type ParseResult, type RestEvent, type Score } from '../model/types'
-import { isDurationSymbol, sumMeasureUnits } from '../theory/duration'
+import { FULL_MEASURE_UNITS, isDurationSymbol, sumMeasureUnits } from '../theory/duration'
 import { parseScientificPitch } from '../theory/pitch'
 import { parseDirectionToken } from './notation'
 import { createParseError, tokenize } from './shared'
 
-const NOTE_TOKEN_PATTERN = /\||,|\[[^\]]+\]|[<>]|[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|w|h|q|8|\S+/g
-const MAX_MEASURE_UNITS = 8
+const NOTE_TOKEN_PATTERN = /\||,|\(|\)|\[[^\]]+\]|[<>]|[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|pause|w|h|q|8|16|\S+/gi
 
 export function parseNoteInput(input: string): ParseResult<Score> {
   const score = createEmptyScore('notes')
@@ -23,6 +22,10 @@ export function parseNoteInput(input: string): ParseResult<Score> {
   let measureIndex = 0
   let eventIndex = 0
   let directionIndex = 0
+  let pendingSlurStart = false
+  let openSlurs = 0
+  let lastNoteEvent: NoteEvent | null = null
+  let lastEventCanEndSlur = false
 
   const pushMeasure = () => {
     if (currentMeasureEvents.length === 0) {
@@ -49,6 +52,24 @@ export function parseNoteInput(input: string): ParseResult<Score> {
       continue
     }
 
+    if (token.value === '(') {
+      pendingSlurStart = true
+      openSlurs += 1
+      continue
+    }
+
+    if (token.value === ')') {
+      if (openSlurs > 0 && lastNoteEvent && lastEventCanEndSlur) {
+        lastNoteEvent.slurStop = true
+      } else {
+        errors.push(createParseError(input, token.index, 'Slur end must follow a note.', token.value))
+      }
+      if (openSlurs > 0) {
+        openSlurs -= 1
+      }
+      continue
+    }
+
     if (token.value === '|') {
       pushMeasure()
       continue
@@ -66,7 +87,7 @@ export function parseNoteInput(input: string): ParseResult<Score> {
       continue
     }
 
-    const isRestToken = /^rest$/i.test(token.value) || /^r$/i.test(token.value)
+    const isRestToken = /^rest$/i.test(token.value) || /^r$/i.test(token.value) || /^pause$/i.test(token.value)
     if (isRestToken) {
       let duration: RestEvent['duration'] = 'q'
       const maybeDuration = tokens[tokenIndex + 1]
@@ -81,9 +102,10 @@ export function parseNoteInput(input: string): ParseResult<Score> {
         duration,
       })
       eventIndex += 1
+      lastEventCanEndSlur = false
 
       const totalUnits = sumMeasureUnits(currentMeasureEvents.filter(isRhythmicEvent).map((event) => event.duration))
-      if (totalUnits > MAX_MEASURE_UNITS) {
+      if (totalUnits > FULL_MEASURE_UNITS) {
         errors.push(
           createParseError(
             input,
@@ -92,6 +114,10 @@ export function parseNoteInput(input: string): ParseResult<Score> {
             token.value,
           ),
         )
+      }
+      if (pendingSlurStart) {
+        errors.push(createParseError(input, token.index, 'Slur start must attach to a note, not a rest or pause.', token.value))
+        pendingSlurStart = false
       }
       continue
     }
@@ -116,16 +142,21 @@ export function parseNoteInput(input: string): ParseResult<Score> {
       tokenIndex += 1
     }
 
-    currentMeasureEvents.push({
+    const noteEvent: NoteEvent = {
       id: `m${measureIndex + 1}-n${eventIndex + 1}`,
       kind: 'note',
       pitch,
       duration,
-    })
+      ...(pendingSlurStart ? { slurStart: true } : {}),
+    }
+    currentMeasureEvents.push(noteEvent)
+    pendingSlurStart = false
+    lastNoteEvent = noteEvent
+    lastEventCanEndSlur = true
     eventIndex += 1
 
     const totalUnits = sumMeasureUnits(currentMeasureEvents.filter(isRhythmicEvent).map((event) => event.duration))
-    if (totalUnits > MAX_MEASURE_UNITS) {
+    if (totalUnits > FULL_MEASURE_UNITS) {
       errors.push(
         createParseError(
           input,
@@ -144,8 +175,15 @@ export function parseNoteInput(input: string): ParseResult<Score> {
   }
 
   const incompleteMeasureCount = score.measures.filter(
-    (measure) => sumMeasureUnits(measure.events.filter(isRhythmicEvent).map((event) => event.duration)) < MAX_MEASURE_UNITS,
+    (measure) => sumMeasureUnits(measure.events.filter(isRhythmicEvent).map((event) => event.duration)) < FULL_MEASURE_UNITS,
   ).length
+
+  if (pendingSlurStart) {
+    errors.push(createParseError(input, input.length, 'Slur start must be followed by a note.', '('))
+  }
+  if (openSlurs > 0) {
+    errors.push(createParseError(input, input.length, 'Slur start must be closed with ).', '('))
+  }
 
   if (incompleteMeasureCount > 0) {
     warnings.push(

@@ -18,12 +18,20 @@ export function SyntaxHelp() {
           <code>C4 q</code>
           <code>F#3 h</code>
           <code>Bb5 8</code>
+          <code>G5 16</code>
         </div>
         <div>
-          <h3>Rests</h3>
-          <p>Use R or rest with optional duration.</p>
+          <h3>Pauses</h3>
+          <p>Use R, rest, or pause with optional duration.</p>
           <code>R w</code>
           <code>rest q</code>
+          <code>pause 8</code>
+        </div>
+        <div>
+          <h3>Slurs</h3>
+          <p>Use parentheses around notes for smooth transitions.</p>
+          <code>( C4 q, D4 q )</code>
+          <code>( E4 8, F4 8, G4 h )</code>
         </div>
         <div>
           <h3>Chords</h3>

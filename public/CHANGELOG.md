@@ -2,6 +2,18 @@
 
 All notable StaffSmith changes will be documented in this file.
 
+## 0.1.3 - 2026-04-29 - Expressive Durations
+
+### Added
+
+- Note mode now supports sixteenth durations with `16`, readable `pause` rest syntax, and slur parentheses for smooth note-to-note transitions.
+- Composer, Syntax Help, README examples, and Gemini prompts now teach the same sixteenth-note, pause, and slur syntax.
+- MusicXML export now emits 4 divisions per quarter note, sixteenth note types, second-level beams for sixteenth runs, and MusicXML slur notations.
+
+### Changed
+
+- The internal 4/4 rhythm grid now uses sixteenth-note units so smart bar insertion and incomplete-measure padding understand shorter durations.
+
 ## 0.1.2 - 2026-04-29 - Engraved Part Layouts
 
 ### Added
@@ -17,7 +29,7 @@ All notable StaffSmith changes will be documented in this file.
 
 ### Changed
 
-- Orchestral Solo now shrinks the part content by 30%, with tighter system spacing and 6-measure systems so it fits more music per page.
+- Orchestral Solo now shrinks the part content by 30%, uses 10 mm page margins, and targets 12 systems per page with 6-measure systems.
 - Layout presets now drive both the on-screen preview and exported MusicXML instead of exposing raw size, spacing, or wrap percentages.
 - Page-turn planning now prefers rest passages of at least 4 measures, then section changes, before falling back to the target page length.
 - Eighth-note beaming now breaks across rests instead of joining note beams through silent beats.

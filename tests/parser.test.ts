@@ -43,10 +43,10 @@ describe('StaffSmith parser', () => {
   })
 
   it('parses explicit note-mode rests with durations', () => {
-    const result = parseScoreInput('notes', 'C4 h R h | rest w')
+    const result = parseScoreInput('notes', 'C4 h R h | rest w | pause q, C4 q, D4 h')
 
     expect(result.ok).toBe(true)
-    expect(result.value.measures).toHaveLength(2)
+    expect(result.value.measures).toHaveLength(3)
     expect(result.value.measures[0]?.events[1]).toMatchObject({
       kind: 'rest',
       duration: 'h',
@@ -54,6 +54,36 @@ describe('StaffSmith parser', () => {
     expect(result.value.measures[1]?.events[0]).toMatchObject({
       kind: 'rest',
       duration: 'w',
+    })
+    expect(result.value.measures[2]?.events[0]).toMatchObject({
+      kind: 'rest',
+      duration: 'q',
+    })
+  })
+
+  it('parses sixteenth notes and slur parentheses for smooth transitions', () => {
+    const result = parseScoreInput('notes', '( C4 8, D4 8, E4 q ) pause q, G4 16, A4 16, B4 8')
+
+    expect(result.ok).toBe(true)
+    expect(result.errors).toEqual([])
+    expect(result.value.measures).toHaveLength(1)
+    expect(result.value.measures[0]?.events[0]).toMatchObject({
+      kind: 'note',
+      duration: '8',
+      slurStart: true,
+    })
+    expect(result.value.measures[0]?.events[2]).toMatchObject({
+      kind: 'note',
+      duration: 'q',
+      slurStop: true,
+    })
+    expect(result.value.measures[0]?.events[3]).toMatchObject({
+      kind: 'rest',
+      duration: 'q',
+    })
+    expect(result.value.measures[0]?.events[4]).toMatchObject({
+      kind: 'note',
+      duration: '16',
     })
   })
 

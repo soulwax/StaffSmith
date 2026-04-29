@@ -78,7 +78,7 @@ Key design decisions:
 - Parsers are renderer-agnostic and testable.
 - Chord rendering uses lead-sheet style harmony symbols plus helper root notes for the MVP.
 - Incomplete note measures are padded with rests during MusicXML generation rather than hidden inside parsing.
-- Part layout presets map musician-facing choices (Orchestral Solo, Standard Part, For Children's Songs) to notation density, system spacing, and measures per system. Orchestral Solo uses a 30% smaller content scale for compact solo parts.
+- Part layout presets map musician-facing choices (Orchestral Solo, Standard Part, For Children's Songs) to notation density, system spacing, and measures per system. Orchestral Solo uses a 30% smaller content scale, 10 mm page margins, and a 12-system page target for compact solo parts.
 
 ## Supported Syntax
 
@@ -89,11 +89,13 @@ Accepted syntax:
 - `C4 q, D4 q, E4 h`
 - `C4 E4 G4 | F4 A4 C5`
 - `C4 h, R h | R w | D4 w`
+- `( C4 8, D4 8, E4 q ) pause q, G4 16, A4 16, B4 8`
 - `mf [dolce] C4 q, E4 q, G4 h`
 - `p C4 E4 G4 | < F4 A4 C5 | > G4 h`
 - bar separators with `|`
-- durations: `w`, `h`, `q`, `8`
-- rests: `R` or `rest`, with optional duration such as `R w` or `rest q`
+- durations: `w`, `h`, `q`, `8`, `16`
+- rests/pauses: `R`, `rest`, or `pause`, with optional duration such as `R w`, `rest q`, or `pause 8`
+- smooth slurs/bows: spaced parentheses around notes, for example `( C4 q, D4 q )`
 - the Composer board inserts barlines automatically when a note/rest would overflow a 4/4 measure or complete one
 - dynamics: `pp`, `p`, `mp`, `mf`, `f`, `ff`
 - expression words: `dolce`, `legato`, `staccato`, `tenuto`, `cantabile`, `espressivo`, `rit.`, `accel.`
@@ -104,6 +106,7 @@ Rules:
 
 - Note names require octave numbers.
 - Durations are optional and default to quarter notes.
+- Duration values are `w=4 beats`, `h=2`, `q=1`, `8=0.5`, and `16=0.25`.
 - Measures currently assume 4/4.
 - Full-measure rest runs are used by the MusicXML export for page-turn and long-silence cue placement.
 
@@ -131,6 +134,7 @@ Rules:
 ## Working Examples
 
 - `C4 q, E4 q, G4 h`
+- `( C4 8, D4 8, E4 q ) pause q, G4 16, A4 16, B4 8`
 - `mf [dolce] C4 q, E4 q, G4 h`
 - `p C4 E4 G4 | < F4 A4 C5 | > G4 h`
 - `mf Cmaj7 | < Am7 | Dm7 G7 | p Cmaj7`

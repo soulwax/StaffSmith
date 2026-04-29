@@ -177,4 +177,23 @@ describe('composer assist normalization', () => {
 
     expect(result.generatedInput).toBe('mf C4 h, R h | G4 w')
   })
+
+  it('accepts generated pauses, sixteenths, and slurs', async () => {
+    mockGeminiJson({
+      summary: 'Phrase with a smooth pickup and pause.',
+      keyCenter: 'C major',
+      suggestedMode: 'notes',
+      generatedInput: '( C4 8, D4 8, E4 q ) pause q, G4 16, A4 16, B4 8',
+      notes: ['Uses a slur and short notes before the pause resolves.'],
+    })
+
+    const result = await runComposerAssist({
+      task: 'generate',
+      mode: 'notes',
+      input: 'C4 q E4 q G4 h',
+      prompt: 'Make it smoother with a small pause.',
+    })
+
+    expect(result.generatedInput).toBe('( C4 8, D4 8, E4 q ) pause q, G4 16, A4 16, B4 8')
+  })
 })

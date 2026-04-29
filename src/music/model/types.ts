@@ -1,8 +1,8 @@
 export type InputMode = 'notes' | 'chords'
 
-export type DurationSymbol = 'w' | 'h' | 'q' | '8'
+export type DurationSymbol = 'w' | 'h' | 'q' | '8' | '16'
 
-export type MusicXmlNoteType = 'whole' | 'half' | 'quarter' | 'eighth'
+export type MusicXmlNoteType = 'whole' | 'half' | 'quarter' | 'eighth' | '16th'
 
 export type HarmonyKind =
   | 'major'
@@ -27,6 +27,8 @@ export interface NoteEvent {
   kind: 'note'
   pitch: NotePitch
   duration: DurationSymbol
+  slurStart?: boolean
+  slurStop?: boolean
 }
 
 export interface RestEvent {

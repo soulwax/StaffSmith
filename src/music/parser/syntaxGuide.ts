@@ -1,6 +1,7 @@
 export const NOTE_SYNTAX_EXAMPLES = [
   'C4 q, E4 q, G4 h',
-  'C4 h, R h | R w | D4 w',
+  'C4 h, pause h | R w | D4 w',
+  '( C4 8, D4 8, E4 q ) R q, G4 16, A4 16, B4 8',
   'mf [dolce] C4 q, E4 q, G4 h',
   'p C4 E4 G4 | < F4 A4 C5 | > G4 h',
   'C4 q, D4 q, E4 q, F4 q | G4 h, R h',
@@ -31,14 +32,15 @@ export const HAIRPIN_TOKENS = ['< or cresc', '> or dim'] as const
 
 export const STAFFSMITH_AI_SYNTAX_GUIDE = `StaffSmith syntax guide:
 - Return generatedInput as plain StaffSmith notation only, never markdown.
-- Notes mode uses pitch+octave and optional duration: C4 q, F#3 h, Bb5 8.
-- R or rest creates an explicit rest and can take a duration: R w, rest q.
-- Notes require octave numbers. Valid durations are w, h, q, 8. Omitted durations default to q.
-- Duration beat values: w=4 beats, h=2 beats, q=1 beat, 8=0.5 beats.
+- Notes mode uses pitch+octave and optional duration: C4 q, F#3 h, Bb5 8, G5 16.
+- R, rest, or pause creates an explicit rest/pause and can take a duration: R w, rest q, pause 8.
+- Notes require octave numbers. Valid durations are w, h, q, 8, 16. Omitted durations default to q.
+- Duration beat values: w=4 beats, h=2 beats, q=1 beat, 8=0.5 beats, 16=0.25 beats.
+- Slurs for smooth/bowed transitions use spaced parentheses around notes: ( C4 q, D4 q, E4 h ). Never attach slurs to rests.
 - CRITICAL: Each measure between | bars must total EXACTLY 4 beats — never more, never less.
 - Use | as a real barline. Insert it immediately when the next note/rest would overflow 4 beats or when a measure is complete.
 - Do not leave a measure incomplete unless the user specifically asks for a pickup or sketch fragment.
-- Use explicit rests to complete silent beats instead of omitting rhythm: R q, R h, R w.
+- Use explicit rests/pauses to complete silent beats instead of omitting rhythm: R q, pause h, R w.
 - Example of INVALID measure (5 beats): D5 8, F5 8, A5 8, F5 8, G5 8, E5 8, D5 h (6×0.5+2=5). Split it.
 - Example of VALID replacement: D5 8, F5 8, A5 8, F5 8, G5 8, A5 8 | D5 h, G5 h
 - Count beats before writing each measure. If the measure would overflow, insert a | and continue.

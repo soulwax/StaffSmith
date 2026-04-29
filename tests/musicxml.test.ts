@@ -15,15 +15,17 @@ describe('MusicXML export', () => {
     })
 
     expect(xml).toContain('<work-title>Etude &amp; Print</work-title>')
-    expect(xml).toContain('<page-height>1697.14</page-height>')
-    expect(xml).toContain('<page-width>1200</page-width>')
+    expect(xml).toContain('<page-height>2424.49</page-height>')
+    expect(xml).toContain('<page-width>1714.29</page-width>')
     expect(xml).toContain('<page-margins type="odd">')
-    expect(xml).toContain('<left-margin>85.71</left-margin>')
-    expect(xml).toContain('<right-margin>57.14</right-margin>')
-    expect(xml).toContain('<system-distance>57.14</system-distance>')
+    expect(xml).toContain('<left-margin>81.63</left-margin>')
+    expect(xml).toContain('<right-margin>81.63</right-margin>')
+    expect(xml).toContain('<top-margin>81.63</top-margin>')
+    expect(xml).toContain('<system-distance>61.22</system-distance>')
     expect(xml).toContain('<music-font font-family="Bravura, Maestro, Petaluma, Finale Maestro" />')
     expect(xml).toContain('<millimeters>4.9</millimeters>')
     expect(xml).toContain('<tenths>40</tenths>')
+    expect(xml).toContain('<divisions>4</divisions>')
     expect(xml).toContain('<part-name></part-name>')
     expect(xml).toContain('<per-minute>96</per-minute>')
   })
@@ -41,6 +43,19 @@ describe('MusicXML export', () => {
     expect(xml).toContain('<measure number="7">\n      <print new-system="yes" />')
   })
 
+  it('targets twelve systems per page for the orchestral solo preset', () => {
+    const input = Array.from({ length: 73 }, () => 'C4 w').join(' | ')
+    const result = parseScoreInput('notes', input)
+    expect(result.ok).toBe(true)
+
+    const xml = scoreToMusicXml(result.value, {
+      partLayoutPreset: 'orchestral-solo',
+      staffLabel: '',
+    })
+
+    expect(xml).toContain('<measure number="73">\n      <print new-page="yes" />')
+  })
+
   it('serializes printable dynamics, expressions, and hairpins', () => {
     const result = parseScoreInput('notes', 'mf [warm tone] < C4 q D4 q > E4 h')
     expect(result.ok).toBe(true)
@@ -51,6 +66,19 @@ describe('MusicXML export', () => {
     expect(xml).toContain('<words>warm tone</words>')
     expect(xml).toContain('<wedge type="crescendo" />')
     expect(xml).toContain('<wedge type="diminuendo" />')
+  })
+
+  it('serializes sixteenth durations, pauses, and slurs', () => {
+    const result = parseScoreInput('notes', '( C4 8, D4 8, E4 q ) pause q, G4 16, A4 16, B4 8')
+    expect(result.ok).toBe(true)
+
+    const xml = scoreToMusicXml(result.value)
+
+    expect(xml).toContain('<type>16th</type>')
+    expect(xml).toContain('<duration>1</duration>')
+    expect(xml).toContain('<rest />')
+    expect(xml).toContain('<slur type="start" number="1" />')
+    expect(xml).toContain('<slur type="stop" number="1" />')
   })
 
   it('serializes explicit rests, page-turn breaks, and cue-sized notes for long silence', () => {

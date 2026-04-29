@@ -2,7 +2,7 @@ import { Minus, Music2, Play, Plus, SquareStack } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { SectionCard } from '../../components/SectionCard'
 import type { DurationSymbol, InputMode, ParseError } from '../../music/model/types'
-import { DURATION_UNITS } from '../../music/theory/duration'
+import { DURATION_UNITS, FULL_MEASURE_UNITS, isDurationSymbol } from '../../music/theory/duration'
 import type { ExamplePreset } from './examples'
 import './EditorPanel.css'
 
@@ -27,6 +27,7 @@ const DURATIONS: Array<{ label: string, value: DurationSymbol }> = [
   { label: 'Half', value: 'h' },
   { label: 'Quarter', value: 'q' },
   { label: 'Eighth', value: '8' },
+  { label: '16th', value: '16' },
 ]
 const DYNAMICS = ['pp', 'p', 'mp', 'mf', 'f', 'ff'] as const
 const EXPRESSIONS = ['dolce', 'legato', 'staccato', 'tenuto', 'cantabile', 'espressivo', 'rit.', 'accel.'] as const
@@ -48,8 +49,7 @@ const CHORD_PROGRESSIONS = [
   { label: '12-bar start', value: 'C7 | F7 | C7 | C7' },
   { label: 'minor i VI VII', value: 'Am | F | G | Am' },
 ] as const
-const FULL_MEASURE_UNITS = 8
-const RHYTHM_TOKEN_PATTERN = /[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|w|h|q|8|\S+/g
+const RHYTHM_TOKEN_PATTERN = /,|\(|\)|[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|pause|w|h|q|8|16|\S+/gi
 
 function joinToken(input: string, token: string, mode: InputMode) {
   const trimmedToken = token.trim()
@@ -74,7 +74,7 @@ function joinToken(input: string, token: string, mode: InputMode) {
 }
 
 function isDurationToken(value: string): value is DurationSymbol {
-  return value === 'w' || value === 'h' || value === 'q' || value === '8'
+  return isDurationSymbol(value)
 }
 
 function getCurrentMeasureUnits(input: string) {
@@ -85,7 +85,7 @@ function getCurrentMeasureUnits(input: string) {
   for (let index = 0; index < tokens.length; index += 1) {
     const token = tokens[index] ?? ''
     const isPitch = /^[A-Ga-g](?:#|b)?\d+$/.test(token)
-    const isRest = /^r(?:est)?$/i.test(token)
+    const isRest = /^r(?:est)?$/i.test(token) || /^pause$/i.test(token)
     if (!isPitch && !isRest) {
       continue
     }
@@ -267,7 +267,7 @@ export function EditorPanel({
 
               <div className="builder-group builder-group--tools">
                 <span className="builder-label">Measure</span>
-                <button type="button" onClick={insertRest}>Rest</button>
+                <button type="button" onClick={insertRest}>Pause</button>
                 <button type="button" onClick={() => insertToken('|')}>Bar</button>
               </div>
             </div>
@@ -366,6 +366,8 @@ export function EditorPanel({
               ))}
               <button type="button" onClick={() => insertToken('<')}>cresc</button>
               <button type="button" onClick={() => insertToken('>')}>dim</button>
+              <button type="button" onClick={() => insertToken('(')}>slur start</button>
+              <button type="button" onClick={() => insertToken(')')}>slur end</button>
             </div>
           </div>
         </div>
@@ -395,7 +397,7 @@ export function EditorPanel({
         </button>
         <p className={errors.length > 0 ? 'helper-text helper-text--error' : 'helper-text'}>
           {mode === 'notes'
-            ? 'C4 q, R h, mf, <, >, staccato'
+            ? 'C4 q, R h, pause q, G4 16, (, ), mf'
             : 'Cmaj7 | Am7 | Dm7 G7 | Cmaj7'}
         </p>
       </div>
