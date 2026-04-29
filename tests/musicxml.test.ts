@@ -23,7 +23,7 @@ describe('MusicXML export', () => {
     expect(xml).toContain('<top-margin>81.63</top-margin>')
     expect(xml).toContain('<system-distance>61.22</system-distance>')
     expect(xml).toContain('<music-font font-family="Bravura, Maestro, Petaluma, Finale Maestro" />')
-    expect(xml).toContain('<millimeters>4.9</millimeters>')
+    expect(xml).toContain('<millimeters>4.90</millimeters>')
     expect(xml).toContain('<tenths>40</tenths>')
     expect(xml).toContain('<divisions>8</divisions>')
     expect(xml).toContain('<part-name></part-name>')
@@ -54,6 +54,24 @@ describe('MusicXML export', () => {
     })
 
     expect(xml).toContain('<measure number="73">\n      <print new-page="yes" />')
+  })
+
+  it('uses preset-specific page breaks for standard and children layouts', () => {
+    const input = Array.from({ length: 37 }, () => 'C4 w').join(' | ')
+    const result = parseScoreInput('notes', input)
+    expect(result.ok).toBe(true)
+
+    const standardXml = scoreToMusicXml(result.value, {
+      partLayoutPreset: 'standard-part',
+      staffLabel: '',
+    })
+    const childrenXml = scoreToMusicXml(result.value, {
+      partLayoutPreset: 'children-songs',
+      staffLabel: '',
+    })
+
+    expect(standardXml).toContain('<measure number="37">\n      <print new-page="yes" />')
+    expect(childrenXml).toContain('<measure number="25">\n      <print new-page="yes" />')
   })
 
   it('serializes printable dynamics, expressions, and hairpins', () => {

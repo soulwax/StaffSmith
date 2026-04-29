@@ -37,6 +37,7 @@ type ZoomableDisplay = {
 }
 
 const BASE_PREVIEW_ZOOM = 0.84
+const UNTITLED_SCORE_TITLE = 'Untitled sketch'
 
 function applyZoom(display: ZoomableDisplay, zoom: number) {
   if (display.setZoom) {
@@ -52,6 +53,52 @@ function applyZoom(display: ZoomableDisplay, zoom: number) {
   display.zoom = zoom
 }
 
+function createScoreTitleBlock(title: string) {
+  const titleBlock = document.createElement('header')
+  titleBlock.className = 'score-title-block'
+
+  const heading = document.createElement('h2')
+  heading.textContent = title || UNTITLED_SCORE_TITLE
+  titleBlock.append(heading)
+
+  return titleBlock
+}
+
+function createScorePage(svg: SVGSVGElement, pageIndex: number, showTitle: boolean, title: string) {
+  const page = document.createElement('article')
+  page.className = pageIndex === 0 && showTitle ? 'score-page score-page--with-title' : 'score-page'
+  page.dataset.pageIndex = String(pageIndex)
+  page.setAttribute('aria-label', `Score page ${pageIndex + 1}`)
+
+  if (pageIndex === 0 && showTitle) {
+    page.append(createScoreTitleBlock(title))
+  }
+
+  const pageBody = document.createElement('div')
+  pageBody.className = 'score-page__body'
+  pageBody.append(svg)
+  page.append(pageBody)
+
+  return page
+}
+
+function replaceRenderTargetWithPages(container: HTMLElement, renderTarget: HTMLElement, showTitle: boolean, title: string) {
+  const renderedPages = Array.from(renderTarget.querySelectorAll<SVGSVGElement>('svg'))
+
+  if (renderedPages.length === 0) {
+    container.replaceChildren(renderTarget)
+    return 0
+  }
+
+  const fragment = document.createDocumentFragment()
+  renderedPages.forEach((svg, index) => {
+    fragment.append(createScorePage(svg, index, showTitle, title))
+  })
+  container.replaceChildren(fragment)
+
+  return renderedPages.length
+}
+
 export function ScorePreview({
   musicXml,
   title,
@@ -62,8 +109,10 @@ export function ScorePreview({
   onPrintScore,
 }: ScorePreviewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const previewSurfaceRef = useRef<HTMLDivElement | null>(null)
   const dragStartRef = useRef<number | null>(null)
   const renderIdRef = useRef(0)
+  const scrollFrameRef = useRef<number | null>(null)
   const [renderError, setRenderError] = useState<RenderError | null>(null)
   const [pageIndex, setPageIndex] = useState(0)
   const [pageCount, setPageCount] = useState(1)
@@ -79,23 +128,66 @@ export function ScorePreview({
       return
     }
 
-    const renderedPages = container.querySelectorAll('svg')
+    const renderedPages = container.querySelectorAll('.score-page')
     const nextPageCount = Math.max(1, renderedPages.length)
     setPageCount(nextPageCount)
     setPageIndex((current) => (resetPage ? 0 : Math.min(current, nextPageCount - 1)))
+    if (resetPage) {
+      previewSurfaceRef.current?.scrollTo({ top: 0, left: 0 })
+    }
   }, [])
 
-  useEffect(() => {
+  const scrollToPage = useCallback((index: number, behavior: ScrollBehavior = 'smooth') => {
     const container = containerRef.current
-    if (!container) {
+    const page = container?.querySelector<HTMLElement>(`.score-page[data-page-index="${index}"]`)
+    if (!page) {
       return
     }
 
-    const pages = Array.from(container.querySelectorAll('svg'))
-    pages.forEach((page, index) => {
-      page.style.display = index === pageIndex ? 'block' : 'none'
+    page.scrollIntoView({ block: 'start', inline: 'nearest', behavior })
+  }, [])
+
+  const updateCurrentPageFromScroll = useCallback(() => {
+    const surface = previewSurfaceRef.current
+    if (!surface) {
+      return
+    }
+
+    const pages = Array.from(surface.querySelectorAll<HTMLElement>('.score-page'))
+    if (pages.length === 0) {
+      return
+    }
+
+    const surfaceRect = surface.getBoundingClientRect()
+    const referenceY = surfaceRect.top + Math.min(surfaceRect.height * 0.35, 180)
+    const closestPage = pages
+      .map((page, index) => {
+        const rect = page.getBoundingClientRect()
+        const distance = referenceY >= rect.top && referenceY <= rect.bottom
+          ? 0
+          : Math.min(Math.abs(referenceY - rect.top), Math.abs(referenceY - rect.bottom))
+
+        return { index, distance }
+      })
+      .sort((a, b) => a.distance - b.distance)[0]
+
+    if (!closestPage) {
+      return
+    }
+
+    setPageIndex((current) => (current === closestPage.index ? current : closestPage.index))
+  }, [])
+
+  const handlePreviewScroll = () => {
+    if (scrollFrameRef.current !== null) {
+      return
+    }
+
+    scrollFrameRef.current = window.requestAnimationFrame(() => {
+      scrollFrameRef.current = null
+      updateCurrentPageFromScroll()
     })
-  }, [pageIndex, pageCount])
+  }
 
   useEffect(() => {
     const container = containerRef.current
@@ -154,6 +246,7 @@ export function ScorePreview({
         const zoomableDisplay = osmd as ZoomableDisplay
         applyZoom(zoomableDisplay, BASE_PREVIEW_ZOOM * (deferredPartLayoutPreset.previewNoteScale / 100))
         osmd.render()
+        replaceRenderTargetWithPages(container, renderTarget, showTitle, title)
         updateRenderedPages(true)
         setRenderError(null)
       } catch (error) {
@@ -171,14 +264,28 @@ export function ScorePreview({
         container.replaceChildren()
       }
     }
-  }, [deferredPartLayoutPreset, deferredShowMeasureNumbers, musicXml, updateRenderedPages])
+  }, [deferredPartLayoutPreset, deferredShowMeasureNumbers, musicXml, showTitle, title, updateRenderedPages])
+
+  useEffect(() => () => {
+    if (scrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(scrollFrameRef.current)
+    }
+  }, [])
 
   const goToPreviousPage = () => {
-    setPageIndex((current) => Math.max(0, current - 1))
+    setPageIndex((current) => {
+      const nextPage = Math.max(0, current - 1)
+      scrollToPage(nextPage)
+      return nextPage
+    })
   }
 
   const goToNextPage = () => {
-    setPageIndex((current) => Math.min(pageCount - 1, current + 1))
+    setPageIndex((current) => {
+      const nextPage = Math.min(pageCount - 1, current + 1)
+      scrollToPage(nextPage)
+      return nextPage
+    })
   }
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -311,18 +418,13 @@ export function ScorePreview({
       ) : null}
       <div
         className="preview-surface"
-        aria-label="A4 score page"
+        aria-label="A4 score pages"
+        ref={previewSurfaceRef}
+        onScroll={handlePreviewScroll}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
       >
-        <div className="a4-page">
-          {showTitle ? (
-            <header className="score-title-block">
-              <h2>{title || 'Untitled sketch'}</h2>
-            </header>
-          ) : null}
-          <div className="score-engraving" ref={containerRef} />
-        </div>
+        <div className="score-page-stack score-engraving" ref={containerRef} />
       </div>
       <div className="page-controls" aria-label="Score page controls">
         <button type="button" onClick={goToPreviousPage} disabled={!musicXml || pageIndex === 0} aria-label="Previous page" title="Previous page">
