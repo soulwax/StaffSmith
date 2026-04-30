@@ -79,9 +79,9 @@ export const PART_LAYOUT_PRESETS: PartLayoutPreset[] = [
     density: 'spacious',
     measuresPerSystem: 3,
     systemsPerPageTarget: 5,
-    minimumSystemGapMm: 7,
+    minimumSystemGapMm: 5,
     previewNoteScale: 120,
-    previewSystemSpacing: 148,
+    previewSystemSpacing: 118,
   },
 ]
 

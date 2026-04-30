@@ -87,10 +87,21 @@ function createScorePageShell(showTitle: boolean, title: string) {
   return { page, renderTarget }
 }
 
-function createPrintScorePage(svg: SVGSVGElement, showTitle: boolean, title: string) {
+function createPageNumber(pageNumber: number) {
+  const pageNumberElement = document.createElement('div')
+  pageNumberElement.className = 'score-page-number'
+  pageNumberElement.textContent = String(pageNumber)
+  return pageNumberElement
+}
+
+function createPrintScorePage(svg: SVGSVGElement, showTitle: boolean, title: string, pageNumber: number) {
   const page = document.createElement('article')
   page.className = showTitle ? 'score-print-page score-print-page--with-title' : 'score-print-page'
   page.setAttribute('aria-hidden', 'true')
+
+  if (pageNumber > 1) {
+    page.append(createPageNumber(pageNumber))
+  }
 
   if (showTitle) {
     page.append(createScoreTitleBlock(title))
@@ -116,7 +127,7 @@ function syncPrintableScorePages(container: HTMLElement, renderTarget: HTMLEleme
   const printStack = document.createElement('div')
   printStack.className = 'score-print-stack score-engraving'
   pages.forEach((page, index) => {
-    printStack.append(createPrintScorePage(page, showTitle && index === 0, title))
+    printStack.append(createPrintScorePage(page, showTitle && index === 0, title, index + 1))
   })
   container.append(printStack)
 }

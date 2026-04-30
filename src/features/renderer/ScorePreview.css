@@ -465,6 +465,7 @@
 
   .score-print-page {
     display: flex;
+    position: relative;
     flex-direction: column;
     width: 100%;
     aspect-ratio: auto;
@@ -478,6 +479,17 @@
     background: #fff;
     break-after: page;
     page-break-after: always;
+  }
+
+  .score-page-number {
+    position: absolute;
+    top: 0;
+    right: 0;
+    color: #000;
+    font-family: "Georgia", "Times New Roman", serif;
+    font-size: 10pt;
+    font-weight: 700;
+    line-height: 1;
   }
 
   .score-print-page:last-child {
