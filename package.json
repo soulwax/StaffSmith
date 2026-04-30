@@ -7,6 +7,16 @@
   "engines": {
     "node": ">=22.0.0 <26.0.0"
   },
+  "repository": {
+    "url": "https://github.com/soulwax/StaffSmith.git",
+    "type": "git",
+    "directory": "."
+  },
+  "author": {
+    "email": "soulwax@cock.li",
+    "name": "Christian Kling",
+    "url": "https://bluesix.dev"
+  },
   "scripts": {
     "dev": "vite",
     "dev:full": "pnpm dlx vercel@latest dev",

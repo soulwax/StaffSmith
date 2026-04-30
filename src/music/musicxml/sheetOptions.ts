@@ -68,7 +68,7 @@ export const PART_LAYOUT_PRESETS: PartLayoutPreset[] = [
     label: 'Standard Part',
     density: 'standard',
     measuresPerSystem: 4,
-    systemsPerPageTarget: 6,
+    systemsPerPageTarget: 5,
     minimumSystemGapMm: 5,
     previewNoteScale: 102,
     previewSystemSpacing: 112,
