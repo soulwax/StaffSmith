@@ -109,6 +109,27 @@ function updateVisibleScorePage(container: HTMLElement | null, pageIndex: number
   })
 }
 
+function revealAllScorePagesForPrint(container: HTMLElement | null) {
+  if (!container) {
+    return
+  }
+
+  const titleBlock = container.querySelector<HTMLElement>('.score-title-block')
+  if (titleBlock) {
+    titleBlock.hidden = false
+  }
+
+  const renderTarget = container.querySelector<HTMLElement>('.preview-render-target')
+  const pages = renderTarget ? getRenderedPageSvgs(renderTarget) : []
+  pages.forEach((page) => {
+    const pageWrapper = page.parentElement && page.parentElement !== renderTarget ? page.parentElement : page
+    page.dataset.active = 'true'
+    page.setAttribute('aria-hidden', 'false')
+    page.style.display = 'block'
+    pageWrapper.style.display = 'block'
+  })
+}
+
 function getRenderedPageSvgs(renderTarget: HTMLElement) {
   const directPages = Array.from(renderTarget.children).filter(
     (child): child is SVGSVGElement => child instanceof SVGSVGElement,
@@ -376,6 +397,23 @@ export function ScorePreview({
   }
 
   useEffect(() => {
+    const handleBeforePrint = () => {
+      revealAllScorePagesForPrint(containerRef.current)
+    }
+
+    const handleAfterPrint = () => {
+      updateVisibleScorePage(containerRef.current, pageIndex)
+    }
+
+    window.addEventListener('beforeprint', handleBeforePrint)
+    window.addEventListener('afterprint', handleAfterPrint)
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint)
+      window.removeEventListener('afterprint', handleAfterPrint)
+    }
+  }, [pageIndex])
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target
       const isTextEntry = target instanceof HTMLInputElement
@@ -433,6 +471,11 @@ export function ScorePreview({
     onPartLayoutPresetChange(DEFAULT_PART_LAYOUT_PRESET)
     setShowTitle(true)
     setShowMeasureNumbers(true)
+  }
+
+  const handlePrintScore = () => {
+    revealAllScorePagesForPrint(containerRef.current)
+    onPrintScore()
   }
 
   return (
@@ -513,7 +556,7 @@ export function ScorePreview({
           <button
             type="button"
             className="preview-icon-button"
-            onClick={onPrintScore}
+            onClick={handlePrintScore}
             disabled={!musicXml}
             aria-label="Print or save PDF"
             title="Print or save PDF"

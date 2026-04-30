@@ -72,8 +72,8 @@ describe('MusicXML export', () => {
     })
 
     expect(standardXml).toContain('<measure number="25">\n      <print new-page="yes" />')
-    expect(childrenXml).toContain('<measure number="13">\n      <print new-page="yes" />')
-    expect(childrenXml).toContain('<measure number="25">\n      <print new-page="yes" />')
+    expect(childrenXml).toContain('<measure number="16">\n      <print new-page="yes" />')
+    expect(childrenXml).toContain('<measure number="31">\n      <print new-page="yes" />')
   })
 
   it('serializes printable dynamics, expressions, and hairpin labels', () => {

@@ -78,7 +78,7 @@ export const PART_LAYOUT_PRESETS: PartLayoutPreset[] = [
     label: "For Children's Songs",
     density: 'spacious',
     measuresPerSystem: 3,
-    systemsPerPageTarget: 4,
+    systemsPerPageTarget: 5,
     minimumSystemGapMm: 7,
     previewNoteScale: 120,
     previewSystemSpacing: 148,
