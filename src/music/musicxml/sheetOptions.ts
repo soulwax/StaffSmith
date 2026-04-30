@@ -54,7 +54,7 @@ export const PART_LAYOUT_PRESETS: PartLayoutPreset[] = [
     label: 'Orchestral Solo',
     density: 'standard',
     measuresPerSystem: 6,
-    systemsPerPageTarget: 12,
+    systemsPerPageTarget: 13,
     minimumSystemGapMm: 3,
     insideMarginMm: 10,
     outsideMarginMm: 10,

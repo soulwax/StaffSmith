@@ -44,8 +44,8 @@ describe('MusicXML export', () => {
     expect(xml).toContain('<measure number="7">\n      <print new-system="yes" />')
   })
 
-  it('targets twelve systems per page for the orchestral solo preset', () => {
-    const input = Array.from({ length: 73 }, () => 'C4 w').join(' | ')
+  it('allows thirteen systems per page for the orchestral solo preset', () => {
+    const input = Array.from({ length: 79 }, () => 'C4 w').join(' | ')
     const result = parseScoreInput('notes', input)
     expect(result.ok).toBe(true)
 
@@ -54,7 +54,7 @@ describe('MusicXML export', () => {
       staffLabel: '',
     })
 
-    expect(xml).toContain('<measure number="73">\n      <print new-page="yes" />')
+    expect(xml).toContain('<measure number="79">\n      <print new-page="yes" />')
   })
 
   it('uses preset-specific page breaks for standard and children layouts', () => {

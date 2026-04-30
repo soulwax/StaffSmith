@@ -162,7 +162,7 @@ function resolveSheetOptions(options: Partial<ScoreSheetOptions>): ScoreSheetOpt
 function buildLayoutPlan(score: Score, options: ScoreSheetOptions): Map<number, MeasureLayoutPlan> {
   const plan = new Map<number, MeasureLayoutPlan>()
   const measuresPerSystem = clampInteger(options.measuresPerSystem, 1, 12)
-  const systemsPerPage = clampInteger(options.systemsPerPageTarget, 4, 12)
+  const systemsPerPage = clampInteger(options.systemsPerPageTarget, 4, 13)
   const measuresPerPage = measuresPerSystem * systemsPerPage
   const pageBreaks = computePageBreaks(score, measuresPerPage)
   const cueMeasures = computeCueMeasures(score)
