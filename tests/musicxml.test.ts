@@ -44,8 +44,8 @@ describe('MusicXML export', () => {
     expect(xml).toContain('<measure number="7">\n      <print new-system="yes" />')
   })
 
-  it('allows thirteen systems per page for the orchestral solo preset', () => {
-    const input = Array.from({ length: 79 }, () => 'C4 w').join(' | ')
+  it('targets twelve systems per page for the orchestral solo preset', () => {
+    const input = Array.from({ length: 73 }, () => 'C4 w').join(' | ')
     const result = parseScoreInput('notes', input)
     expect(result.ok).toBe(true)
 
@@ -54,7 +54,7 @@ describe('MusicXML export', () => {
       staffLabel: '',
     })
 
-    expect(xml).toContain('<measure number="79">\n      <print new-page="yes" />')
+    expect(xml).toContain('<measure number="73">\n      <print new-page="yes" />')
   })
 
   it('uses preset-specific page breaks for standard and children layouts', () => {
@@ -72,8 +72,9 @@ describe('MusicXML export', () => {
     })
 
     expect(standardXml).toContain('<measure number="17">\n      <print new-page="yes" />')
-    expect(childrenXml).toContain('<measure number="16">\n      <print new-page="yes" />')
-    expect(childrenXml).toContain('<measure number="31">\n      <print new-page="yes" />')
+    expect(childrenXml).toContain('<measure number="13">\n      <print new-page="yes" />')
+    expect(childrenXml).toContain('<measure number="25">\n      <print new-page="yes" />')
+    expect(childrenXml).toContain('<measure number="37">\n      <print new-page="yes" />')
   })
 
   it('serializes printable dynamics, expressions, and hairpin labels', () => {
