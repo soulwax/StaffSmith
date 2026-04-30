@@ -208,7 +208,7 @@ function computePageBreaks(score: Score, measuresPerPage: number): Set<number> {
 
 function findRestPageBreak(score: Score, target: number, previousBreak: number): number | undefined {
   const searchStart = Math.max(previousBreak + 1, target - MIN_PAGE_TURN_REST_MEASURES)
-  const searchEnd = Math.min(score.measures.length - 1, target + MIN_PAGE_TURN_REST_MEASURES * 2)
+  const searchEnd = Math.min(score.measures.length - 1, target)
   const runs = findFullMeasureRestRuns(score)
 
   return runs
@@ -219,7 +219,7 @@ function findRestPageBreak(score: Score, target: number, previousBreak: number):
 
 function findSectionPageBreak(score: Score, target: number, previousBreak: number): number | undefined {
   const searchStart = Math.max(previousBreak + 1, target - 2)
-  const searchEnd = Math.min(score.measures.length - 1, target + 8)
+  const searchEnd = Math.min(score.measures.length - 1, target)
 
   for (let index = searchStart; index <= searchEnd; index += 1) {
     if (hasSectionChange(score.measures[index])) {
