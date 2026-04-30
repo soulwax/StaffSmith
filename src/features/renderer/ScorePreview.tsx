@@ -87,6 +87,52 @@ function createScorePageShell(showTitle: boolean, title: string) {
   return { page, renderTarget }
 }
 
+function createPrintScorePage(svg: SVGSVGElement, showTitle: boolean, title: string) {
+  const page = document.createElement('article')
+  page.className = showTitle ? 'score-print-page score-print-page--with-title' : 'score-print-page'
+  page.setAttribute('aria-hidden', 'true')
+
+  if (showTitle) {
+    page.append(createScoreTitleBlock(title))
+  }
+
+  const body = document.createElement('div')
+  body.className = 'score-print-page__body'
+  body.append(svg.cloneNode(true))
+  page.append(body)
+
+  return page
+}
+
+function syncPrintableScorePages(container: HTMLElement, renderTarget: HTMLElement, showTitle: boolean, title: string) {
+  const existingPrintStack = container.querySelector('.score-print-stack')
+  existingPrintStack?.remove()
+
+  const pages = getRenderedPageSvgs(renderTarget)
+  if (pages.length === 0) {
+    return
+  }
+
+  const printStack = document.createElement('div')
+  printStack.className = 'score-print-stack score-engraving'
+  pages.forEach((page, index) => {
+    printStack.append(createPrintScorePage(page, showTitle && index === 0, title))
+  })
+  container.append(printStack)
+}
+
+function configureDisplayEngraving(
+  display: ZoomableDisplay,
+  spacingScale: number,
+  showMeasureNumbers: boolean,
+  measuresPerSystem: number,
+) {
+  display.EngravingRules.MinimumDistanceBetweenSystems *= spacingScale
+  display.EngravingRules.MinSkyBottomDistBetweenSystems *= spacingScale
+  display.EngravingRules.RenderMeasureNumbers = showMeasureNumbers
+  display.EngravingRules.RenderXMeasuresPerLineAkaSystem = measuresPerSystem
+}
+
 function updateVisibleScorePage(container: HTMLElement | null, pageIndex: number) {
   if (!container) {
     return
@@ -102,10 +148,12 @@ function updateVisibleScorePage(container: HTMLElement | null, pageIndex: number
   pages.forEach((page, index) => {
     const isActive = index === pageIndex
     const pageWrapper = page.parentElement && page.parentElement !== renderTarget ? page.parentElement : page
+    pageWrapper.classList.add('score-rendered-page')
+    pageWrapper.dataset.active = isActive ? 'true' : 'false'
     page.dataset.active = isActive ? 'true' : 'false'
     page.setAttribute('aria-hidden', isActive ? 'false' : 'true')
-    page.style.display = 'block'
-    pageWrapper.style.display = isActive ? 'block' : 'none'
+    page.style.display = ''
+    pageWrapper.style.display = ''
   })
 }
 
@@ -123,10 +171,12 @@ function revealAllScorePagesForPrint(container: HTMLElement | null) {
   const pages = renderTarget ? getRenderedPageSvgs(renderTarget) : []
   pages.forEach((page) => {
     const pageWrapper = page.parentElement && page.parentElement !== renderTarget ? page.parentElement : page
+    pageWrapper.classList.add('score-rendered-page')
+    pageWrapper.dataset.active = 'true'
     page.dataset.active = 'true'
     page.setAttribute('aria-hidden', 'false')
-    page.style.display = 'block'
-    pageWrapper.style.display = 'block'
+    page.style.display = ''
+    pageWrapper.style.display = ''
   })
 }
 
@@ -331,10 +381,12 @@ export function ScorePreview({
         })
 
         const spacingScale = deferredPartLayoutPreset.previewSystemSpacing / 100
-        osmd.EngravingRules.MinimumDistanceBetweenSystems *= spacingScale
-        osmd.EngravingRules.MinSkyBottomDistBetweenSystems *= spacingScale
-        osmd.EngravingRules.RenderMeasureNumbers = deferredShowMeasureNumbers
-        osmd.EngravingRules.RenderXMeasuresPerLineAkaSystem = deferredPartLayoutPreset.measuresPerSystem
+        configureDisplayEngraving(
+          osmd as ZoomableDisplay,
+          spacingScale,
+          deferredShowMeasureNumbers,
+          deferredPartLayoutPreset.measuresPerSystem,
+        )
 
         await osmd.load(musicXml)
         if (cancelled) {
@@ -366,6 +418,47 @@ export function ScorePreview({
         if (cancelled || renderId !== renderIdRef.current) {
           renderTarget.remove()
           return
+        }
+
+        const printRenderTarget = document.createElement('div')
+        printRenderTarget.className = 'print-render-source'
+        printRenderTarget.style.width = `${renderTargetWidth}px`
+        container.append(printRenderTarget)
+
+        try {
+          const printOsmd = new OpenSheetMusicDisplay(printRenderTarget, {
+            autoResize: false,
+            drawTitle: false,
+            drawPartNames: false,
+            drawPartAbbreviations: false,
+            backend: 'svg',
+            newPageFromXML: true,
+            newSystemFromXML: true,
+          })
+          configureDisplayEngraving(
+            printOsmd as ZoomableDisplay,
+            spacingScale,
+            deferredShowMeasureNumbers,
+            deferredPartLayoutPreset.measuresPerSystem,
+          )
+          await printOsmd.load(musicXml)
+          if (!cancelled && renderId === renderIdRef.current) {
+            applyZoom(printOsmd as ZoomableDisplay, 1)
+            printOsmd.render()
+            await waitForRenderedSvgContent(
+              printRenderTarget,
+              () => cancelled || renderId !== renderIdRef.current,
+            )
+          }
+          if (!cancelled && renderId === renderIdRef.current) {
+            syncPrintableScorePages(container, printRenderTarget, showTitle, title)
+          }
+        } catch {
+          if (!cancelled && renderId === renderIdRef.current) {
+            syncPrintableScorePages(container, renderTarget, showTitle, title)
+          }
+        } finally {
+          printRenderTarget.remove()
         }
 
         fitRenderedScoreToPage(container, renderTarget, renderTargetWidth)
