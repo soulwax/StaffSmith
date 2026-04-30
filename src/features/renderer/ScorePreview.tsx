@@ -38,8 +38,8 @@ type ZoomableDisplay = {
 
 const BASE_PREVIEW_ZOOM = 0.84
 const MIN_ENGRAVING_WIDTH = 720
+const PRINT_RENDER_WIDTH = 720
 const UNTITLED_SCORE_TITLE = 'Untitled sketch'
-const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 const PRINT_PAGE_WIDTH_MM = 210
 const PRINT_PAGE_HEIGHT_MM = 297
 const PRINT_PAGE_MARGIN_MM = 12
@@ -233,17 +233,18 @@ function collectPrintSystemBlocks(svg: SVGSVGElement): PrintSystemBlock[] {
   }))
 }
 
-function createPrintPageSvg(sourceViewBox: SvgBox, pageHeight: number, showTitle: boolean, title: string) {
-  const svg = document.createElementNS(SVG_NAMESPACE, 'svg')
+function createPrintPageSvg(sourceViewBox: SvgBox, showTitle: boolean, title: string) {
+  const pageHeight = getPrintSvgPageHeight(sourceViewBox.width)
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   svg.classList.add('score-print-page-svg')
-  svg.setAttribute('viewBox', `${sourceViewBox.x} ${sourceViewBox.y} ${sourceViewBox.width} ${pageHeight}`)
+  svg.setAttribute('viewBox', `${formatSvgNumber(sourceViewBox.x)} ${formatSvgNumber(sourceViewBox.y)} ${formatSvgNumber(sourceViewBox.width)} ${formatSvgNumber(pageHeight)}`)
   svg.setAttribute('preserveAspectRatio', 'xMidYMin meet')
   svg.setAttribute('width', formatSvgNumber(sourceViewBox.width))
   svg.setAttribute('height', formatSvgNumber(pageHeight))
   svg.setAttribute('aria-hidden', 'true')
 
   if (showTitle) {
-    const titleText = document.createElementNS(SVG_NAMESPACE, 'text')
+    const titleText = document.createElementNS('http://www.w3.org/2000/svg', 'text')
     titleText.classList.add('score-print-title')
     titleText.setAttribute('x', formatSvgNumber(sourceViewBox.x + sourceViewBox.width / 2))
     titleText.setAttribute('y', formatSvgNumber(sourceViewBox.y + 34))
@@ -256,7 +257,7 @@ function createPrintPageSvg(sourceViewBox: SvgBox, pageHeight: number, showTitle
 }
 
 function appendSystemBlock(svg: SVGSVGElement, block: PrintSystemBlock, targetY: number) {
-  const group = document.createElementNS(SVG_NAMESPACE, 'g')
+  const group = document.createElementNS('http://www.w3.org/2000/svg', 'g')
   group.classList.add('score-print-system')
   group.setAttribute('transform', `translate(0 ${formatSvgNumber(targetY - block.box.y)})`)
   block.elements.forEach((element) => {
@@ -272,13 +273,11 @@ function buildPrintPageSvgs(renderTarget: HTMLElement, showTitle: boolean, title
   }
 
   const sourceViewBox = getSvgViewBox(sourcePages[0]!)
-  const contentWidthMm = PRINT_PAGE_WIDTH_MM - PRINT_PAGE_MARGIN_MM * 2
-  const contentHeightMm = PRINT_PAGE_HEIGHT_MM - PRINT_PAGE_MARGIN_MM * 2
-  const pageHeight = sourceViewBox.width * (contentHeightMm / contentWidthMm)
-  const bottomLimit = pageHeight - PRINT_BOTTOM_PADDING_UNITS
+  const pageHeight = getPrintSvgPageHeight(sourceViewBox.width)
+  const bottomLimit = sourceViewBox.y + pageHeight - PRINT_BOTTOM_PADDING_UNITS
   const blocks = sourcePages.flatMap(collectPrintSystemBlocks)
   const pages: SVGSVGElement[] = []
-  let page = createPrintPageSvg(sourceViewBox, pageHeight, showTitle, title)
+  let page = createPrintPageSvg(sourceViewBox, showTitle, title)
   let cursorY = sourceViewBox.y + PRINT_TOP_PADDING_UNITS + (showTitle ? PRINT_TITLE_HEIGHT_UNITS : 0)
   let systemCountOnPage = 0
 
@@ -288,7 +287,7 @@ function buildPrintPageSvgs(renderTarget: HTMLElement, showTitle: boolean, title
 
     if (systemCountOnPage > 0 && targetY + block.box.height > bottomLimit) {
       pages.push(page)
-      page = createPrintPageSvg(sourceViewBox, pageHeight, false, title)
+      page = createPrintPageSvg(sourceViewBox, false, title)
       cursorY = sourceViewBox.y + PRINT_TOP_PADDING_UNITS
       systemCountOnPage = 0
     }
@@ -304,6 +303,13 @@ function buildPrintPageSvgs(renderTarget: HTMLElement, showTitle: boolean, title
   }
 
   return pages
+}
+
+function getPrintSvgPageHeight(width: number) {
+  const contentWidthMm = PRINT_PAGE_WIDTH_MM - PRINT_PAGE_MARGIN_MM * 2
+  const contentHeightMm = PRINT_PAGE_HEIGHT_MM - PRINT_PAGE_MARGIN_MM * 2
+
+  return width * (contentHeightMm / contentWidthMm)
 }
 
 function syncPrintableScorePages(container: HTMLElement, renderTarget: HTMLElement, showTitle: boolean, title: string) {
@@ -626,8 +632,48 @@ export function ScorePreview({
           return
         }
 
+        const printRenderTarget = document.createElement('div')
+        printRenderTarget.className = 'print-render-source'
+        printRenderTarget.style.width = `${PRINT_RENDER_WIDTH}px`
+        container.append(printRenderTarget)
+
+        try {
+          const printOsmd = new OpenSheetMusicDisplay(printRenderTarget, {
+            autoResize: false,
+            drawTitle: false,
+            drawPartNames: false,
+            drawPartAbbreviations: false,
+            backend: 'svg',
+            newPageFromXML: false,
+            newSystemFromXML: true,
+          })
+          configureDisplayEngraving(
+            printOsmd as ZoomableDisplay,
+            spacingScale,
+            deferredShowMeasureNumbers,
+            deferredPartLayoutPreset.measuresPerSystem,
+          )
+          await printOsmd.load(musicXml)
+          if (!cancelled && renderId === renderIdRef.current) {
+            applyZoom(printOsmd as ZoomableDisplay, BASE_PREVIEW_ZOOM * (deferredPartLayoutPreset.previewNoteScale / 100))
+            printOsmd.render()
+            await waitForRenderedSvgContent(
+              printRenderTarget,
+              () => cancelled || renderId !== renderIdRef.current,
+            )
+          }
+          if (!cancelled && renderId === renderIdRef.current) {
+            syncPrintableScorePages(container, printRenderTarget, showTitle, title)
+          }
+        } catch {
+          if (!cancelled && renderId === renderIdRef.current) {
+            syncPrintableScorePages(container, renderTarget, showTitle, title)
+          }
+        } finally {
+          printRenderTarget.remove()
+        }
+
         fitRenderedScoreToPage(container, renderTarget, renderTargetWidth)
-        syncPrintableScorePages(container, renderTarget, showTitle, title)
         updateRenderedPages(true)
         setRenderError(null)
       } catch (error) {

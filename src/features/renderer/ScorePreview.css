@@ -181,6 +181,14 @@
   display: none;
 }
 
+.print-render-source {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .score-print-title {
   fill: #000;
   font-family: "Georgia", "Times New Roman", serif;
