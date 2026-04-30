@@ -87,21 +87,10 @@ function createScorePageShell(showTitle: boolean, title: string) {
   return { page, renderTarget }
 }
 
-function createPageNumber(pageNumber: number) {
-  const pageNumberElement = document.createElement('div')
-  pageNumberElement.className = 'score-page-number'
-  pageNumberElement.textContent = String(pageNumber)
-  return pageNumberElement
-}
-
-function createPrintScorePage(svg: SVGSVGElement, showTitle: boolean, title: string, pageNumber: number) {
+function createPrintScorePage(svg: SVGSVGElement, showTitle: boolean, title: string) {
   const page = document.createElement('article')
   page.className = showTitle ? 'score-print-page score-print-page--with-title' : 'score-print-page'
   page.setAttribute('aria-hidden', 'true')
-
-  if (pageNumber > 1) {
-    page.append(createPageNumber(pageNumber))
-  }
 
   if (showTitle) {
     page.append(createScoreTitleBlock(title))
@@ -127,7 +116,7 @@ function syncPrintableScorePages(container: HTMLElement, renderTarget: HTMLEleme
   const printStack = document.createElement('div')
   printStack.className = 'score-print-stack score-engraving'
   pages.forEach((page, index) => {
-    printStack.append(createPrintScorePage(page, showTitle && index === 0, title, index + 1))
+    printStack.append(createPrintScorePage(page, showTitle && index === 0, title))
   })
   container.append(printStack)
 }
@@ -431,48 +420,8 @@ export function ScorePreview({
           return
         }
 
-        const printRenderTarget = document.createElement('div')
-        printRenderTarget.className = 'print-render-source'
-        printRenderTarget.style.width = `${renderTargetWidth}px`
-        container.append(printRenderTarget)
-
-        try {
-          const printOsmd = new OpenSheetMusicDisplay(printRenderTarget, {
-            autoResize: false,
-            drawTitle: false,
-            drawPartNames: false,
-            drawPartAbbreviations: false,
-            backend: 'svg',
-            newPageFromXML: true,
-            newSystemFromXML: true,
-          })
-          configureDisplayEngraving(
-            printOsmd as ZoomableDisplay,
-            spacingScale,
-            deferredShowMeasureNumbers,
-            deferredPartLayoutPreset.measuresPerSystem,
-          )
-          await printOsmd.load(musicXml)
-          if (!cancelled && renderId === renderIdRef.current) {
-            applyZoom(printOsmd as ZoomableDisplay, 1)
-            printOsmd.render()
-            await waitForRenderedSvgContent(
-              printRenderTarget,
-              () => cancelled || renderId !== renderIdRef.current,
-            )
-          }
-          if (!cancelled && renderId === renderIdRef.current) {
-            syncPrintableScorePages(container, printRenderTarget, showTitle, title)
-          }
-        } catch {
-          if (!cancelled && renderId === renderIdRef.current) {
-            syncPrintableScorePages(container, renderTarget, showTitle, title)
-          }
-        } finally {
-          printRenderTarget.remove()
-        }
-
         fitRenderedScoreToPage(container, renderTarget, renderTargetWidth)
+        syncPrintableScorePages(container, renderTarget, showTitle, title)
         updateRenderedPages(true)
         setRenderError(null)
       } catch (error) {

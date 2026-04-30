@@ -71,7 +71,7 @@ describe('MusicXML export', () => {
       staffLabel: '',
     })
 
-    expect(standardXml).toContain('<measure number="21">\n      <print new-page="yes" />')
+    expect(standardXml).toContain('<measure number="17">\n      <print new-page="yes" />')
     expect(childrenXml).toContain('<measure number="16">\n      <print new-page="yes" />')
     expect(childrenXml).toContain('<measure number="31">\n      <print new-page="yes" />')
   })
