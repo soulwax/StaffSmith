@@ -36,6 +36,43 @@ type ZoomableDisplay = {
   }
 }
 
+type SvgDebugMetrics = {
+  width: string | null
+  height: string | null
+  viewBox: string | null
+  renderedWidth: number
+  renderedHeight: number
+  childElementCount: number
+  elementCount: number
+  textCount: number
+  hash: string
+}
+
+type PrintDebugPageReport = {
+  page: number
+  geometryMatches: boolean
+  markupMatches: boolean
+  preview: SvgDebugMetrics | null
+  print: SvgDebugMetrics | null
+}
+
+type PrintDebugReport = {
+  pageCountMatches: boolean
+  mismatchCount: number
+  previewPageCount: number
+  printPageCount: number
+  pages: PrintDebugPageReport[]
+}
+
+type PrintVisualDebugApi = () => PrintDebugReport | null
+
+declare global {
+  interface Window {
+    __staffSmithComparePrintPreview?: PrintVisualDebugApi
+    __staffSmithLastPrintDebugReport?: PrintDebugReport | null
+  }
+}
+
 const BASE_PREVIEW_ZOOM = 0.84
 const MIN_ENGRAVING_WIDTH = 720
 const UNTITLED_SCORE_TITLE = 'Untitled sketch'
@@ -119,6 +156,227 @@ function syncPrintableScorePages(container: HTMLElement, renderTarget: HTMLEleme
     printStack.append(createPrintScorePage(page, showTitle && index === 0, title))
   })
   container.append(printStack)
+}
+
+function getPrintPageSvgs(container: HTMLElement) {
+  return Array.from(container.querySelectorAll<SVGSVGElement>('.score-print-page__body > svg'))
+}
+
+function hashString(value: string) {
+  let hash = 2166136261
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+
+  return (hash >>> 0).toString(16).padStart(8, '0')
+}
+
+function getSvgDebugMetrics(svg: SVGSVGElement): SvgDebugMetrics {
+  const bounds = svg.getBoundingClientRect()
+  const width = svg.getAttribute('width')
+  const height = svg.getAttribute('height')
+  const fallbackWidth = Number.parseFloat(width ?? '')
+  const fallbackHeight = Number.parseFloat(height ?? '')
+
+  return {
+    width,
+    height,
+    viewBox: svg.getAttribute('viewBox'),
+    renderedWidth: Math.round((bounds.width || fallbackWidth || 0) * 100) / 100,
+    renderedHeight: Math.round((bounds.height || fallbackHeight || 0) * 100) / 100,
+    childElementCount: svg.childElementCount,
+    elementCount: svg.querySelectorAll('*').length,
+    textCount: svg.querySelectorAll('text').length,
+    hash: hashString(svg.outerHTML),
+  }
+}
+
+function svgGeometryMatches(preview: SvgDebugMetrics | null, print: SvgDebugMetrics | null) {
+  return Boolean(
+    preview
+    && print
+    && preview.width === print.width
+    && preview.height === print.height
+    && preview.viewBox === print.viewBox,
+  )
+}
+
+function svgMarkupMatches(preview: SvgDebugMetrics | null, print: SvgDebugMetrics | null) {
+  return Boolean(preview && print && preview.hash === print.hash)
+}
+
+function getSvgAspectRatio(svg: SVGSVGElement) {
+  const width = Number.parseFloat(svg.getAttribute('width') ?? '')
+  const height = Number.parseFloat(svg.getAttribute('height') ?? '')
+
+  if (Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0) {
+    return `${width} / ${height}`
+  }
+
+  const viewBox = svg.viewBox.baseVal
+  if (viewBox.width > 0 && viewBox.height > 0) {
+    return `${viewBox.width} / ${viewBox.height}`
+  }
+
+  return '210 / 297'
+}
+
+function createPrintDebugReport(previewPages: SVGSVGElement[], printPages: SVGSVGElement[]): PrintDebugReport {
+  const pageCount = Math.max(previewPages.length, printPages.length)
+  const pages = Array.from({ length: pageCount }, (_, index): PrintDebugPageReport => {
+    const preview = previewPages[index] ? getSvgDebugMetrics(previewPages[index]) : null
+    const print = printPages[index] ? getSvgDebugMetrics(printPages[index]) : null
+
+    return {
+      page: index + 1,
+      geometryMatches: svgGeometryMatches(preview, print),
+      markupMatches: svgMarkupMatches(preview, print),
+      preview,
+      print,
+    }
+  })
+
+  return {
+    pageCountMatches: previewPages.length === printPages.length,
+    mismatchCount: pages.filter((page) => !page.geometryMatches || !page.markupMatches).length,
+    previewPageCount: previewPages.length,
+    printPageCount: printPages.length,
+    pages,
+  }
+}
+
+function createDebugLabel(text: string, className?: string) {
+  const label = document.createElement('span')
+  label.className = className ? `score-print-debug-label ${className}` : 'score-print-debug-label'
+  label.textContent = text
+  return label
+}
+
+function createDebugSvgPanel(label: string, svg: SVGSVGElement | undefined) {
+  const panel = document.createElement('div')
+  panel.className = 'score-print-debug-panel'
+  panel.append(createDebugLabel(label))
+
+  const visual = document.createElement('div')
+  visual.className = 'score-print-debug-page-visual'
+
+  if (svg) {
+    visual.style.setProperty('--score-print-debug-ratio', getSvgAspectRatio(svg))
+    visual.append(svg.cloneNode(true))
+  } else {
+    visual.classList.add('score-print-debug-page-visual--empty')
+    visual.textContent = 'Missing page'
+  }
+
+  panel.append(visual)
+  return panel
+}
+
+function createDebugOverlayPanel(previewSvg: SVGSVGElement | undefined, printSvg: SVGSVGElement | undefined) {
+  const panel = document.createElement('div')
+  panel.className = 'score-print-debug-panel'
+  panel.append(createDebugLabel('Overlap'))
+
+  const visual = document.createElement('div')
+  visual.className = 'score-print-debug-page-visual score-print-debug-page-visual--overlay'
+  const sourceSvg = previewSvg ?? printSvg
+  if (sourceSvg) {
+    visual.style.setProperty('--score-print-debug-ratio', getSvgAspectRatio(sourceSvg))
+  }
+
+  if (previewSvg) {
+    const previewClone = previewSvg.cloneNode(true) as SVGSVGElement
+    previewClone.classList.add('score-print-debug-overlay-svg', 'score-print-debug-overlay-svg--preview')
+    visual.append(previewClone)
+  }
+
+  if (printSvg) {
+    const printClone = printSvg.cloneNode(true) as SVGSVGElement
+    printClone.classList.add('score-print-debug-overlay-svg', 'score-print-debug-overlay-svg--print')
+    visual.append(printClone)
+  }
+
+  panel.append(visual)
+  return panel
+}
+
+function renderPrintDebugOverlay(report: PrintDebugReport, previewPages: SVGSVGElement[], printPages: SVGSVGElement[]) {
+  document.querySelector('.score-print-debug-overlay')?.remove()
+
+  const overlay = document.createElement('aside')
+  overlay.className = 'score-print-debug-overlay'
+  overlay.setAttribute('aria-label', 'Score print visual debug')
+
+  const header = document.createElement('header')
+  header.className = 'score-print-debug-header'
+
+  const heading = document.createElement('h2')
+  heading.textContent = 'Score vs Print'
+
+  const summary = document.createElement('p')
+  summary.textContent = `${report.previewPageCount} score pages, ${report.printPageCount} print pages, ${report.mismatchCount} mismatches`
+
+  const closeButton = document.createElement('button')
+  closeButton.type = 'button'
+  closeButton.textContent = 'Close'
+  closeButton.addEventListener('click', () => overlay.remove())
+
+  header.append(heading, summary, closeButton)
+  overlay.append(header)
+
+  const scroll = document.createElement('div')
+  scroll.className = 'score-print-debug-scroll'
+
+  report.pages.forEach((pageReport, index) => {
+    const section = document.createElement('section')
+    section.className = pageReport.geometryMatches && pageReport.markupMatches
+      ? 'score-print-debug-page score-print-debug-page--match'
+      : 'score-print-debug-page score-print-debug-page--mismatch'
+
+    const pageHeading = document.createElement('h3')
+    pageHeading.textContent = `Page ${pageReport.page}`
+
+    const details = document.createElement('p')
+    details.textContent = `Geometry ${pageReport.geometryMatches ? 'matches' : 'differs'} · SVG ${pageReport.markupMatches ? 'matches' : 'differs'}`
+
+    const grid = document.createElement('div')
+    grid.className = 'score-print-debug-grid'
+    grid.append(
+      createDebugSvgPanel('Score', previewPages[index]),
+      createDebugSvgPanel('Print', printPages[index]),
+      createDebugOverlayPanel(previewPages[index], printPages[index]),
+    )
+
+    section.append(pageHeading, details, grid)
+    scroll.append(section)
+  })
+
+  overlay.append(scroll)
+  document.body.append(overlay)
+}
+
+function comparePrintPreviewVisually(
+  container: HTMLElement,
+  showTitle: boolean,
+  title: string,
+): PrintDebugReport | null {
+  const renderTarget = container.querySelector<HTMLElement>('.preview-render-target')
+  if (!renderTarget) {
+    return null
+  }
+
+  syncPrintableScorePages(container, renderTarget, showTitle, title)
+
+  const previewPages = getRenderedPageSvgs(renderTarget)
+  const printPages = getPrintPageSvgs(container)
+  const report = createPrintDebugReport(previewPages, printPages)
+
+  window.__staffSmithLastPrintDebugReport = report
+  renderPrintDebugOverlay(report, previewPages, printPages)
+
+  return report
 }
 
 function configureDisplayEngraving(
@@ -330,6 +588,24 @@ export function ScorePreview({
   useEffect(() => {
     updateVisibleScorePage(containerRef.current, pageIndex)
   }, [pageIndex, pageCount])
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) {
+      return undefined
+    }
+
+    const comparePrintPreview: PrintVisualDebugApi = () => {
+      const container = containerRef.current
+      return container ? comparePrintPreviewVisually(container, showTitle, title) : null
+    }
+
+    window.__staffSmithComparePrintPreview = comparePrintPreview
+    return () => {
+      if (window.__staffSmithComparePrintPreview === comparePrintPreview) {
+        delete window.__staffSmithComparePrintPreview
+      }
+    }
+  }, [showTitle, title])
 
   useEffect(() => {
     const container = containerRef.current
