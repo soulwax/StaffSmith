@@ -70,7 +70,10 @@ type LocalDraft = {
 }
 
 const AUTOSAVE_KEY = 'staffsmith:draft:v2'
-const DEFAULT_NOTE_GENERATION_PROMPT = 'A flute solo for beginners, in the style of jethro tull jazz'
+const DEFAULT_PROJECT_TITLE = 'Take Five - 1st Flute'
+const DEFAULT_NOTE_GENERATION_PROMPT = 'Create an original, non-infringing airy first-flute solo inspired only by the broad cool-jazz feel of "Take Five": modal color, off-kilter phrasing, and light syncopation, without quoting or closely imitating the melody. Output StaffScript notes notation only, in 4/4, at least 100 complete measures, with readable flute range, breath pauses, section labels, dynamics, slurs, cresc./dim., and occasional tasteful 8th/16th/32nd-note flourishes.'
+const LEGACY_PROJECT_TITLE = 'Untitled sketch'
+const LEGACY_NOTE_GENERATION_PROMPT = 'A flute solo for beginners, in the style of jethro tull jazz'
 const API_TIMEOUT_MS = 45_000
 const GENERATION_API_TIMEOUT_MS = 180_000
 const API_PREFLIGHT_TIMEOUT_MS = 3_000
@@ -246,7 +249,7 @@ function getCurrentView(): AppView {
 function renderInput(
   mode: InputMode,
   input: string,
-  title = 'Untitled sketch',
+  title = DEFAULT_PROJECT_TITLE,
   partLayoutPresetId: PartLayoutPresetId = DEFAULT_PART_LAYOUT_PRESET,
   advancedLayoutSettings: AdvancedPartLayoutSettings = DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS,
 ): RenderState {
@@ -397,14 +400,19 @@ function loadLocalDraft(): LocalDraft | null {
       return null
     }
 
+    const draftProjectTitle = typeof draft.projectTitle === 'string' ? draft.projectTitle.trim() : ''
+    const draftNoteGenerationPrompt = typeof draft.noteGenerationPrompt === 'string' ? draft.noteGenerationPrompt.trim() : ''
+
     return {
       projectId: typeof draft.projectId === 'string' ? draft.projectId : null,
-      projectTitle: typeof draft.projectTitle === 'string' ? draft.projectTitle : 'Untitled sketch',
+      projectTitle: draftProjectTitle && draftProjectTitle !== LEGACY_PROJECT_TITLE
+        ? draft.projectTitle as string
+        : DEFAULT_PROJECT_TITLE,
       mode: draft.mode,
       input: draft.input.includes('[object Object]') ? initialExample.input : draft.input,
       assistantPrompt: typeof draft.assistantPrompt === 'string' ? draft.assistantPrompt : '',
-      noteGenerationPrompt: typeof draft.noteGenerationPrompt === 'string' && draft.noteGenerationPrompt.trim()
-        ? draft.noteGenerationPrompt
+      noteGenerationPrompt: draftNoteGenerationPrompt && draftNoteGenerationPrompt !== LEGACY_NOTE_GENERATION_PROMPT
+        ? draft.noteGenerationPrompt as string
         : DEFAULT_NOTE_GENERATION_PROMPT,
       partLayoutPresetId: normalizePartLayoutPresetId(draft.partLayoutPresetId),
       advancedLayoutSettings: normalizeAdvancedLayoutSettings(draft.advancedLayoutSettings),
@@ -456,13 +464,13 @@ export function App() {
   const [state, setState] = useState<RenderState>(() => renderInput(
     initialDraft?.mode ?? initialExample.mode,
     initialDraft?.input ?? initialExample.input,
-    initialDraft?.projectTitle ?? 'Untitled sketch',
+    initialDraft?.projectTitle ?? DEFAULT_PROJECT_TITLE,
     initialDraft?.partLayoutPresetId ?? DEFAULT_PART_LAYOUT_PRESET,
     initialDraft?.advancedLayoutSettings ?? DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS,
   ))
   const [view, setView] = useState<AppView>(() => getCurrentView())
   const [projectId, setProjectId] = useState<string | null>(initialDraft?.projectId ?? null)
-  const [projectTitle, setProjectTitle] = useState(initialDraft?.projectTitle ?? 'Untitled sketch')
+  const [projectTitle, setProjectTitle] = useState(initialDraft?.projectTitle ?? DEFAULT_PROJECT_TITLE)
   const [projects, setProjects] = useState<SavedProject[]>([])
   const [assistantPrompt, setAssistantPrompt] = useState(initialDraft?.assistantPrompt ?? '')
   const [noteGenerationPrompt, setNoteGenerationPrompt] = useState(initialDraft?.noteGenerationPrompt ?? DEFAULT_NOTE_GENERATION_PROMPT)
@@ -701,7 +709,7 @@ export function App() {
 
   const newSketch = () => {
     setProjectId(null)
-    setProjectTitle('Untitled sketch')
+    setProjectTitle(DEFAULT_PROJECT_TITLE)
     setAssistantPrompt('')
     setNoteGenerationPrompt(DEFAULT_NOTE_GENERATION_PROMPT)
     setAnalysis(null)
@@ -810,7 +818,7 @@ export function App() {
             className="project-title-input"
             value={projectTitle}
             onChange={(event) => handleProjectTitleChange(event.target.value)}
-            placeholder="Untitled sketch"
+            placeholder={DEFAULT_PROJECT_TITLE}
           />
           <div className="header-project-actions">
             <button type="button" className="icon-button" onClick={newSketch} aria-label="New sketch" title="New sketch">

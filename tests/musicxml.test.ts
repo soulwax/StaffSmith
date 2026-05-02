@@ -90,9 +90,11 @@ describe('MusicXML export', () => {
     expect(xml).not.toContain('<wedge')
   })
 
-  it('serializes the bundled composer solo example with OSMD-safe hairpin labels', () => {
-    const example = EXAMPLES.find((preset) => preset.id === 'staffscript-take-5-flute')
+  it('serializes the bundled first-flute example with OSMD-safe hairpin labels', () => {
+    const example = EXAMPLES.find((preset) => preset.id === 'take-five-first-flute')
     expect(example).toBeDefined()
+    expect(EXAMPLES[0]?.id).toBe('take-five-first-flute')
+    expect(example?.input.startsWith('mp [airy flute]')).toBe(true)
 
     const result = parseScoreInput('notes', example?.input ?? '')
     expect(result.ok).toBe(true)
@@ -100,7 +102,7 @@ describe('MusicXML export', () => {
     const xml = scoreToMusicXml(result.value)
     const hairpinLabels = xml.match(/<words font-style="italic">(?:cresc\.|dim\.)<\/words>/g) ?? []
 
-    expect(result.value.measures.length).toBeGreaterThan(12)
+    expect(result.value.measures).toHaveLength(96)
     expect(hairpinLabels.length).toBeGreaterThan(0)
     expect(xml).not.toContain('<wedge')
   })
