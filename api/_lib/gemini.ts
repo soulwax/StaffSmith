@@ -1,7 +1,6 @@
 import type { ComposerAssistRequest, ComposerAssistResult, GeminiStatusResponse } from '../../src/lib/apiTypes.js'
 import { STAFFSMITH_AI_SYNTAX_GUIDE } from '../../src/music/parser/syntaxGuide.js'
 import type { DurationSymbol, InputMode } from '../../src/music/model/types.js'
-import { parseScoreInput } from '../../src/music/parser/index.js'
 import { getGeminiApiKey } from './env.js'
 import { GEMINI_CONFIG } from './gemini.config.js'
 import { fail } from './http.js'
@@ -350,7 +349,7 @@ function getParseableStaffScriptCandidate(mode: InputMode, input: string): strin
 }
 
 function isParseableStaffScriptInput(mode: InputMode, input: string) {
-  return parseScoreInput(mode, input).ok
+  return isLikelyParseableStaffSmithInput(mode, input)
 }
 
 function maybeCompleteGeneratedMeasures(mode: InputMode, input: string) {
@@ -358,9 +357,7 @@ function maybeCompleteGeneratedMeasures(mode: InputMode, input: string) {
     return input
   }
 
-  const parsed = parseScoreInput(mode, input)
-  const needsMeasurePadding = parsed.warnings.some((warning) => warning.includes('rhythmically incomplete'))
-  if (!needsMeasurePadding || !isFlatNoteNotation(input)) {
+  if (!hasIncompleteFlatNoteMeasure(input) || !isFlatNoteNotation(input)) {
     return input
   }
 
@@ -384,7 +381,7 @@ function repairGeneratedNotation(mode: InputMode, input: string): string | null 
   let repaired = false
 
   const pushBar = () => {
-    if (output.at(-1) === '|') {
+    if (output[output.length - 1] === '|') {
       return
     }
 
@@ -520,6 +517,156 @@ function stringifyNotationTokens(tokens: string[]) {
   }
 
   return output.replace(/\s+\|$/g, '').trim()
+}
+
+function hasIncompleteFlatNoteMeasure(input: string) {
+  const { body } = splitLeadingDirectives(input)
+  const measureUnits = getFlatNoteMeasureUnits(body)
+  return Boolean(measureUnits?.some((units) => units > 0 && units < MAX_MEASURE_UNITS))
+}
+
+function isLikelyParseableStaffSmithInput(mode: InputMode, input: string) {
+  const { body } = splitLeadingDirectives(input)
+  const flattenedBody = flattenStaffScriptForValidation(body)
+  if (!flattenedBody) {
+    return false
+  }
+
+  return mode === 'chords'
+    ? hasLikelyChordInput(flattenedBody)
+    : Boolean(getFlatNoteMeasureUnits(flattenedBody))
+}
+
+function flattenStaffScriptForValidation(input: string): string | null {
+  const motifs = new Map<string, string>()
+  let body = input
+    .replace(/\/\/.*$/gm, ' ')
+    .replace(/^\s*@motif\s+([A-Za-z][\w-]*)\s*=\s*(.+)$/gim, (_match, name: string, value: string) => {
+      motifs.set(name.toLowerCase(), value.trim())
+      return ' '
+    })
+    .replace(/^\s*@.*$/gm, ' ')
+
+  body = body.replace(/\buse\s+([A-Za-z][\w-]*)\b/gi, (_match, name: string) => motifs.get(name.toLowerCase()) ?? ' ')
+
+  let previousBody = ''
+  while (previousBody !== body) {
+    previousBody = body
+    body = body
+      .replace(/\bsection\s+([A-Za-z][\w -]*)\s*\{([^{}]*)\}/gi, (_match, name: string, content: string) => ` [${slugifySectionName(name)}] ${content} `)
+      .replace(/\brepeat\s+(\d+)\s*\{([^{}]*)\}/gi, (_match, count: string, content: string) => repeatStaffScriptContent(count, content))
+      .replace(/\bx(\d+)\s*\{([^{}]*)\}/gi, (_match, count: string, content: string) => repeatStaffScriptContent(count, content))
+  }
+
+  if (/[{}]/.test(body)) {
+    return null
+  }
+
+  return body.trim() || null
+}
+
+function repeatStaffScriptContent(count: string, content: string) {
+  const repeatCount = Math.max(1, Math.min(16, Number(count) || 1))
+  return Array.from({ length: repeatCount }, () => content.trim()).filter(Boolean).join(' | ')
+}
+
+function slugifySectionName(name: string) {
+  return name.trim().replace(/[^\w -]/g, '').replace(/\s+/g, '-').toLowerCase() || 'section'
+}
+
+function hasLikelyChordInput(input: string) {
+  return input
+    .split(/\s+|\||,/)
+    .map((token) => token.trim())
+    .some((token) => token && !isDirectionToken(token))
+}
+
+function getFlatNoteMeasureUnits(input: string): number[] | null {
+  const tokens = input.match(FLAT_NOTATION_TOKEN_PATTERN) ?? []
+  if (tokens.length === 0) {
+    return null
+  }
+
+  const measures: number[] = []
+  let currentUnits = 0
+  let sawEvent = false
+  let openSlur = false
+
+  const pushMeasure = () => {
+    if (currentUnits > MAX_MEASURE_UNITS) {
+      return false
+    }
+
+    measures.push(currentUnits)
+    currentUnits = 0
+    return true
+  }
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index] ?? ''
+    if (!token || token === ',') {
+      continue
+    }
+
+    if (token === '(') {
+      if (openSlur) {
+        return null
+      }
+
+      openSlur = true
+      continue
+    }
+
+    if (token === ')') {
+      if (!openSlur) {
+        return null
+      }
+
+      openSlur = false
+      continue
+    }
+
+    if (token === '|') {
+      if (!pushMeasure()) {
+        return null
+      }
+
+      continue
+    }
+
+    if (isDirectionToken(token)) {
+      continue
+    }
+
+    if (isGeneratedDuration(token)) {
+      return null
+    }
+
+    const isNote = /^[A-Ga-g](?:#|b)?\d+$/.test(token)
+    const isRest = /^r(?:est)?$/i.test(token) || /^pause$/i.test(token)
+    if (!isNote && !isRest) {
+      return null
+    }
+
+    const nextToken = tokens[index + 1]
+    const duration = nextToken && isGeneratedDuration(nextToken) ? nextToken : 'q'
+    currentUnits += DURATION_UNITS[duration]
+    sawEvent = true
+
+    if (nextToken && isGeneratedDuration(nextToken)) {
+      index += 1
+    }
+  }
+
+  if (openSlur || currentUnits > MAX_MEASURE_UNITS) {
+    return null
+  }
+
+  if (currentUnits > 0 || measures.length === 0) {
+    measures.push(currentUnits)
+  }
+
+  return sawEvent ? measures : null
 }
 
 function collectNotationCandidates(value: unknown): string[] {

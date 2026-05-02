@@ -299,7 +299,11 @@ async function fetchJson<T>(url: string, init: RequestInit, fallbackMessage: str
     const contentType = response.headers.get('content-type') ?? ''
 
     if (!contentType.includes('application/json')) {
-      throw new Error(`${fallbackMessage} API is not returning JSON. In local development, run pnpm dev:full so Vercel API routes are available.`)
+      throw new Error(getNonJsonApiMessage(
+        response,
+        fallbackMessage,
+        'API is not returning JSON. In local development, run pnpm dev:full so Vercel API routes are available.',
+      ))
     }
 
     const body = await response.json() as T & ApiErrorResponse
@@ -362,7 +366,11 @@ async function assertApiAvailable(fallbackMessage: string) {
     const contentType = response.headers.get('content-type') ?? ''
 
     if (!contentType.includes('application/json')) {
-      throw new Error(`${fallbackMessage} API is not running. In local development, use pnpm dev:full instead of pnpm dev so Vercel API routes are available.`)
+      throw new Error(getNonJsonApiMessage(
+        response,
+        fallbackMessage,
+        'API is not running. In local development, use pnpm dev:full instead of pnpm dev so Vercel API routes are available.',
+      ))
     }
 
     if (!response.ok) {
@@ -378,6 +386,14 @@ async function assertApiAvailable(fallbackMessage: string) {
   } finally {
     window.clearTimeout(timeoutId)
   }
+}
+
+function getNonJsonApiMessage(response: Response, fallbackMessage: string, localDevelopmentMessage: string) {
+  if (response.status === 401 || response.status === 403) {
+    return `${fallbackMessage} Vercel returned an HTML authentication page instead of JSON. Use the public production domain, or disable deployment protection for this URL.`
+  }
+
+  return `${fallbackMessage} ${localDevelopmentMessage}`
 }
 
 const initialExample = EXAMPLES[0] ?? {
