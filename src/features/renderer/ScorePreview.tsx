@@ -38,27 +38,7 @@ type ZoomableDisplay = {
 
 const BASE_PREVIEW_ZOOM = 0.84
 const MIN_ENGRAVING_WIDTH = 720
-const PRINT_RENDER_WIDTH = 720
 const UNTITLED_SCORE_TITLE = 'Untitled sketch'
-const PRINT_PAGE_WIDTH_MM = 210
-const PRINT_PAGE_HEIGHT_MM = 297
-const PRINT_PAGE_MARGIN_MM = 12
-const PRINT_TOP_PADDING_UNITS = 18
-const PRINT_BOTTOM_PADDING_UNITS = 18
-const PRINT_SYSTEM_GAP_UNITS = 30
-const PRINT_TITLE_HEIGHT_UNITS = 62
-
-type SvgBox = {
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
-type PrintSystemBlock = {
-  elements: SVGElement[]
-  box: SvgBox
-}
 
 function applyZoom(display: ZoomableDisplay, zoom: number) {
   if (display.setZoom) {
@@ -107,10 +87,14 @@ function createScorePageShell(showTitle: boolean, title: string) {
   return { page, renderTarget }
 }
 
-function createPrintScorePage(svg: SVGSVGElement) {
+function createPrintScorePage(svg: SVGSVGElement, showTitle: boolean, title: string) {
   const page = document.createElement('article')
-  page.className = 'score-print-page'
+  page.className = showTitle ? 'score-print-page score-print-page--with-title' : 'score-print-page'
   page.setAttribute('aria-hidden', 'true')
+
+  if (showTitle) {
+    page.append(createScoreTitleBlock(title))
+  }
 
   const body = document.createElement('div')
   body.className = 'score-print-page__body'
@@ -120,211 +104,19 @@ function createPrintScorePage(svg: SVGSVGElement) {
   return page
 }
 
-function getSvgViewBox(svg: SVGSVGElement): SvgBox {
-  const viewBox = svg.viewBox.baseVal
-  if (viewBox.width > 0 && viewBox.height > 0) {
-    return {
-      x: viewBox.x,
-      y: viewBox.y,
-      width: viewBox.width,
-      height: viewBox.height,
-    }
-  }
-
-  const width = Number.parseFloat(svg.getAttribute('width') ?? '')
-  const height = Number.parseFloat(svg.getAttribute('height') ?? '')
-
-  return {
-    x: 0,
-    y: 0,
-    width: Number.isFinite(width) && width > 0 ? width : 840,
-    height: Number.isFinite(height) && height > 0 ? height : 1188,
-  }
-}
-
-function getSvgElementBox(element: SVGElement): SvgBox | null {
-  if (!(element instanceof SVGGraphicsElement)) {
-    return null
-  }
-
-  try {
-    const box = element.getBBox()
-    if (box.width === 0 && box.height === 0) {
-      return null
-    }
-
-    return {
-      x: box.x,
-      y: box.y,
-      width: box.width,
-      height: box.height,
-    }
-  } catch {
-    return null
-  }
-}
-
-function unionSvgBoxes(boxes: SvgBox[]): SvgBox {
-  const minX = Math.min(...boxes.map((box) => box.x))
-  const minY = Math.min(...boxes.map((box) => box.y))
-  const maxX = Math.max(...boxes.map((box) => box.x + box.width))
-  const maxY = Math.max(...boxes.map((box) => box.y + box.height))
-
-  return {
-    x: minX,
-    y: minY,
-    width: maxX - minX,
-    height: maxY - minY,
-  }
-}
-
-function collectPrintSystemBlocks(svg: SVGSVGElement): PrintSystemBlock[] {
-  const topLevelElements = Array.from(svg.children).filter((child): child is SVGElement => child instanceof SVGElement)
-  const systems = topLevelElements
-    .map((element) => ({
-      element,
-      box: getSvgElementBox(element),
-    }))
-    .filter((item): item is { element: SVGElement, box: SvgBox } => (
-      item.box !== null && item.element.classList.contains('staffline')
-    ))
-    .sort((a, b) => a.box.y - b.box.y)
-
-  if (systems.length === 0) {
-    const box = getSvgElementBox(svg)
-    return box ? [{ elements: [svg], box }] : []
-  }
-
-  const systemCenters = systems.map((system) => system.box.y + system.box.height / 2)
-  const assigned = systems.map((system) => ({
-    elements: [system.element],
-    boxes: [system.box],
-  }))
-
-  for (const element of topLevelElements) {
-    if (element.classList.contains('staffline')) {
-      continue
-    }
-
-    const box = getSvgElementBox(element)
-    if (!box) {
-      continue
-    }
-
-    const centerY = box.y + box.height / 2
-    let nearestIndex = 0
-    let nearestDistance = Number.POSITIVE_INFINITY
-
-    systemCenters.forEach((systemCenter, index) => {
-      const distance = Math.abs(centerY - systemCenter)
-      if (distance < nearestDistance) {
-        nearestIndex = index
-        nearestDistance = distance
-      }
-    })
-
-    assigned[nearestIndex]?.elements.push(element)
-    assigned[nearestIndex]?.boxes.push(box)
-  }
-
-  return assigned.map((system) => ({
-    elements: system.elements,
-    box: unionSvgBoxes(system.boxes),
-  }))
-}
-
-function createPrintPageSvg(sourceViewBox: SvgBox, showTitle: boolean, title: string) {
-  const pageHeight = getPrintSvgPageHeight(sourceViewBox.width)
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-  svg.classList.add('score-print-page-svg')
-  svg.setAttribute('viewBox', `${formatSvgNumber(sourceViewBox.x)} ${formatSvgNumber(sourceViewBox.y)} ${formatSvgNumber(sourceViewBox.width)} ${formatSvgNumber(pageHeight)}`)
-  svg.setAttribute('preserveAspectRatio', 'xMidYMin meet')
-  svg.setAttribute('width', formatSvgNumber(sourceViewBox.width))
-  svg.setAttribute('height', formatSvgNumber(pageHeight))
-  svg.setAttribute('aria-hidden', 'true')
-
-  if (showTitle) {
-    const titleText = document.createElementNS('http://www.w3.org/2000/svg', 'text')
-    titleText.classList.add('score-print-title')
-    titleText.setAttribute('x', formatSvgNumber(sourceViewBox.x + sourceViewBox.width / 2))
-    titleText.setAttribute('y', formatSvgNumber(sourceViewBox.y + 34))
-    titleText.setAttribute('text-anchor', 'middle')
-    titleText.textContent = title || UNTITLED_SCORE_TITLE
-    svg.append(titleText)
-  }
-
-  return svg
-}
-
-function appendSystemBlock(svg: SVGSVGElement, block: PrintSystemBlock, targetY: number) {
-  const group = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-  group.classList.add('score-print-system')
-  group.setAttribute('transform', `translate(0 ${formatSvgNumber(targetY - block.box.y)})`)
-  block.elements.forEach((element) => {
-    group.append(element.cloneNode(true))
-  })
-  svg.append(group)
-}
-
-function buildPrintPageSvgs(renderTarget: HTMLElement, showTitle: boolean, title: string): SVGSVGElement[] {
-  const sourcePages = getRenderedPageSvgs(renderTarget)
-  if (sourcePages.length === 0) {
-    return []
-  }
-
-  const sourceViewBox = getSvgViewBox(sourcePages[0]!)
-  const pageHeight = getPrintSvgPageHeight(sourceViewBox.width)
-  const bottomLimit = sourceViewBox.y + pageHeight - PRINT_BOTTOM_PADDING_UNITS
-  const blocks = sourcePages.flatMap(collectPrintSystemBlocks)
-  const pages: SVGSVGElement[] = []
-  let page = createPrintPageSvg(sourceViewBox, showTitle, title)
-  let cursorY = sourceViewBox.y + PRINT_TOP_PADDING_UNITS + (showTitle ? PRINT_TITLE_HEIGHT_UNITS : 0)
-  let systemCountOnPage = 0
-
-  for (const block of blocks) {
-    const gap = systemCountOnPage > 0 ? PRINT_SYSTEM_GAP_UNITS : 0
-    const targetY = cursorY + gap
-
-    if (systemCountOnPage > 0 && targetY + block.box.height > bottomLimit) {
-      pages.push(page)
-      page = createPrintPageSvg(sourceViewBox, false, title)
-      cursorY = sourceViewBox.y + PRINT_TOP_PADDING_UNITS
-      systemCountOnPage = 0
-    }
-
-    const nextTargetY = systemCountOnPage > 0 ? cursorY + PRINT_SYSTEM_GAP_UNITS : cursorY
-    appendSystemBlock(page, block, nextTargetY)
-    cursorY = nextTargetY + block.box.height
-    systemCountOnPage += 1
-  }
-
-  if (systemCountOnPage > 0 || pages.length === 0) {
-    pages.push(page)
-  }
-
-  return pages
-}
-
-function getPrintSvgPageHeight(width: number) {
-  const contentWidthMm = PRINT_PAGE_WIDTH_MM - PRINT_PAGE_MARGIN_MM * 2
-  const contentHeightMm = PRINT_PAGE_HEIGHT_MM - PRINT_PAGE_MARGIN_MM * 2
-
-  return width * (contentHeightMm / contentWidthMm)
-}
-
 function syncPrintableScorePages(container: HTMLElement, renderTarget: HTMLElement, showTitle: boolean, title: string) {
   const existingPrintStack = container.querySelector('.score-print-stack')
   existingPrintStack?.remove()
 
-  const pages = buildPrintPageSvgs(renderTarget, showTitle, title)
+  const pages = getRenderedPageSvgs(renderTarget)
   if (pages.length === 0) {
     return
   }
 
   const printStack = document.createElement('div')
-  printStack.className = 'score-print-stack'
-  pages.forEach((page) => {
-    printStack.append(createPrintScorePage(page))
+  printStack.className = 'score-print-stack score-engraving'
+  pages.forEach((page, index) => {
+    printStack.append(createPrintScorePage(page, showTitle && index === 0, title))
   })
   container.append(printStack)
 }
@@ -497,10 +289,6 @@ function fitRenderedScoreToPage(container: HTMLElement, renderTarget: HTMLElemen
   renderTarget.style.height = scale < 1 ? `${renderedHeight}px` : ''
 }
 
-function formatSvgNumber(value: number) {
-  return Number.isInteger(value) ? String(value) : value.toFixed(3)
-}
-
 export function ScorePreview({
   musicXml,
   title,
@@ -632,48 +420,8 @@ export function ScorePreview({
           return
         }
 
-        const printRenderTarget = document.createElement('div')
-        printRenderTarget.className = 'print-render-source'
-        printRenderTarget.style.width = `${PRINT_RENDER_WIDTH}px`
-        container.append(printRenderTarget)
-
-        try {
-          const printOsmd = new OpenSheetMusicDisplay(printRenderTarget, {
-            autoResize: false,
-            drawTitle: false,
-            drawPartNames: false,
-            drawPartAbbreviations: false,
-            backend: 'svg',
-            newPageFromXML: false,
-            newSystemFromXML: true,
-          })
-          configureDisplayEngraving(
-            printOsmd as ZoomableDisplay,
-            spacingScale,
-            deferredShowMeasureNumbers,
-            deferredPartLayoutPreset.measuresPerSystem,
-          )
-          await printOsmd.load(musicXml)
-          if (!cancelled && renderId === renderIdRef.current) {
-            applyZoom(printOsmd as ZoomableDisplay, BASE_PREVIEW_ZOOM * (deferredPartLayoutPreset.previewNoteScale / 100))
-            printOsmd.render()
-            await waitForRenderedSvgContent(
-              printRenderTarget,
-              () => cancelled || renderId !== renderIdRef.current,
-            )
-          }
-          if (!cancelled && renderId === renderIdRef.current) {
-            syncPrintableScorePages(container, printRenderTarget, showTitle, title)
-          }
-        } catch {
-          if (!cancelled && renderId === renderIdRef.current) {
-            syncPrintableScorePages(container, renderTarget, showTitle, title)
-          }
-        } finally {
-          printRenderTarget.remove()
-        }
-
         fitRenderedScoreToPage(container, renderTarget, renderTargetWidth)
+        syncPrintableScorePages(container, renderTarget, showTitle, title)
         updateRenderedPages(true)
         setRenderError(null)
       } catch (error) {
@@ -779,7 +527,14 @@ export function ScorePreview({
   }
 
   const handlePrintScore = () => {
-    revealAllScorePagesForPrint(containerRef.current)
+    const container = containerRef.current
+    const renderTarget = container?.querySelector<HTMLElement>('.preview-render-target')
+
+    if (container && renderTarget) {
+      syncPrintableScorePages(container, renderTarget, showTitle, title)
+    }
+
+    revealAllScorePagesForPrint(container)
     onPrintScore()
   }
 
