@@ -1,10 +1,13 @@
-import { useCallback, useDeferredValue, useEffect, useRef, useState, type PointerEvent } from 'react'
-import { ChevronLeft, ChevronRight, Copy, Download, Printer, RotateCcw } from 'lucide-react'
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
+import { Bug, ChevronLeft, ChevronRight, Copy, Download, Printer, RotateCcw } from 'lucide-react'
 import { SectionCard } from '../../components/SectionCard'
 import {
+  DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS,
   DEFAULT_PART_LAYOUT_PRESET,
+  PAGE_FORMATS,
   PART_LAYOUT_PRESETS,
   getPartLayoutPreset,
+  type AdvancedPartLayoutSettings,
   type PartLayoutPresetId,
 } from '../../music/musicxml/sheetOptions'
 import './ScorePreview.css'
@@ -13,7 +16,9 @@ type ScorePreviewProps = {
   musicXml: string | null
   title: string
   partLayoutPresetId: PartLayoutPresetId
+  advancedLayoutSettings: AdvancedPartLayoutSettings
   onPartLayoutPresetChange: (presetId: PartLayoutPresetId) => void
+  onAdvancedLayoutSettingsChange: (settings: AdvancedPartLayoutSettings) => void
   onCopyMusicXml: () => void
   onDownloadMusicXml: () => void
   onPrintScore: () => void
@@ -76,6 +81,10 @@ declare global {
 const BASE_PREVIEW_ZOOM = 0.84
 const MIN_ENGRAVING_WIDTH = 720
 const UNTITLED_SCORE_TITLE = 'Untitled sketch'
+const PAGE_FORMAT_OPTIONS = Object.entries(PAGE_FORMATS).map(([value, definition]) => ({
+  value: value as AdvancedPartLayoutSettings['pageFormat'],
+  label: definition.label,
+}))
 
 function applyZoom(display: ZoomableDisplay, zoom: number) {
   if (display.setZoom) {
@@ -547,11 +556,36 @@ function fitRenderedScoreToPage(container: HTMLElement, renderTarget: HTMLElemen
   renderTarget.style.height = scale < 1 ? `${renderedHeight}px` : ''
 }
 
+function applyPageFormatCssVariables(container: HTMLElement, settings: AdvancedPartLayoutSettings) {
+  const pageFormat = PAGE_FORMATS[settings.pageFormat]
+
+  container.style.setProperty('--score-page-width-mm', String(pageFormat.widthMm))
+  container.style.setProperty('--score-page-height-mm', String(pageFormat.heightMm))
+}
+
+function clampAdvancedSetting(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) {
+    return min
+  }
+
+  return Math.max(min, Math.min(max, value))
+}
+
+function readIntegerSetting(value: string, min: number, max: number) {
+  return Math.round(clampAdvancedSetting(Number(value), min, max))
+}
+
+function readDecimalSetting(value: string, min: number, max: number) {
+  return Math.round(clampAdvancedSetting(Number(value), min, max) * 10) / 10
+}
+
 export function ScorePreview({
   musicXml,
   title,
   partLayoutPresetId,
+  advancedLayoutSettings,
   onPartLayoutPresetChange,
+  onAdvancedLayoutSettingsChange,
   onCopyMusicXml,
   onDownloadMusicXml,
   onPrintScore,
@@ -565,7 +599,17 @@ export function ScorePreview({
   const [showTitle, setShowTitle] = useState(true)
   const [showMeasureNumbers, setShowMeasureNumbers] = useState(true)
   const partLayoutPreset = getPartLayoutPreset(partLayoutPresetId)
-  const deferredPartLayoutPreset = useDeferredValue(partLayoutPreset)
+  const activePreviewLayout = useMemo(() => (
+    partLayoutPresetId === 'advanced'
+      ? {
+        ...partLayoutPreset,
+        measuresPerSystem: advancedLayoutSettings.measuresPerSystem,
+        previewNoteScale: advancedLayoutSettings.previewNoteScale,
+        previewSystemSpacing: advancedLayoutSettings.previewSystemSpacing,
+      }
+      : partLayoutPreset
+  ), [advancedLayoutSettings, partLayoutPreset, partLayoutPresetId])
+  const deferredPartLayoutPreset = useDeferredValue(activePreviewLayout)
   const deferredShowMeasureNumbers = useDeferredValue(showMeasureNumbers)
 
   const updateRenderedPages = useCallback((resetPage = false) => {
@@ -623,6 +667,10 @@ export function ScorePreview({
     const renderId = renderIdRef.current + 1
     renderIdRef.current = renderId
     container.replaceChildren()
+    applyPageFormatCssVariables(
+      container,
+      partLayoutPresetId === 'advanced' ? advancedLayoutSettings : DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS,
+    )
 
     const renderScore = async () => {
       try {
@@ -715,7 +763,16 @@ export function ScorePreview({
         container.replaceChildren()
       }
     }
-  }, [deferredPartLayoutPreset, deferredShowMeasureNumbers, musicXml, showTitle, title, updateRenderedPages])
+  }, [
+    advancedLayoutSettings,
+    deferredPartLayoutPreset,
+    deferredShowMeasureNumbers,
+    musicXml,
+    partLayoutPresetId,
+    showTitle,
+    title,
+    updateRenderedPages,
+  ])
 
   const goToPreviousPage = () => {
     setPageIndex((current) => Math.max(0, current - 1))
@@ -798,8 +855,28 @@ export function ScorePreview({
 
   const handleResetLayout = () => {
     onPartLayoutPresetChange(DEFAULT_PART_LAYOUT_PRESET)
+    onAdvancedLayoutSettingsChange(DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS)
     setShowTitle(true)
     setShowMeasureNumbers(true)
+  }
+
+  const updateAdvancedLayoutSetting = <Key extends keyof AdvancedPartLayoutSettings>(
+    key: Key,
+    value: AdvancedPartLayoutSettings[Key],
+  ) => {
+    onAdvancedLayoutSettingsChange({
+      ...advancedLayoutSettings,
+      [key]: value,
+    })
+  }
+
+  const handleComparePrintPreview = () => {
+    const container = containerRef.current
+    if (!container) {
+      return
+    }
+
+    comparePrintPreviewVisually(container, showTitle, title)
   }
 
   const handlePrintScore = () => {
@@ -813,6 +890,8 @@ export function ScorePreview({
     revealAllScorePagesForPrint(container)
     onPrintScore()
   }
+
+  const showAdvancedControls = partLayoutPresetId === 'advanced'
 
   return (
     <SectionCard title="Score" className="score-preview-card">
@@ -901,6 +980,166 @@ export function ScorePreview({
           </button>
         </div>
       </div>
+      {showAdvancedControls ? (
+        <div className="advanced-layout-panel" aria-label="Advanced layout settings">
+          <div className="advanced-layout-panel__group advanced-layout-panel__group--paper">
+            <span className="advanced-layout-label">Paper</span>
+            <div className="advanced-layout-segmented" role="group" aria-label="Paper layout">
+              {PAGE_FORMAT_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={advancedLayoutSettings.pageFormat === option.value ? 'is-active' : undefined}
+                  onClick={() => updateAdvancedLayoutSetting('pageFormat', option.value)}
+                  aria-pressed={advancedLayoutSettings.pageFormat === option.value}
+                  disabled={!musicXml}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <label className="advanced-layout-field">
+            <span>Measures/line</span>
+            <input
+              type="number"
+              min="1"
+              max="12"
+              step="1"
+              value={advancedLayoutSettings.measuresPerSystem}
+              onChange={(event) => updateAdvancedLayoutSetting('measuresPerSystem', readIntegerSetting(event.target.value, 1, 12))}
+              disabled={!musicXml}
+            />
+          </label>
+
+          <label className="advanced-layout-field">
+            <span>Lines/page</span>
+            <input
+              type="number"
+              min="1"
+              max="13"
+              step="1"
+              value={advancedLayoutSettings.systemsPerPageTarget}
+              onChange={(event) => updateAdvancedLayoutSetting('systemsPerPageTarget', readIntegerSetting(event.target.value, 1, 13))}
+              disabled={!musicXml}
+            />
+          </label>
+
+          <label className="advanced-layout-field">
+            <span>Engraving</span>
+            <input
+              type="number"
+              min="50"
+              max="140"
+              step="1"
+              value={advancedLayoutSettings.previewNoteScale}
+              onChange={(event) => updateAdvancedLayoutSetting('previewNoteScale', readIntegerSetting(event.target.value, 50, 140))}
+              disabled={!musicXml}
+            />
+          </label>
+
+          <label className="advanced-layout-field">
+            <span>Line height</span>
+            <input
+              type="number"
+              min="60"
+              max="150"
+              step="1"
+              value={advancedLayoutSettings.previewSystemSpacing}
+              onChange={(event) => updateAdvancedLayoutSetting('previewSystemSpacing', readIntegerSetting(event.target.value, 60, 150))}
+              disabled={!musicXml}
+            />
+          </label>
+
+          <label className="advanced-layout-field">
+            <span>System gap</span>
+            <input
+              type="number"
+              min="1"
+              max="18"
+              step="0.5"
+              value={advancedLayoutSettings.minimumSystemGapMm}
+              onChange={(event) => updateAdvancedLayoutSetting('minimumSystemGapMm', readDecimalSetting(event.target.value, 1, 18))}
+              disabled={!musicXml}
+            />
+          </label>
+
+          <label className="advanced-layout-field">
+            <span>Top</span>
+            <input
+              type="number"
+              min="4"
+              max="36"
+              step="0.5"
+              value={advancedLayoutSettings.topMarginMm}
+              onChange={(event) => updateAdvancedLayoutSetting('topMarginMm', readDecimalSetting(event.target.value, 4, 36))}
+              disabled={!musicXml}
+            />
+          </label>
+
+          <label className="advanced-layout-field">
+            <span>Bottom</span>
+            <input
+              type="number"
+              min="4"
+              max="36"
+              step="0.5"
+              value={advancedLayoutSettings.bottomMarginMm}
+              onChange={(event) => updateAdvancedLayoutSetting('bottomMarginMm', readDecimalSetting(event.target.value, 4, 36))}
+              disabled={!musicXml}
+            />
+          </label>
+
+          <label className="advanced-layout-field">
+            <span>Inside</span>
+            <input
+              type="number"
+              min="4"
+              max="30"
+              step="0.5"
+              value={advancedLayoutSettings.insideMarginMm}
+              onChange={(event) => updateAdvancedLayoutSetting('insideMarginMm', readDecimalSetting(event.target.value, 4, 30))}
+              disabled={!musicXml}
+            />
+          </label>
+
+          <label className="advanced-layout-field">
+            <span>Outside</span>
+            <input
+              type="number"
+              min="4"
+              max="30"
+              step="0.5"
+              value={advancedLayoutSettings.outsideMarginMm}
+              onChange={(event) => updateAdvancedLayoutSetting('outsideMarginMm', readDecimalSetting(event.target.value, 4, 30))}
+              disabled={!musicXml}
+            />
+          </label>
+
+          <div className="advanced-layout-actions">
+            <button
+              type="button"
+              className="advanced-layout-button"
+              onClick={() => onAdvancedLayoutSettingsChange(DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS)}
+              disabled={!musicXml}
+            >
+              Reset Advanced
+            </button>
+            {import.meta.env.DEV ? (
+              <button
+                type="button"
+                className="advanced-layout-button advanced-layout-button--debug"
+                onClick={handleComparePrintPreview}
+                disabled={!musicXml}
+              >
+                <Bug size={14} aria-hidden="true" />
+                Compare
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
       {renderError && renderError.musicXml === musicXml ? (
         <p className="preview-error">Renderer error: {renderError.message}</p>
       ) : null}

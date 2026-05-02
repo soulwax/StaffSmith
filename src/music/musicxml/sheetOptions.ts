@@ -4,9 +4,15 @@ export type SheetDensity = 'spacious' | 'standard' | 'compact'
 
 export type PageFormat = 'a4' | 'nine-by-twelve'
 
-export type PartLayoutPresetId = 'orchestral-solo' | 'standard-part' | 'children-songs'
+export type PartLayoutPresetId = 'orchestral-solo' | 'standard-part' | 'children-songs' | 'advanced'
 
 type LegacyPartLayoutPresetId = 'orchestra-solo' | 'moderate' | 'children'
+
+export type PageFormatDefinition = {
+  label: string
+  widthMm: number
+  heightMm: number
+}
 
 export type PartLayoutPreset = {
   id: PartLayoutPresetId
@@ -19,6 +25,19 @@ export type PartLayoutPreset = {
   outsideMarginMm?: number
   topMarginMm?: number
   bottomMarginMm?: number
+  previewNoteScale: number
+  previewSystemSpacing: number
+}
+
+export type AdvancedPartLayoutSettings = {
+  pageFormat: PageFormat
+  measuresPerSystem: number
+  systemsPerPageTarget: number
+  minimumSystemGapMm: number
+  insideMarginMm: number
+  outsideMarginMm: number
+  topMarginMm: number
+  bottomMarginMm: number
   previewNoteScale: number
   previewSystemSpacing: number
 }
@@ -46,6 +65,24 @@ export type ScoreSheetOptions = {
   topMarginMm: number
   bottomMarginMm: number
   minimumSystemGapMm: number
+}
+
+export const PAGE_FORMATS: Record<PageFormat, PageFormatDefinition> = {
+  a4: { label: 'A4', widthMm: 210, heightMm: 297 },
+  'nine-by-twelve': { label: '9 x 12', widthMm: 228.6, heightMm: 304.8 },
+}
+
+export const DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS: AdvancedPartLayoutSettings = {
+  pageFormat: 'a4',
+  measuresPerSystem: 4,
+  systemsPerPageTarget: 5,
+  minimumSystemGapMm: 5,
+  insideMarginMm: 12,
+  outsideMarginMm: 12,
+  topMarginMm: 12,
+  bottomMarginMm: 12,
+  previewNoteScale: 100,
+  previewSystemSpacing: 110,
 }
 
 export const PART_LAYOUT_PRESETS: PartLayoutPreset[] = [
@@ -82,6 +119,20 @@ export const PART_LAYOUT_PRESETS: PartLayoutPreset[] = [
     minimumSystemGapMm: 5,
     previewNoteScale: 120,
     previewSystemSpacing: 118,
+  },
+  {
+    id: 'advanced',
+    label: 'Advanced',
+    density: 'standard',
+    measuresPerSystem: DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.measuresPerSystem,
+    systemsPerPageTarget: DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.systemsPerPageTarget,
+    minimumSystemGapMm: DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.minimumSystemGapMm,
+    insideMarginMm: DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.insideMarginMm,
+    outsideMarginMm: DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.outsideMarginMm,
+    topMarginMm: DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.topMarginMm,
+    bottomMarginMm: DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.bottomMarginMm,
+    previewNoteScale: DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.previewNoteScale,
+    previewSystemSpacing: DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.previewSystemSpacing,
   },
 ]
 

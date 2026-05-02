@@ -4,6 +4,7 @@
   border-radius: 8px;
   box-shadow: var(--panel-shadow);
   backdrop-filter: blur(14px);
+  color: #172027;
   min-height: 0;
   position: relative;
   overflow: hidden;

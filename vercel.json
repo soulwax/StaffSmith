@@ -7,7 +7,7 @@
   "devCommand": "pnpm dev -- --host 0.0.0.0",
   "functions": {
     "api/composer-assist.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/projects.ts": {
       "maxDuration": 30

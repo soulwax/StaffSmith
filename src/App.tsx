@@ -40,7 +40,13 @@ import { copyText, downloadTextFile, toSafeFilename } from './lib/fileActions'
 import { getScoreInsights } from './music/analysis/scoreInsights'
 import type { InputMode, NotePitch, ParseError, ParseResult, Score } from './music/model/types'
 import { scoreToMusicXml } from './music/musicxml/scoreToMusicXml'
-import { DEFAULT_PART_LAYOUT_PRESET, normalizePartLayoutPresetId, type PartLayoutPresetId } from './music/musicxml/sheetOptions'
+import {
+  DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS,
+  DEFAULT_PART_LAYOUT_PRESET,
+  normalizePartLayoutPresetId,
+  type AdvancedPartLayoutSettings,
+  type PartLayoutPresetId,
+} from './music/musicxml/sheetOptions'
 import { parseScoreInput } from './music/parser'
 
 type RenderState = {
@@ -59,12 +65,14 @@ type LocalDraft = {
   assistantPrompt: string
   noteGenerationPrompt: string
   partLayoutPresetId: PartLayoutPresetId
+  advancedLayoutSettings: AdvancedPartLayoutSettings
   analysis: ComposerAssistResult | null
 }
 
 const AUTOSAVE_KEY = 'staffsmith:draft:v2'
 const DEFAULT_NOTE_GENERATION_PROMPT = 'A flute solo for beginners, in the style of jethro tull jazz'
 const API_TIMEOUT_MS = 45_000
+const GENERATION_API_TIMEOUT_MS = 180_000
 const API_PREFLIGHT_TIMEOUT_MS = 3_000
 const GEMINI_STATUS_INTERVAL_MS = 60 * 60 * 1000
 
@@ -240,14 +248,17 @@ function renderInput(
   input: string,
   title = 'Untitled sketch',
   partLayoutPresetId: PartLayoutPresetId = DEFAULT_PART_LAYOUT_PRESET,
+  advancedLayoutSettings: AdvancedPartLayoutSettings = DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS,
 ): RenderState {
   const parseResult = parseScoreInput(mode, input)
+  const layoutOptions = partLayoutPresetId === 'advanced' ? advancedLayoutSettings : {}
   const musicXml = parseResult.ok
     ? scoreToMusicXml(parseResult.value, {
       title,
       staffLabel: '',
       partLayoutPreset: partLayoutPresetId,
       showTempo: true,
+      ...layoutOptions,
       ...(parseResult.value.metadata.tempoBpm !== undefined && { tempoBpm: parseResult.value.metadata.tempoBpm }),
     })
     : null
@@ -269,13 +280,13 @@ function summarizeErrors(errors: ParseError[]): string {
   return `${errors.length} parse error${errors.length === 1 ? '' : 's'} found.`
 }
 
-async function fetchJson<T>(url: string, init: RequestInit, fallbackMessage: string): Promise<T> {
+async function fetchJson<T>(url: string, init: RequestInit, fallbackMessage: string, timeoutMs = API_TIMEOUT_MS): Promise<T> {
   if (url.startsWith('/api/') && url !== '/api/health') {
     await assertApiAvailable(fallbackMessage)
   }
 
   const controller = new AbortController()
-  const timeoutId = window.setTimeout(() => controller.abort(), API_TIMEOUT_MS)
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs)
 
   try {
     const response = await fetch(url, {
@@ -296,7 +307,7 @@ async function fetchJson<T>(url: string, init: RequestInit, fallbackMessage: str
     return body
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error(`${fallbackMessage} timed out. In local development, run pnpm dev:full so the API route is available.`)
+      throw new Error(`${fallbackMessage} timed out after ${Math.round(timeoutMs / 1000)} seconds. Long AI generations can take a while; try again, or shorten the requested length. In local development, run pnpm dev:full so the API route is available.`)
     }
 
     throw error
@@ -396,10 +407,39 @@ function loadLocalDraft(): LocalDraft | null {
         ? draft.noteGenerationPrompt
         : DEFAULT_NOTE_GENERATION_PROMPT,
       partLayoutPresetId: normalizePartLayoutPresetId(draft.partLayoutPresetId),
+      advancedLayoutSettings: normalizeAdvancedLayoutSettings(draft.advancedLayoutSettings),
       analysis: draft.analysis ?? null,
     }
   } catch {
     return null
+  }
+}
+
+function normalizeNumber(value: unknown, fallback: number, min: number, max: number) {
+  const numericValue = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(numericValue)) {
+    return fallback
+  }
+
+  return Math.max(min, Math.min(max, numericValue))
+}
+
+function normalizeAdvancedLayoutSettings(value: unknown): AdvancedPartLayoutSettings {
+  const draft = typeof value === 'object' && value !== null
+    ? value as Partial<AdvancedPartLayoutSettings>
+    : {}
+
+  return {
+    pageFormat: draft.pageFormat === 'nine-by-twelve' ? 'nine-by-twelve' : DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.pageFormat,
+    measuresPerSystem: Math.round(normalizeNumber(draft.measuresPerSystem, DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.measuresPerSystem, 1, 12)),
+    systemsPerPageTarget: Math.round(normalizeNumber(draft.systemsPerPageTarget, DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.systemsPerPageTarget, 1, 13)),
+    minimumSystemGapMm: normalizeNumber(draft.minimumSystemGapMm, DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.minimumSystemGapMm, 1, 18),
+    insideMarginMm: normalizeNumber(draft.insideMarginMm, DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.insideMarginMm, 4, 30),
+    outsideMarginMm: normalizeNumber(draft.outsideMarginMm, DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.outsideMarginMm, 4, 30),
+    topMarginMm: normalizeNumber(draft.topMarginMm, DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.topMarginMm, 4, 36),
+    bottomMarginMm: normalizeNumber(draft.bottomMarginMm, DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.bottomMarginMm, 4, 36),
+    previewNoteScale: Math.round(normalizeNumber(draft.previewNoteScale, DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.previewNoteScale, 50, 140)),
+    previewSystemSpacing: Math.round(normalizeNumber(draft.previewSystemSpacing, DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS.previewSystemSpacing, 60, 150)),
   }
 }
 
@@ -418,6 +458,7 @@ export function App() {
     initialDraft?.input ?? initialExample.input,
     initialDraft?.projectTitle ?? 'Untitled sketch',
     initialDraft?.partLayoutPresetId ?? DEFAULT_PART_LAYOUT_PRESET,
+    initialDraft?.advancedLayoutSettings ?? DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS,
   ))
   const [view, setView] = useState<AppView>(() => getCurrentView())
   const [projectId, setProjectId] = useState<string | null>(initialDraft?.projectId ?? null)
@@ -427,6 +468,9 @@ export function App() {
   const [noteGenerationPrompt, setNoteGenerationPrompt] = useState(initialDraft?.noteGenerationPrompt ?? DEFAULT_NOTE_GENERATION_PROMPT)
   const [partLayoutPresetId, setPartLayoutPresetId] = useState<PartLayoutPresetId>(
     initialDraft?.partLayoutPresetId ?? DEFAULT_PART_LAYOUT_PRESET,
+  )
+  const [advancedLayoutSettings, setAdvancedLayoutSettings] = useState<AdvancedPartLayoutSettings>(
+    initialDraft?.advancedLayoutSettings ?? DEFAULT_ADVANCED_PART_LAYOUT_SETTINGS,
   )
   const [analysis, setAnalysis] = useState<ComposerAssistResult | null>(initialDraft?.analysis ?? null)
   const [isAssisting, setIsAssisting] = useState(false)
@@ -513,29 +557,49 @@ export function App() {
       assistantPrompt,
       noteGenerationPrompt,
       partLayoutPresetId,
+      advancedLayoutSettings,
       analysis,
     }
 
     window.localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(draft))
-  }, [analysis, assistantPrompt, noteGenerationPrompt, partLayoutPresetId, projectId, projectTitle, state.input, state.mode])
+  }, [
+    advancedLayoutSettings,
+    analysis,
+    assistantPrompt,
+    noteGenerationPrompt,
+    partLayoutPresetId,
+    projectId,
+    projectTitle,
+    state.input,
+    state.mode,
+  ])
 
   const updateDraft = (mode: InputMode, input: string) => {
-    setState(renderInput(mode, input, projectTitle, partLayoutPresetId))
+    setState(renderInput(mode, input, projectTitle, partLayoutPresetId, advancedLayoutSettings))
     setServerMessage(null)
   }
 
   const handleRender = (mode: InputMode, input: string) => {
-    setState(renderInput(mode, input, projectTitle, partLayoutPresetId))
+    setState(renderInput(mode, input, projectTitle, partLayoutPresetId, advancedLayoutSettings))
   }
 
   const handleProjectTitleChange = (title: string) => {
     setProjectTitle(title)
-    setState((current) => renderInput(current.mode, current.input, title, partLayoutPresetId))
+    setState((current) => renderInput(current.mode, current.input, title, partLayoutPresetId, advancedLayoutSettings))
   }
 
   const handlePartLayoutPresetChange = (presetId: PartLayoutPresetId) => {
     setPartLayoutPresetId(presetId)
-    setState((current) => renderInput(current.mode, current.input, projectTitle, presetId))
+    setState((current) => renderInput(current.mode, current.input, projectTitle, presetId, advancedLayoutSettings))
+  }
+
+  const handleAdvancedLayoutSettingsChange = (settings: AdvancedPartLayoutSettings) => {
+    const normalizedSettings = normalizeAdvancedLayoutSettings(settings)
+    setAdvancedLayoutSettings(normalizedSettings)
+
+    if (partLayoutPresetId === 'advanced') {
+      setState((current) => renderInput(current.mode, current.input, projectTitle, partLayoutPresetId, normalizedSettings))
+    }
   }
 
   const handleSelectExample = (exampleId: string) => {
@@ -561,7 +625,7 @@ export function App() {
           input: state.input,
           prompt: assistantPrompt,
         }),
-      }, 'Composer assistant failed.')
+      }, 'Composer assistant failed.', task === 'generate' ? GENERATION_API_TIMEOUT_MS : API_TIMEOUT_MS)
 
       if (!body.result) {
         throw new Error('Composer assistant failed.')
@@ -664,9 +728,9 @@ export function App() {
           task: 'generate',
           mode: 'notes',
           input: state.input,
-          prompt: `Generate StaffSmith notes mode notation from this text. Use only documented StaffSmith notes syntax. First priority is strong note choice and intentional rests/pauses; markings are secondary. If the user asks for a full piece, complete composition, beginning-to-end composition, or long solo, do not return a tiny sketch: aim for at least 24 complete measures, and use 48-96 measures when the prompt invites something expansive. Treat phrases like "up to 8096 notes" as permission to be generous within the response budget, not as a reason to stay short. The result should feel professionally engraved: balanced 4- or 8-measure phrase groups, bracketed section labels, readable breath pauses, clean 4/4 beat grouping, and fast passages that sit inside the beat. Prefer compact complete 4/4 measures, insert | before a measure would overflow, and use explicit rests or pauses for missing beats. Supported durations are w, h, q, 8, 16, and 32. Use fast 16/32 material as featured freestyle segments, ornaments, pickups, transitions, and phrase peaks, not as unreadable filler. Use bracketed section labels such as [intro], [theme], [freestyle], [return], [finale], [coda], plus spaced slur parentheses, dynamics, hairpins, chromatic pitches, wider contours, and bracketed performance text when they make the music more vivid.\n\n${prompt}`,
+          prompt: `Generate StaffSmith notes mode notation from this text. Use only documented StaffSmith notes syntax. First priority is strong note choice and intentional rests/pauses; markings are secondary. If the user asks for a full piece, complete composition, beginning-to-end composition, or long solo, do not return a tiny sketch: aim for at least 24 complete measures, use 48-96 measures when the prompt invites something expansive, and target 100-120 complete 4/4 measures when the prompt explicitly asks for around 100 measures or a five-minute piece. Treat phrases like "up to 8096 notes" as permission to be generous within the response budget, not as a reason to stay short. The result should feel professionally engraved: balanced 4- or 8-measure phrase groups, bracketed section labels, readable breath pauses, clean 4/4 beat grouping, and fast passages that sit inside the beat. Prefer compact complete 4/4 measures, insert | before a measure would overflow, and use explicit rests or pauses for missing beats. Supported durations are w, h, q, 8, 16, and 32. Use fast 16/32 material as featured freestyle segments, ornaments, pickups, transitions, and phrase peaks, not as unreadable filler. Use bracketed section labels such as [intro], [theme], [freestyle], [return], [finale], [coda], plus spaced slur parentheses, dynamics, hairpins, chromatic pitches, wider contours, and bracketed performance text when they make the music more vivid. If the request references a copyrighted song or jazz standard, write an original non-infringing variation inspired only by broad traits and do not quote or closely recreate the melody.\n\n${prompt}`,
         }),
-      }, 'Note generation failed.')
+      }, 'Note generation failed.', GENERATION_API_TIMEOUT_MS)
 
       if (!body.result) {
         throw new Error('Note generation failed.')
@@ -695,6 +759,7 @@ export function App() {
         score: activeScore,
         musicXml: state.musicXml,
         partLayoutPresetId,
+        advancedLayoutSettings,
         analysis,
       }, null, 2),
       'application/json;charset=utf-8',
@@ -985,7 +1050,9 @@ export function App() {
             musicXml={state.musicXml}
             title={projectTitle}
             partLayoutPresetId={partLayoutPresetId}
+            advancedLayoutSettings={advancedLayoutSettings}
             onPartLayoutPresetChange={handlePartLayoutPresetChange}
+            onAdvancedLayoutSettingsChange={handleAdvancedLayoutSettingsChange}
             onCopyMusicXml={copyMusicXml}
             onDownloadMusicXml={downloadMusicXml}
             onPrintScore={printScore}

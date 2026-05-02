@@ -1,7 +1,7 @@
 .app-shell {
   min-height: 100vh;
   padding: 14px 16px 16px;
-  color: #172027;
+  color: #e9f7f1;
 }
 
 .workspace-header {
@@ -12,6 +12,7 @@
   min-height: 42px;
   margin-bottom: 10px;
   padding: 0 2px;
+  color: #e9f7f1;
 }
 
 .brand-lockup {
@@ -33,16 +34,18 @@
   color: #d65c2f;
   object-fit: cover;
   box-shadow:
-    0 0 0 3px rgba(255, 246, 188, 0.82),
-    0 8px 22px rgba(214, 92, 47, 0.18),
-    0 0 24px rgba(255, 247, 164, 0.42);
+    0 0 0 3px rgba(136, 237, 198, 0.22),
+    0 8px 22px rgba(0, 18, 12, 0.28),
+    0 0 28px rgba(82, 229, 179, 0.22);
 }
 
 .brand-lockup h1 {
   margin: 0;
+  color: #f3fff9;
   font-size: 1.15rem;
   line-height: 1;
   letter-spacing: 0;
+  text-shadow: 0 1px 18px rgba(97, 237, 187, 0.26);
 }
 
 .header-project-console {
@@ -73,9 +76,9 @@
   width: 34px;
   min-height: 34px;
   padding: 0;
-  border: 1px solid rgba(28, 126, 152, 0.18);
+  border: 1px solid rgba(123, 205, 179, 0.28);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.9);
   color: #273c4a;
   font-size: 0.88rem;
   font-weight: 750;
@@ -102,13 +105,13 @@
   gap: 5px;
   min-height: 34px;
   padding: 7px 8px;
-  border: 1px solid rgba(28, 126, 152, 0.16);
+  border: 1px solid rgba(123, 205, 179, 0.28);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.92);
   color: #273c4a;
   font-size: 0.88rem;
   font-weight: 650;
-  box-shadow: 0 10px 24px rgba(27, 52, 44, 0.06);
+  box-shadow: 0 10px 24px rgba(0, 18, 12, 0.18);
 }
 
 .workspace-metrics .service-light {
@@ -173,15 +176,15 @@
   min-height: 34px;
   padding: 0;
   place-items: center;
-  border: 1px solid rgba(28, 126, 152, 0.16);
+  border: 1px solid rgba(123, 205, 179, 0.28);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.92);
   color: #273c4a;
   cursor: pointer;
   font: inherit;
   font-size: 0.88rem;
   font-weight: 750;
-  box-shadow: 0 10px 24px rgba(27, 52, 44, 0.06);
+  box-shadow: 0 10px 24px rgba(0, 18, 12, 0.18);
 }
 
 .icon-button:hover,
@@ -204,6 +207,13 @@
 .help-layout {
   max-width: 1120px;
   margin: 0 auto;
+  padding: 16px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: var(--panel-bg);
+  box-shadow: var(--panel-shadow);
+  color: #172027;
+  backdrop-filter: blur(14px);
 }
 
 .workbench-column,

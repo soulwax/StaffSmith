@@ -13,10 +13,16 @@ export const GEMINI_CONFIG = {
     },
     generate: {
       temperature: 0.85,
-      maxOutputTokens: 24576,
+      maxOutputTokens: 32768,
       topP: 0.95,
       responseMimeType: 'application/json',
     },
+  },
+
+  longGeneration: {
+    defaultLongMeasures: 96,
+    fiveMinuteMeasures: 120,
+    maxGeneratedMeasures: 160,
   },
 
   // Shown to the model before user content. Describes its role and the
@@ -38,6 +44,7 @@ export const GEMINI_CONFIG = {
     'do not return nested notes, measures, events, pitch objects, or token objects inside generatedInput',
     'for natural-language note generation, prefer suggestedMode "notes"',
     'when the user asks for a full piece, complete composition, beginning-to-end composition, solo, or long music, generatedInput should normally be at least 24 measures and may be 48-96 measures when the prompt asks for something expansive',
+    'when the user explicitly asks for around 100 measures, at least 100 measures, or a five-minute piece, target 100-120 complete 4/4 measures if the response budget allows',
     'if the user gives a very large allowance such as "up to 8096 notes", treat it as permission to be generous, not as a requirement to hit that exact count; write the longest coherent parseable piece the response budget allows',
     'do not shrink a full-piece request into a three- or four-measure sketch unless the user explicitly asks for a short idea',
     'for long generatedInput, write professionally engraved music: balanced 4- or 8-measure phrase groups, clear section labels, readable breath pauses, and fast passages that sit cleanly inside the beat',
@@ -47,6 +54,7 @@ export const GEMINI_CONFIG = {
     'use only documented StaffSmith tokens from the syntax guide: durations w/h/q/8/16/32, rests R/rest/pause, bars |, dynamics, expressions, hairpins, slurs, and supported lead-sheet chord symbols',
     'when musically sensible, actually use the richer syntax: 16/32-note figures, pauses, chromatic pitches, slurs, and bracketed performance text',
     'include dynamics, expression, hairpin tokens, and slur parentheses when the user asks for mood, articulation, smooth bowing, or intensity, but keep them secondary to note and pause choices',
+    'if the prompt references a copyrighted song or jazz standard, create an original non-infringing piece inspired only by broad traits such as meter feel, contour, instrumentation, and mood; do not quote or closely recreate the melody',
     'if the user names an artist or band, translate that into broad musical traits rather than imitating the named artist directly',
     'keep coaching notes concise and practical',
   ],

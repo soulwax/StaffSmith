@@ -12,7 +12,14 @@ import {
 } from '../model/types'
 import { DURATION_UNITS, FULL_MEASURE_UNITS, MUSICXML_NOTE_TYPE } from '../theory/duration'
 import { buildPitchClass } from '../theory/pitch'
-import { DEFAULT_SHEET_OPTIONS, getClefDefinition, getDensityScale, getPartLayoutPreset, type ScoreSheetOptions } from './sheetOptions'
+import {
+  DEFAULT_SHEET_OPTIONS,
+  PAGE_FORMATS,
+  getClefDefinition,
+  getDensityScale,
+  getPartLayoutPreset,
+  type ScoreSheetOptions,
+} from './sheetOptions'
 
 const STAFF_HEIGHT_TENTHS = 40
 const ORCHESTRAL_SOLO_STAFF_MM = 4.9
@@ -21,20 +28,10 @@ const MIN_PAGE_TURN_REST_MEASURES = 4
 
 type BeamMark = 'begin' | 'continue' | 'end'
 
-type PageSize = {
-  widthMm: number
-  heightMm: number
-}
-
 type MeasureLayoutPlan = {
   newSystem: boolean
   newPage: boolean
   cuePitch?: NotePitch
-}
-
-const PAGE_SIZES: Record<ScoreSheetOptions['pageFormat'], PageSize> = {
-  a4: { widthMm: 210, heightMm: 297 },
-  'nine-by-twelve': { widthMm: 228.6, heightMm: 304.8 },
 }
 
 function computeBeams(events: ScoreEvent[]): Map<string, BeamMark> {
@@ -162,7 +159,7 @@ function resolveSheetOptions(options: Partial<ScoreSheetOptions>): ScoreSheetOpt
 function buildLayoutPlan(score: Score, options: ScoreSheetOptions): Map<number, MeasureLayoutPlan> {
   const plan = new Map<number, MeasureLayoutPlan>()
   const measuresPerSystem = clampInteger(options.measuresPerSystem, 1, 12)
-  const systemsPerPage = clampInteger(options.systemsPerPageTarget, 4, 13)
+  const systemsPerPage = clampInteger(options.systemsPerPageTarget, 1, 13)
   const measuresPerPage = measuresPerSystem * systemsPerPage
   const pageBreaks = computePageBreaks(score, measuresPerPage)
   const cueMeasures = computeCueMeasures(score)
@@ -313,7 +310,7 @@ function findCuePitch(score: Score, startIndex: number): NotePitch | undefined {
 }
 
 function renderPageLayout(options: ScoreSheetOptions): string {
-  const pageSize = PAGE_SIZES[options.pageFormat]
+  const pageSize = PAGE_FORMATS[options.pageFormat]
   const tenthsPerMm = getTenthsPerMm(options)
   const inside = toTenths(options.insideMarginMm, tenthsPerMm)
   const outside = toTenths(options.outsideMarginMm, tenthsPerMm)

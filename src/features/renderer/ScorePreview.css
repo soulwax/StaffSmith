@@ -5,12 +5,13 @@
 
 .score-preview-card .section-card__content {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
   height: calc(100vh - 160px);
   min-height: 0;
 }
 
 .preview-toolbar {
+  grid-row: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 6px 8px;
@@ -138,6 +139,7 @@
 }
 
 .preview-placeholder {
+  grid-row: 3;
   display: grid;
   place-items: center;
   min-height: 220px;
@@ -148,6 +150,7 @@
 }
 
 .preview-surface {
+  grid-row: 4;
   display: block;
   overflow: hidden;
   min-height: 0;
@@ -169,6 +172,8 @@
 }
 
 .score-page-stack {
+  --score-page-width-mm: 210;
+  --score-page-height-mm: 297;
   display: grid;
   justify-items: center;
   gap: 14px;
@@ -192,8 +197,8 @@
 .score-page {
   display: flex;
   flex-direction: column;
-  width: min(100%, calc((100vh - 300px) * 210 / 297));
-  aspect-ratio: 210 / 297;
+  width: min(100%, calc((100vh - 300px) * var(--score-page-width-mm) / var(--score-page-height-mm)));
+  aspect-ratio: var(--score-page-width-mm) / var(--score-page-height-mm);
   min-height: 0;
   margin: 0 auto;
   padding: clamp(10px, 1.8vh, 20px) clamp(12px, 2.4vh, 26px) clamp(14px, 2.6vh, 28px);
@@ -268,10 +273,12 @@
 }
 
 .preview-error {
+  grid-row: 3;
   color: var(--danger);
 }
 
 .page-controls {
+  grid-row: 5;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -304,6 +311,103 @@
   font-size: 0.86rem;
   font-weight: 750;
   text-align: center;
+}
+
+.advanced-layout-panel {
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 6px;
+  margin: 0 0 6px;
+  padding: 7px;
+  border: 1px solid rgba(28, 126, 152, 0.14);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.advanced-layout-panel__group,
+.advanced-layout-field,
+.advanced-layout-actions {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.advanced-layout-panel__group--paper {
+  grid-column: span 2;
+}
+
+.advanced-layout-label,
+.advanced-layout-field span {
+  color: #455563;
+  font-size: 0.64rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.advanced-layout-segmented {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  min-height: 28px;
+  padding: 2px;
+  border-radius: 7px;
+  background: rgba(28, 126, 152, 0.08);
+}
+
+.advanced-layout-segmented button,
+.advanced-layout-button,
+.advanced-layout-field input {
+  min-width: 0;
+  min-height: 27px;
+  border: 1px solid rgba(28, 126, 152, 0.14);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #273c4a;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.advanced-layout-segmented button,
+.advanced-layout-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 4px 7px;
+  cursor: pointer;
+}
+
+.advanced-layout-segmented button.is-active {
+  background: #ffffff;
+  color: #0e6774;
+  box-shadow: 0 1px 4px rgba(36, 103, 122, 0.14);
+}
+
+.advanced-layout-field input {
+  width: 100%;
+  padding: 4px 6px;
+}
+
+.advanced-layout-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-column: span 2;
+  align-content: end;
+}
+
+.advanced-layout-button--debug {
+  color: #0e6774;
+}
+
+.advanced-layout-segmented button:disabled,
+.advanced-layout-button:disabled,
+.advanced-layout-field input:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
 }
 
 .score-print-debug-overlay {
@@ -507,7 +611,7 @@
 
   .preview-segmented-control {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
   }
 
@@ -515,6 +619,15 @@
     justify-content: center;
     min-width: 0;
     white-space: normal;
+  }
+
+  .advanced-layout-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .advanced-layout-panel__group--paper,
+  .advanced-layout-actions {
+    grid-column: 1 / -1;
   }
 }
 
@@ -547,6 +660,7 @@
   .score-preview-card::before,
   .score-preview-card > .section-card__header,
   .preview-toolbar,
+  .advanced-layout-panel,
   .preview-placeholder,
   .preview-error,
   .page-controls {

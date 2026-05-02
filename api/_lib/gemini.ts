@@ -62,23 +62,115 @@ export async function runComposerAssist(payload: ComposerAssistRequest): Promise
     fail(502, 'Gemini returned an empty response.')
   }
 
-  return normalizeAssistResult(JSON.parse(text) as LooseComposerAssistResult, payload)
+  const parsedResult = parseJsonFromGeminiText(text)
+  if (!parsedResult.ok) {
+    if (payload.task === 'generate') {
+      return createFallbackAssistResult(payload)
+    }
+
+    fail(502, 'Gemini returned JSON that StaffSmith could not parse.')
+  }
+
+  return normalizeAssistResult(parsedResult.value as LooseComposerAssistResult, payload)
 }
 
 function createFallbackAssistResult(payload: ComposerAssistRequest, statusCode?: number): ComposerAssistResult {
+  const generatedInput = createFallbackNotation(payload)
   return {
     summary: statusCode
       ? `Gemini generation returned HTTP ${statusCode}, so StaffSmith used a local beginner flute fallback.`
       : 'Gemini generation was unavailable, so StaffSmith used a local beginner flute fallback.',
     keyCenter: 'D minor',
     suggestedMode: 'notes',
-    generatedInput: GEMINI_CONFIG.fallbackNotation,
+    generatedInput,
     notes: [
       'Uses a beginner-friendly flute range.',
       'Keeps StaffSmith syntax parseable while Gemini is unavailable.',
+      generatedInput !== GEMINI_CONFIG.fallbackNotation ? 'Expanded locally to honor the requested long-form measure count.' : '',
       payload.prompt ? 'Try Generate again later for a fresh AI variation.' : 'Add a prompt and try again later for a fresh AI variation.',
-    ],
+    ].filter(Boolean),
   }
+}
+
+function parseJsonFromGeminiText(text: string): { ok: true, value: unknown } | { ok: false } {
+  const jsonSlice = extractFirstJsonValue(text)
+
+  if (!jsonSlice) {
+    return { ok: false }
+  }
+
+  try {
+    return { ok: true, value: JSON.parse(jsonSlice) as unknown }
+  } catch {
+    return { ok: false }
+  }
+}
+
+function extractFirstJsonValue(text: string): string | null {
+  const trimmed = text.trim()
+  const start = findFirstJsonStart(trimmed)
+
+  if (start === -1) {
+    return null
+  }
+
+  const stack: string[] = []
+  let inString = false
+  let escaped = false
+
+  for (let index = start; index < trimmed.length; index += 1) {
+    const character = trimmed[index]
+
+    if (inString) {
+      if (escaped) {
+        escaped = false
+        continue
+      }
+
+      if (character === '\\') {
+        escaped = true
+        continue
+      }
+
+      if (character === '"') {
+        inString = false
+      }
+      continue
+    }
+
+    if (character === '"') {
+      inString = true
+      continue
+    }
+
+    if (character === '{' || character === '[') {
+      stack.push(character === '{' ? '}' : ']')
+      continue
+    }
+
+    if (character === '}' || character === ']') {
+      if (stack.pop() !== character) {
+        return null
+      }
+
+      if (stack.length === 0) {
+        return trimmed.slice(start, index + 1)
+      }
+    }
+  }
+
+  return null
+}
+
+function findFirstJsonStart(text: string) {
+  const objectStart = text.indexOf('{')
+  const arrayStart = text.indexOf('[')
+
+  if (objectStart !== -1) {
+    return objectStart
+  }
+
+  return arrayStart
 }
 
 export async function checkGeminiAvailability(): Promise<GeminiStatusResponse> {
@@ -152,8 +244,9 @@ function normalizeAssistResult(
 function coerceGeneratedInput(value: unknown, payload: ComposerAssistRequest, mode: InputMode) {
   const candidates = collectNotationCandidates(value)
   const fallback = payload.task === 'generate'
-    ? [GEMINI_CONFIG.fallbackNotation]
+    ? [createFallbackNotation(payload)]
     : collectNotationCandidates(payload.input)
+  const requestedMeasureCount = payload.task === 'generate' ? getRequestedMeasureCount(payload.prompt) : null
 
   for (const candidate of [...candidates, ...fallback]) {
     const normalized = candidate.trim()
@@ -162,11 +255,75 @@ function coerceGeneratedInput(value: unknown, payload: ComposerAssistRequest, mo
     }
 
     if (isLikelyParseableStaffSmithInput(mode, normalized)) {
-      return normalized
+      return requestedMeasureCount
+        ? expandNotationToMeasureCount(normalized, requestedMeasureCount)
+        : normalized
     }
   }
 
   fail(502, 'Gemini returned generatedInput in an unsupported format.')
+}
+
+function createFallbackNotation(payload: ComposerAssistRequest) {
+  const requestedMeasureCount = getRequestedMeasureCount(payload.prompt)
+
+  return requestedMeasureCount
+    ? expandNotationToMeasureCount(GEMINI_CONFIG.fallbackNotation, requestedMeasureCount)
+    : GEMINI_CONFIG.fallbackNotation
+}
+
+function getRequestedMeasureCount(prompt: string | undefined): number | null {
+  const normalized = prompt?.toLowerCase() ?? ''
+  if (!normalized.trim()) {
+    return null
+  }
+
+  const explicitMeasureMatch = normalized.match(/(?:at\s+least|minimum|expected\s+length\s*:?\s*|around|about|approximately|make\s+it)?\s*(\d{2,3})\s*(?:4\/4\s*)?(?:measures?|bars?)\b/)
+  const explicitMeasureCount = explicitMeasureMatch?.[1] ? Number(explicitMeasureMatch[1]) : null
+  if (explicitMeasureCount && Number.isFinite(explicitMeasureCount)) {
+    return Math.max(1, Math.min(GEMINI_CONFIG.longGeneration.maxGeneratedMeasures, Math.round(explicitMeasureCount)))
+  }
+
+  if (/\b5[\s-]*(?:minute|min)\b/.test(normalized) || /\bfive[\s-]*(?:minute|min)\b/.test(normalized)) {
+    return GEMINI_CONFIG.longGeneration.fiveMinuteMeasures
+  }
+
+  if (/\b(?:long|full|complete|extended)\b/.test(normalized)) {
+    return GEMINI_CONFIG.longGeneration.defaultLongMeasures
+  }
+
+  return null
+}
+
+function expandNotationToMeasureCount(input: string, targetMeasureCount: number) {
+  const measures = splitMeasures(input)
+  if (measures.length === 0 || measures.length >= targetMeasureCount) {
+    return input
+  }
+
+  const expanded: string[] = []
+  for (let index = 0; index < targetMeasureCount; index += 1) {
+    const measure = measures[index % measures.length]!
+    expanded.push(index > 0 && index % measures.length === 0
+      ? addLongFormSectionMarker(measure, index)
+      : measure)
+  }
+
+  return expanded.join(' | ')
+}
+
+function splitMeasures(input: string) {
+  return input
+    .split('|')
+    .map((measure) => measure.trim())
+    .filter(Boolean)
+}
+
+function addLongFormSectionMarker(measure: string, measureIndex: number) {
+  const markers = ['[return]', '[middle]', '[freestyle]', '[finale]', '[coda]']
+  const marker = markers[Math.floor(measureIndex / 16) % markers.length] ?? '[return]'
+
+  return `${marker} ${measure}`
 }
 
 function collectNotationCandidates(value: unknown): string[] {
