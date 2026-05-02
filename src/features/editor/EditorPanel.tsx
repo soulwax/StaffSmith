@@ -32,6 +32,14 @@ const DURATIONS: Array<{ label: string, value: DurationSymbol }> = [
 ]
 const DYNAMICS = ['pp', 'p', 'mp', 'mf', 'f', 'ff'] as const
 const EXPRESSIONS = ['dolce', 'legato', 'staccato', 'tenuto', 'cantabile', 'espressivo', 'rit.', 'accel.'] as const
+const STAFFSCRIPT_SNIPPETS = [
+  { label: 'Header', value: '@version=0.1\n@title="Take Five - 1st Flute"\n@instrument=flute\n@tempo=120\n@time=4/4\n@key=Dm\n@dur=q\n\n' },
+  { label: 'Section', value: 'section theme {\n  D5 q, F5 q, A5 h\n}' },
+  { label: 'Motif', value: '@motif call = ( D5 q, F5 q, A5 h )' },
+  { label: 'Use motif', value: 'use call' },
+  { label: 'Repeat', value: 'repeat 2 {\n  D5 q, F5 q, A5 h\n}' },
+  { label: 'Airy', value: '[airy flute]' },
+] as const
 const CHORD_ROOTS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'] as const
 const CHORD_QUALITIES = [
   { label: 'maj', value: '' },
@@ -173,6 +181,30 @@ export function EditorPanel({
     })
   }
 
+  const insertSnippet = (snippet: string, nextMode = mode) => {
+    const textarea = textareaRef.current
+    if (!textarea) {
+      onDraftChange(nextMode, joinToken(input, snippet, nextMode))
+      return
+    }
+
+    const selectionStart = textarea.selectionStart
+    const selectionEnd = textarea.selectionEnd
+    const before = input.slice(0, selectionStart)
+    const after = input.slice(selectionEnd)
+    const needsLeadingBreak = before.trim().length > 0 && !/[\s|{]\s*$/.test(before) && snippet.includes('\n')
+    const needsTrailingBreak = after.trim().length > 0 && snippet.includes('\n') && !/^\s/.test(after)
+    const insertion = `${needsLeadingBreak ? '\n' : ''}${snippet}${needsTrailingBreak ? '\n' : ''}`
+    const nextInput = `${before}${insertion}${after}`
+    const nextCursor = before.length + insertion.length
+
+    onDraftChange(nextMode, nextInput)
+    window.requestAnimationFrame(() => {
+      textarea.focus()
+      textarea.setSelectionRange(nextCursor, nextCursor)
+    })
+  }
+
   const handleSelectExample = (exampleId: string) => {
     const example = examples.find((entry) => entry.id === exampleId)
     if (example) {
@@ -245,6 +277,19 @@ export function EditorPanel({
       </div>
 
       <div className="editor-builder" aria-label="Notation builder">
+        <div className="builder-row">
+          <div className="builder-group builder-group--staffscript">
+            <span className="builder-label">StaffScript</span>
+            <div className="staffscript-snippet-strip">
+              {STAFFSCRIPT_SNIPPETS.map((snippet) => (
+                <button key={snippet.label} type="button" onClick={() => insertSnippet(snippet.value, 'notes')}>
+                  {snippet.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {mode === 'notes' ? (
           <>
             <div className="builder-row builder-row--note-console">
