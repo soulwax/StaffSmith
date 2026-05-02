@@ -933,9 +933,9 @@ export function App() {
             onSelectExample={handleSelectExample}
           />
 
-          <SectionCard title="AI Studio" className="ai-studio-card">
+          <SectionCard title="Sketch Workshop" className="ai-studio-card">
             <div className="ai-studio-section">
-              <span className="ai-studio-label">Generate from idea</span>
+              <span className="ai-studio-label">Draft from idea</span>
               <label className="visually-hidden" htmlFor="note-generation-prompt">Text idea</label>
               <textarea
                 id="note-generation-prompt"
@@ -967,7 +967,7 @@ export function App() {
             </div>
 
             <div className="ai-studio-section">
-              <span className="ai-studio-label">Refine &amp; analyze</span>
+              <span className="ai-studio-label">Shape &amp; inspect</span>
 
               {studioPalette.toneTags.length > 0 ? (
                 <div className="studio-signal-row" aria-label="Score signals">

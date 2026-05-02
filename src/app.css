@@ -225,7 +225,7 @@
 }
 
 .workbench-column {
-  grid-template-rows: minmax(560px, 1fr) auto;
+  grid-template-rows: auto auto;
   height: 100%;
   overflow: auto;
   padding-right: 2px;
