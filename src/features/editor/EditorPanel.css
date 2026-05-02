@@ -1,7 +1,7 @@
 .composer-card {
   display: grid;
   grid-template-rows: auto auto;
-  min-height: clamp(720px, 78vh, 1040px);
+  min-height: clamp(1000px, 92vh, 1180px);
 }
 
 .composer-card .section-card__content {
