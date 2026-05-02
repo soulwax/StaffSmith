@@ -1,6 +1,10 @@
 export const NOTE_SYNTAX_EXAMPLES = [
+  '@dur=q D5, F5, A5 h',
   'C4 q, E4 q, G4 h',
   'C4 h, pause h | R w | D4 w',
+  'section intro { D5 q, F5 q, A5 h }',
+  '@motif intro = ( D5 q, F5 q, A5 h ) use intro',
+  'repeat 2 { D5 q, F5 q, A5 h }',
   '( C4 8, D4 8, E4 q ) pause q, G4 32, A4 32, B4 16, C5 8',
   'mf [dolce] C4 q, E4 q, G4 h',
   'pp [flutter] F#5 32, G5 32, A5 16, pause 8, ( Bb5 8, C6 8 )',
@@ -9,10 +13,11 @@ export const NOTE_SYNTAX_EXAMPLES = [
 ] as const
 
 export const CHORD_SYNTAX_EXAMPLES = [
+  '@mode=chords Cmaj7 | Am7 | Dm7 G7 | Cmaj7',
   'Cmaj7 | Am7 | Dm7 G7 | Cmaj7',
   'mf Cmaj7 | < Am7 | Dm7 G7 | p Cmaj7',
-  'Dm7 | G7 | Cmaj7',
-  'Am | F | G | Am',
+  'C | Cm | Cmaj7 | Cmin7 | C7 | Cm7',
+  'Cdim | Caug | Csus4 | Cadd9 | F#dim | Bbmaj7',
 ] as const
 
 export const DYNAMIC_TOKENS = ['pp', 'p', 'mp', 'mf', 'f', 'ff'] as const
@@ -35,12 +40,14 @@ export const HAIRPIN_TOKENS = ['<, cresc, cresc.', '>, dim, dim., decresc, decre
 
 export const EXOTIC_EXPRESSION_EXAMPLES = ['[flutter]', '[sul pont.]', '[snap pizz.]', '[breathy]', '[glassy]'] as const
 
-export const STAFFSMITH_AI_SYNTAX_GUIDE = `StaffSmith syntax guide:
-- Return generatedInput as plain StaffSmith notation only, never markdown.
-- Optional tempo prefix at the very start: @tempo=NNN where NNN is an integer from 20 to 300 BPM, e.g. @tempo=120 C4 q, D4 q...
+export const STAFFSMITH_AI_SYNTAX_GUIDE = `StaffScript v0.1 syntax guide:
+- Return generatedInput as plain StaffScript notation only, never markdown.
+- StaffScript is StaffSmith's official readable text notation language. Preferred extension: .staff.
+- Optional metadata directives: @version=0.1, @title="Title", @composer="Name", @instrument=flute, @tempo=120, @time=4/4 or @time=5/4, @key=Dm, @mode=notes or @mode=chords, @dur=q.
+- @dur sets the default duration for following notes/rests. Explicit durations override it.
 - Generation priority order: 1) clear notes and intentional rests/pauses, 2) correct 4/4 rhythm, 3) expressive color such as slurs, dynamics, hairpins, and bracketed performance text.
 - Notes and pauses must carry the composition. Do not rely on dynamics or words to compensate for weak note choices.
-- Full-piece requests should become real multi-section pieces, not tiny sketches. Use bracketed section labels like [intro], [theme], [freestyle], [return], [finale], and [coda] when helpful.
+- Full-piece requests should become real multi-section pieces, not tiny sketches. Prefer formal section blocks like section intro { ... }; bracketed section labels like [intro] remain valid.
 - For a complete solo or beginning-to-end composition, aim for at least 24 measures unless the user asks for something short; 48-96 measures is acceptable when the prompt invites a long piece.
 - If the user says "up to" a very large note count, treat that as permission to write generously within the response budget.
 - Long output should still feel professionally engraved: clear 4- or 8-measure phrase groups, readable breath pauses, section changes, clean 4/4 beat grouping, and fast passages placed where a player can understand them.
@@ -64,8 +71,10 @@ export const STAFFSMITH_AI_SYNTAX_GUIDE = `StaffSmith syntax guide:
 - Expressions may appear before notes or chords: ${EXPRESSION_TOKENS.join(', ')}.
 - Hairpins / volume changes: <, cresc, or cresc. for louder; >, dim, dim., decresc, decresc., or diminuendo for quieter.
 - Custom expression text may be bracketed, for example [dolce] or [warmly].
+- Motifs: @motif intro = ( D5 q, F5 q, A5 h ) then use intro. Compact aliases are allowed, e.g. @intro = ( D5 q, F5 q, A5 h ).
+- Repeat blocks: repeat 2 { D5 q, F5 q, A5 h } or x2 { D5 q, F5 q, A5 h }.
 - Exotic but supported color should use normal StaffSmith syntax: chromatic accidentals, wider octave shapes, 16/32-note figures, pauses, slurs, and bracketed text such as ${EXOTIC_EXPRESSION_EXAMPLES.join(', ')}.
-- Chords mode uses lead-sheet symbols with optional sharp/flat roots: C, Cm, Cmin, Cmaj7, Am7, D7, F#dim, Bbmaj7, Caug, Csus, Csus2, Csus4.
+- Chords mode uses lead-sheet symbols with optional sharp/flat roots: C, Cm, Cmin7, Cmaj7, Am7, D7, F#dim, Bbmaj7, Caug, Csus, Csus2, Csus4, Cadd9.
 - Chord mode supports up to four chord symbols per measure.
 - Chord mode also accepts dynamics, expressions, bracketed custom text, and hairpin tokens before chord symbols.
 - Common chord-builder patterns include ii V I: Dm7 | G7 | Cmaj7, I vi ii V: Cmaj7 | Am7 | Dm7 | G7, and minor i VI VII: Am | F | G | Am.

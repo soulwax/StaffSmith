@@ -51,7 +51,7 @@ const CHORD_PROGRESSIONS = [
   { label: 'minor i VI VII', value: 'Am | F | G | Am' },
 ] as const
 const RHYTHM_TOKEN_PATTERN = /,|\(|\)|[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|pause|w|h|q|8|16|32|\S+/gi
-const TEMPO_RE = /^@tempo=(\d+)\s*/i
+const TEMPO_RE = /^@tempo=(\d+).*$/im
 
 function parseBpmFromInput(input: string): number | null {
   const match = input.match(TEMPO_RE)
@@ -64,8 +64,11 @@ function parseBpmFromInput(input: string): number | null {
 
 function setBpmInInput(input: string, bpm: number): string {
   const match = input.match(TEMPO_RE)
-  const rest = match ? input.slice(match[0].length) : input
-  return `@tempo=${bpm}${rest ? ` ${rest}` : ''}`
+  if (match) {
+    return input.replace(TEMPO_RE, `@tempo=${bpm}`)
+  }
+
+  return `@tempo=${bpm}${input ? `\n${input}` : ''}`
 }
 
 function joinToken(input: string, token: string, mode: InputMode) {
@@ -212,7 +215,7 @@ export function EditorPanel({
   }
 
   return (
-    <SectionCard title="Composer" className="composer-card">
+    <SectionCard title="StaffScript Composer" className="composer-card">
       <div className="mode-toggle" role="tablist" aria-label="Input mode">
         {(['notes', 'chords'] as const).map((entry) => (
           <button
@@ -413,7 +416,7 @@ export function EditorPanel({
       </div>
 
       <label className="visually-hidden" htmlFor="staffsmith-input">
-        Source
+        StaffScript source
       </label>
       <textarea
         ref={textareaRef}
@@ -424,8 +427,8 @@ export function EditorPanel({
         onChange={(event) => handleInputChange(event.target.value)}
         placeholder={
           mode === 'notes'
-            ? 'C4 q, D4 q, E4 h'
-            : 'Cmaj7 | Am7 | Dm7 G7 | Cmaj7'
+            ? '@dur=q\nC4, D4, E4 h'
+            : '@mode=chords\nCmaj7 | Am7 | Dm7 G7 | Cmaj7'
         }
       />
 
@@ -436,8 +439,8 @@ export function EditorPanel({
         </button>
         <p className={errors.length > 0 ? 'helper-text helper-text--error' : 'helper-text'}>
           {mode === 'notes'
-            ? 'C4 q, pause 8, G4 16, A4 32, (, ), mf'
-            : 'Cmaj7 | Am7 | Dm7 G7 | Cmaj7'}
+            ? 'StaffScript: notes, rests, sections, motifs, repeats, @dur, @time'
+            : 'StaffScript chords: C, Cm, Cmaj7, Cadd9, F#dim, Bbmaj7'}
         </p>
       </div>
     </SectionCard>

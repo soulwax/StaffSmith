@@ -79,7 +79,7 @@ declare global {
 }
 
 const BASE_PREVIEW_ZOOM = 0.84
-const MIN_ENGRAVING_WIDTH = 720
+const FIXED_ENGRAVING_WIDTH = 720
 const UNTITLED_SCORE_TITLE = 'Untitled sketch'
 const PAGE_FORMAT_OPTIONS = Object.entries(PAGE_FORMATS).map(([value, definition]) => ({
   value: value as AdvancedPartLayoutSettings['pageFormat'],
@@ -111,9 +111,17 @@ function createScoreTitleBlock(title: string) {
   return titleBlock
 }
 
+function createScorePageFooter(pageNumber: number, pageCount: number) {
+  const footer = document.createElement('footer')
+  footer.className = 'score-page__footer'
+  footer.textContent = `Page ${pageNumber} / ${pageCount}`
+  return footer
+}
+
 function createScorePageShell(showTitle: boolean, title: string) {
   const page = document.createElement('article')
   page.className = showTitle ? 'score-page score-page--with-title' : 'score-page'
+  page.classList.add('score-page--rendering')
   page.dataset.pageIndex = '0'
   page.dataset.active = 'true'
   page.setAttribute('aria-label', 'Score page')
@@ -133,42 +141,52 @@ function createScorePageShell(showTitle: boolean, title: string) {
   return { page, renderTarget }
 }
 
-function createPrintScorePage(svg: SVGSVGElement, showTitle: boolean, title: string) {
+function createScorePageFromSvg(
+  svg: SVGSVGElement,
+  showTitle: boolean,
+  title: string,
+  pageIndex: number,
+  pageCount: number,
+) {
   const page = document.createElement('article')
-  page.className = showTitle ? 'score-print-page score-print-page--with-title' : 'score-print-page'
-  page.setAttribute('aria-hidden', 'true')
+  page.className = showTitle ? 'score-page score-page--with-title' : 'score-page'
+  page.dataset.pageIndex = String(pageIndex)
+  page.dataset.active = pageIndex === 0 ? 'true' : 'false'
+  page.setAttribute('aria-label', `Score page ${pageIndex + 1} of ${pageCount}`)
+  page.setAttribute('aria-hidden', pageIndex === 0 ? 'false' : 'true')
 
   if (showTitle) {
     page.append(createScoreTitleBlock(title))
   }
 
   const body = document.createElement('div')
-  body.className = 'score-print-page__body'
+  body.className = 'score-page__body'
   body.append(svg.cloneNode(true))
   page.append(body)
+  page.append(createScorePageFooter(pageIndex + 1, pageCount))
 
   return page
 }
 
-function syncPrintableScorePages(container: HTMLElement, renderTarget: HTMLElement, showTitle: boolean, title: string) {
-  const existingPrintStack = container.querySelector('.score-print-stack')
-  existingPrintStack?.remove()
-
+function replaceRenderedScorePages(container: HTMLElement, renderTarget: HTMLElement, showTitle: boolean, title: string) {
   const pages = getRenderedPageSvgs(renderTarget)
   if (pages.length === 0) {
-    return
+    return 0
   }
 
-  const printStack = document.createElement('div')
-  printStack.className = 'score-print-stack score-engraving'
-  pages.forEach((page, index) => {
-    printStack.append(createPrintScorePage(page, showTitle && index === 0, title))
-  })
-  container.append(printStack)
+  const scorePages = pages.map((page, index) => (
+    createScorePageFromSvg(page, showTitle && index === 0, title, index, pages.length)
+  ))
+  container.replaceChildren(...scorePages)
+  return scorePages.length
 }
 
-function getPrintPageSvgs(container: HTMLElement) {
-  return Array.from(container.querySelectorAll<SVGSVGElement>('.score-print-page__body > svg'))
+function getScorePages(container: HTMLElement) {
+  return Array.from(container.querySelectorAll<HTMLElement>('.score-page:not(.score-page--rendering)'))
+}
+
+function getScorePageSvgs(container: HTMLElement) {
+  return getScorePages(container).flatMap((page) => Array.from(page.querySelectorAll<SVGSVGElement>('.score-page__body > svg')))
 }
 
 function hashString(value: string) {
@@ -368,18 +386,9 @@ function renderPrintDebugOverlay(report: PrintDebugReport, previewPages: SVGSVGE
 
 function comparePrintPreviewVisually(
   container: HTMLElement,
-  showTitle: boolean,
-  title: string,
 ): PrintDebugReport | null {
-  const renderTarget = container.querySelector<HTMLElement>('.preview-render-target')
-  if (!renderTarget) {
-    return null
-  }
-
-  syncPrintableScorePages(container, renderTarget, showTitle, title)
-
-  const previewPages = getRenderedPageSvgs(renderTarget)
-  const printPages = getPrintPageSvgs(container)
+  const previewPages = getScorePageSvgs(container)
+  const printPages = previewPages
   const report = createPrintDebugReport(previewPages, printPages)
 
   window.__staffSmithLastPrintDebugReport = report
@@ -405,22 +414,12 @@ function updateVisibleScorePage(container: HTMLElement | null, pageIndex: number
     return
   }
 
-  const titleBlock = container.querySelector<HTMLElement>('.score-title-block')
-  if (titleBlock) {
-    titleBlock.hidden = pageIndex !== 0
-  }
-
-  const renderTarget = container.querySelector<HTMLElement>('.preview-render-target')
-  const pages = renderTarget ? getRenderedPageSvgs(renderTarget) : []
+  const pages = getScorePages(container)
   pages.forEach((page, index) => {
     const isActive = index === pageIndex
-    const pageWrapper = page.parentElement && page.parentElement !== renderTarget ? page.parentElement : page
-    pageWrapper.classList.add('score-rendered-page')
-    pageWrapper.dataset.active = isActive ? 'true' : 'false'
     page.dataset.active = isActive ? 'true' : 'false'
     page.setAttribute('aria-hidden', isActive ? 'false' : 'true')
     page.style.display = ''
-    pageWrapper.style.display = ''
   })
 }
 
@@ -429,21 +428,11 @@ function revealAllScorePagesForPrint(container: HTMLElement | null) {
     return
   }
 
-  const titleBlock = container.querySelector<HTMLElement>('.score-title-block')
-  if (titleBlock) {
-    titleBlock.hidden = false
-  }
-
-  const renderTarget = container.querySelector<HTMLElement>('.preview-render-target')
-  const pages = renderTarget ? getRenderedPageSvgs(renderTarget) : []
+  const pages = getScorePages(container)
   pages.forEach((page) => {
-    const pageWrapper = page.parentElement && page.parentElement !== renderTarget ? page.parentElement : page
-    pageWrapper.classList.add('score-rendered-page')
-    pageWrapper.dataset.active = 'true'
     page.dataset.active = 'true'
     page.setAttribute('aria-hidden', 'false')
     page.style.display = ''
-    pageWrapper.style.display = ''
   })
 }
 
@@ -492,75 +481,13 @@ function waitForRenderedSvgContent(renderTarget: HTMLElement, shouldCancel: () =
   })
 }
 
-function getAvailableRenderWidth(container: HTMLElement, renderTarget?: HTMLElement) {
-  const widthSources = [
-    renderTarget,
-    renderTarget?.parentElement,
-    container.querySelector<HTMLElement>('.score-page__body'),
-    container.querySelector<HTMLElement>('.score-page'),
-    container,
-    container.parentElement,
-    container.closest<HTMLElement>('.preview-surface'),
-    container.closest<HTMLElement>('.score-preview-card'),
-  ]
-
-  for (const source of widthSources) {
-    const width = source?.getBoundingClientRect().width ?? 0
-    if (width > 0) {
-      return Math.max(MIN_ENGRAVING_WIDTH, Math.floor(width))
-    }
-  }
-
-  return 768
-}
-
-function waitForRenderTargetWidth(container: HTMLElement, renderTarget: HTMLElement, shouldCancel: () => boolean) {
-  const maxFrames = 30
-
-  return new Promise<number>((resolve) => {
-    const checkFrame = (frame: number) => {
-      if (shouldCancel()) {
-        resolve(0)
-        return
-      }
-
-      const width = getAvailableRenderWidth(container, renderTarget)
-      if (width > 0) {
-        resolve(width)
-        return
-      }
-
-      if (frame >= maxFrames) {
-        resolve(768)
-        return
-      }
-
-      window.requestAnimationFrame(() => checkFrame(frame + 1))
-    }
-
-    checkFrame(0)
-  })
-}
-
-function fitRenderedScoreToPage(container: HTMLElement, renderTarget: HTMLElement, renderTargetWidth: number) {
-  const pageBody = container.querySelector<HTMLElement>('.score-page__body')
-  const availableWidth = pageBody?.getBoundingClientRect().width ?? renderTargetWidth
-  const scale = Math.min(1, availableWidth / renderTargetWidth)
-  const renderedPage = getRenderedPageSvgs(renderTarget)[0]
-  const renderedHeight = renderedPage?.getBoundingClientRect().height
-    ?? renderTarget.scrollHeight
-    ?? renderTarget.getBoundingClientRect().height
-
-  renderTarget.style.transform = scale < 1 ? `scale(${scale})` : ''
-  renderTarget.style.transformOrigin = 'top left'
-  renderTarget.style.height = scale < 1 ? `${renderedHeight}px` : ''
-}
-
 function applyPageFormatCssVariables(container: HTMLElement, settings: AdvancedPartLayoutSettings) {
   const pageFormat = PAGE_FORMATS[settings.pageFormat]
 
   container.style.setProperty('--score-page-width-mm', String(pageFormat.widthMm))
   container.style.setProperty('--score-page-height-mm', String(pageFormat.heightMm))
+  container.style.setProperty('--score-page-width', `${pageFormat.widthMm}mm`)
+  container.style.setProperty('--score-page-height', `${pageFormat.heightMm}mm`)
 }
 
 function clampAdvancedSetting(value: number, min: number, max: number) {
@@ -618,8 +545,7 @@ export function ScorePreview({
       return
     }
 
-    const renderTarget = container.querySelector<HTMLElement>('.preview-render-target')
-    const renderedPages = renderTarget ? getRenderedPageSvgs(renderTarget) : []
+    const renderedPages = getScorePages(container)
     const nextPageCount = Math.max(1, renderedPages.length)
     setPageCount(nextPageCount)
     setPageIndex((current) => {
@@ -640,7 +566,7 @@ export function ScorePreview({
 
     const comparePrintPreview: PrintVisualDebugApi = () => {
       const container = containerRef.current
-      return container ? comparePrintPreviewVisually(container, showTitle, title) : null
+      return container ? comparePrintPreviewVisually(container) : null
     }
 
     window.__staffSmithComparePrintPreview = comparePrintPreview
@@ -649,7 +575,7 @@ export function ScorePreview({
         delete window.__staffSmithComparePrintPreview
       }
     }
-  }, [showTitle, title])
+  }, [])
 
   useEffect(() => {
     const container = containerRef.current
@@ -680,19 +606,13 @@ export function ScorePreview({
         }
 
         const { page, renderTarget } = createScorePageShell(showTitle, title)
-        renderTarget.style.width = '100%'
-        renderTarget.style.maxWidth = '100%'
+        renderTarget.style.width = `${FIXED_ENGRAVING_WIDTH}px`
+        renderTarget.style.maxWidth = `${FIXED_ENGRAVING_WIDTH}px`
         container.replaceChildren(page)
-        const renderTargetWidth = await waitForRenderTargetWidth(
-          container,
-          renderTarget,
-          () => cancelled || renderId !== renderIdRef.current,
-        )
         if (cancelled || renderId !== renderIdRef.current) {
           renderTarget.remove()
           return
         }
-        renderTarget.style.width = `${renderTargetWidth}px`
 
         const osmd = new OpenSheetMusicDisplay(renderTarget, {
           autoResize: false,
@@ -744,8 +664,13 @@ export function ScorePreview({
           return
         }
 
-        fitRenderedScoreToPage(container, renderTarget, renderTargetWidth)
-        syncPrintableScorePages(container, renderTarget, showTitle, title)
+        const nextPageCount = replaceRenderedScorePages(container, renderTarget, showTitle, title)
+        if (nextPageCount === 0) {
+          setPageCount(1)
+          setPageIndex(0)
+          setRenderError(null)
+          return
+        }
         updateRenderedPages(true)
         setRenderError(null)
       } catch (error) {
@@ -876,17 +801,11 @@ export function ScorePreview({
       return
     }
 
-    comparePrintPreviewVisually(container, showTitle, title)
+    comparePrintPreviewVisually(container)
   }
 
   const handlePrintScore = () => {
     const container = containerRef.current
-    const renderTarget = container?.querySelector<HTMLElement>('.preview-render-target')
-
-    if (container && renderTarget) {
-      syncPrintableScorePages(container, renderTarget, showTitle, title)
-    }
-
     revealAllScorePagesForPrint(container)
     onPrintScore()
   }

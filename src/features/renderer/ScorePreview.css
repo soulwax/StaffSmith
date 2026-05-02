@@ -152,7 +152,7 @@
 .preview-surface {
   grid-row: 4;
   display: block;
-  overflow: hidden;
+  overflow: auto;
   min-height: 0;
   padding: 8px;
   border-radius: 7px;
@@ -174,34 +174,31 @@
 .score-page-stack {
   --score-page-width-mm: 210;
   --score-page-height-mm: 297;
+  --score-page-width: 210mm;
+  --score-page-height: 297mm;
+  --score-preview-page-width: 720px;
   display: grid;
   justify-items: center;
   gap: 14px;
-  width: 100%;
-  max-width: 100%;
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
   min-height: 0;
-}
-
-.score-print-stack {
-  display: none;
 }
 
 .score-page:not([data-active="true"]) {
   display: none;
 }
 
-.score-rendered-page:not([data-active="true"]) {
-  display: none;
-}
-
 .score-page {
   display: flex;
+  position: relative;
   flex-direction: column;
-  width: min(100%, calc((100vh - 300px) * var(--score-page-width-mm) / var(--score-page-height-mm)));
+  width: var(--score-preview-page-width);
   aspect-ratio: var(--score-page-width-mm) / var(--score-page-height-mm);
   min-height: 0;
   margin: 0 auto;
-  padding: clamp(10px, 1.8vh, 20px) clamp(12px, 2.4vh, 26px) clamp(14px, 2.6vh, 28px);
+  padding: 18px 22px 20px;
   border: 1px solid rgba(28, 126, 152, 0.14);
   border-radius: 4px;
   background: #ffffff;
@@ -216,6 +213,7 @@
   place-items: start center;
   width: 100%;
   min-height: 0;
+  overflow: hidden;
 }
 
 .score-title-block {
@@ -229,9 +227,18 @@
   margin: 0;
   color: #141812;
   font-family: "Georgia", "Times New Roman", serif;
-  font-size: clamp(1.05rem, 1.6vw, 1.55rem);
+  font-size: 1.45rem;
   font-weight: 700;
   letter-spacing: 0;
+}
+
+.score-page__footer {
+  margin-top: auto;
+  color: #64717a;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
 }
 
 .score-engraving,
@@ -585,8 +592,7 @@
   }
 
   .score-page {
-    width: min(100%, 720px);
-    padding: 14px 12px;
+    padding: 18px 22px 20px;
   }
 
   .score-title-block {
@@ -633,7 +639,7 @@
 
 @page {
   size: A4 portrait;
-  margin: 12mm;
+  margin: 0;
 }
 
 @media print {
@@ -711,37 +717,34 @@
   }
 
   .score-page-stack {
+    display: block;
     gap: 0;
+    width: 100%;
+    max-width: none;
+    overflow: visible;
   }
 
   .score-page {
-    display: none !important;
-  }
-
-  .score-print-stack {
-    display: block;
-    width: 100%;
-  }
-
-  .score-print-page {
-    display: flex;
+    display: flex !important;
     position: relative;
     flex-direction: column;
-    width: 100%;
+    width: var(--score-page-width);
+    max-width: none;
+    height: var(--score-page-height);
     aspect-ratio: auto;
-    height: calc(297mm - 24mm);
     min-height: 0;
-    margin: 0;
-    padding: 0;
+    margin: 0 auto;
+    padding: 10mm 10mm 9mm;
     border: 0;
     border-radius: 0;
     box-shadow: none;
     background: #fff;
+    overflow: hidden;
     break-after: page;
     page-break-after: always;
   }
 
-  .score-print-page:last-child {
+  .score-page:last-child {
     break-after: auto;
     page-break-after: auto;
   }
@@ -754,7 +757,7 @@
     font-size: 18pt;
   }
 
-  .score-print-page__body {
+  .score-page__body {
     display: grid;
     flex: 1 1 auto;
     place-items: start center;
@@ -763,11 +766,22 @@
     overflow: hidden;
   }
 
-  .score-print-page__body svg {
+  .score-page__body svg {
     display: block;
     width: 100%;
     height: auto;
     max-height: 100%;
-    object-fit: contain;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .score-page__footer {
+    margin-top: 3mm;
+    color: #3f4850;
+    font-size: 8pt;
+  }
+
+  .score-page--rendering {
+    display: none !important;
   }
 }

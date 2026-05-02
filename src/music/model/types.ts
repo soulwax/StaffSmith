@@ -48,7 +48,7 @@ export interface ChordEvent {
   tones: string[]
 }
 
-export type DirectionKind = 'dynamic' | 'expression' | 'hairpin'
+export type DirectionKind = 'dynamic' | 'expression' | 'hairpin' | 'section'
 
 export interface DirectionEvent {
   id: string
@@ -79,7 +79,14 @@ export interface Score {
     beats: number
     beatType: number
     totalEvents: number
+    sourceFormat?: 'staffscript'
+    staffScriptVersion?: string
+    composer?: string
+    instrument?: string
+    key?: string
+    defaultDuration?: DurationSymbol
     tempoBpm?: number
+    unknown?: Record<string, string>
   }
   measures: Measure[]
 }

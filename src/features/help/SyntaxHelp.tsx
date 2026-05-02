@@ -10,8 +10,17 @@ import './SyntaxHelp.css'
 
 export function SyntaxHelp() {
   return (
-    <SectionCard title="Syntax Help">
+    <SectionCard title="StaffScript Syntax">
       <div className="syntax-help">
+        <div>
+          <h3>Metadata</h3>
+          <p>Place optional directives before the music.</p>
+          <code>@version=0.1</code>
+          <code>@title="Sketch"</code>
+          <code>@tempo=120</code>
+          <code>@time=5/4</code>
+          <code>@dur=q</code>
+        </div>
         <div>
           <h3>Notes</h3>
           <p>Use pitch+octave with optional duration.</p>
@@ -40,7 +49,27 @@ export function SyntaxHelp() {
           <code>C</code>
           <code>Cm</code>
           <code>Cmaj7</code>
+          <code>Cadd9</code>
           <code>F#dim</code>
+        </div>
+        <div>
+          <h3>Sections</h3>
+          <p>Use named blocks or inline labels.</p>
+          <code>section intro {'{'} D5 q {'}'}</code>
+          <code>[intro] D5 q</code>
+        </div>
+        <div>
+          <h3>Motifs</h3>
+          <p>Define a phrase once and reuse it.</p>
+          <code>@motif intro = ( D5 q, F5 q )</code>
+          <code>@intro = ( D5 q, F5 q )</code>
+          <code>use intro</code>
+        </div>
+        <div>
+          <h3>Repeats</h3>
+          <p>Repeat a block by count.</p>
+          <code>repeat 2 {'{'} D5 q, F5 q {'}'}</code>
+          <code>x2 {'{'} D5 q, F5 q {'}'}</code>
         </div>
         <div>
           <h3>Dynamics</h3>
@@ -59,7 +88,7 @@ export function SyntaxHelp() {
         </div>
         <div>
           <h3>Tempo</h3>
-          <p>Set BPM at the very start of the input (20–300).</p>
+          <p>Set BPM in the metadata header (20-300).</p>
           <code>@tempo=120</code>
           <code>@tempo=72</code>
         </div>
@@ -71,11 +100,11 @@ export function SyntaxHelp() {
       </div>
       <div className="syntax-examples">
         <div>
-          <strong>Notes mode</strong>
+          <strong>StaffScript notes</strong>
           {NOTE_SYNTAX_EXAMPLES.map((example) => <code key={example}>{example}</code>)}
         </div>
         <div>
-          <strong>Chords mode</strong>
+          <strong>StaffScript chords</strong>
           {CHORD_SYNTAX_EXAMPLES.map((example) => <code key={example}>{example}</code>)}
         </div>
       </div>

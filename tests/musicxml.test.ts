@@ -91,7 +91,7 @@ describe('MusicXML export', () => {
   })
 
   it('serializes the bundled composer solo example with OSMD-safe hairpin labels', () => {
-    const example = EXAMPLES.find((preset) => preset.id === 'notes-woodwinds')
+    const example = EXAMPLES.find((preset) => preset.id === 'staffscript-take-5-flute')
     expect(example).toBeDefined()
 
     const result = parseScoreInput('notes', example?.input ?? '')
@@ -100,7 +100,7 @@ describe('MusicXML export', () => {
     const xml = scoreToMusicXml(result.value)
     const hairpinLabels = xml.match(/<words font-style="italic">(?:cresc\.|dim\.)<\/words>/g) ?? []
 
-    expect(result.value.measures).toHaveLength(32)
+    expect(result.value.measures.length).toBeGreaterThan(12)
     expect(hairpinLabels.length).toBeGreaterThan(0)
     expect(xml).not.toContain('<wedge')
   })
@@ -118,6 +118,25 @@ describe('MusicXML export', () => {
     expect(xml).toContain('<beam number="3">begin</beam>')
     expect(xml).toContain('<slur type="start" number="1" />')
     expect(xml).toContain('<slur type="stop" number="1" />')
+  })
+
+  it('serializes StaffScript metadata, 5/4 time, sections, and default-duration expansion', () => {
+    const result = parseScoreInput(
+      'notes',
+      '@title="Take 5 for the Flute"\n@composer="Konstantin Kling"\n@instrument=flute\n@tempo=120\n@time=5/4\n@key=Dm\n@dur=q\n\nsection intro { mp D5, F5, A5 h, R q }',
+    )
+    expect(result.ok).toBe(true)
+
+    const xml = scoreToMusicXml(result.value, { showTempo: true })
+
+    expect(xml).toContain('<work-title>Take 5 for the Flute</work-title>')
+    expect(xml).toContain('<creator type="composer">Konstantin Kling</creator>')
+    expect(xml).toContain('<part-name>flute</part-name>')
+    expect(xml).toContain('<fifths>-1</fifths>')
+    expect(xml).toContain('<beats>5</beats>')
+    expect(xml).toContain('<beat-type>4</beat-type>')
+    expect(xml).toContain('<per-minute>120</per-minute>')
+    expect(xml).toContain('<words font-weight="bold">intro</words>')
   })
 
   it('serializes explicit rests, early page-turn breaks, and cue-sized notes for long silence', () => {

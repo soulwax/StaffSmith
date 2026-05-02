@@ -10,7 +10,7 @@ import {
   type Score,
   type ScoreEvent,
 } from '../model/types'
-import { DURATION_UNITS, FULL_MEASURE_UNITS, MUSICXML_NOTE_TYPE } from '../theory/duration'
+import { DURATION_UNITS, MUSICXML_NOTE_TYPE, getMeasureCapacityUnits } from '../theory/duration'
 import { buildPitchClass } from '../theory/pitch'
 import {
   DEFAULT_SHEET_OPTIONS,
@@ -92,7 +92,16 @@ function stemDirection(octave: number): 'up' | 'down' {
 }
 
 export function scoreToMusicXml(score: Score, options: Partial<ScoreSheetOptions> = {}): string {
-  const sheetOptions = resolveSheetOptions(options)
+  const sheetOptions = resolveSheetOptions({
+    title: score.metadata.title,
+    composer: score.metadata.composer ?? '',
+    staffLabel: score.metadata.instrument ?? '',
+    beats: score.metadata.beats,
+    beatType: score.metadata.beatType,
+    tempoBpm: score.metadata.tempoBpm ?? DEFAULT_SHEET_OPTIONS.tempoBpm,
+    ...(score.metadata.key ? { keyFifths: keyToFifths(score.metadata.key) } : {}),
+    ...options,
+  })
   const layoutPlan = buildLayoutPlan(score, sheetOptions)
   const pageLayout = renderPageLayout(sheetOptions)
   const systemLayout = renderSystemLayout(sheetOptions)
@@ -154,6 +163,44 @@ function resolveSheetOptions(options: Partial<ScoreSheetOptions>): ScoreSheetOpt
     topMarginMm: options.topMarginMm ?? preset.topMarginMm ?? baseOptions.topMarginMm,
     bottomMarginMm: options.bottomMarginMm ?? preset.bottomMarginMm ?? baseOptions.bottomMarginMm,
   }
+}
+
+function keyToFifths(key: string): number {
+  const normalized = key.trim().replace(/min(?:or)?$/i, 'm')
+  const lookup: Record<string, number> = {
+    Cb: -7,
+    Abm: -7,
+    Gb: -6,
+    Ebm: -6,
+    Db: -5,
+    Bbm: -5,
+    Ab: -4,
+    Fm: -4,
+    Eb: -3,
+    Cm: -3,
+    Bb: -2,
+    Gm: -2,
+    F: -1,
+    Dm: -1,
+    C: 0,
+    Am: 0,
+    G: 1,
+    Em: 1,
+    D: 2,
+    Bm: 2,
+    A: 3,
+    'F#m': 3,
+    E: 4,
+    'C#m': 4,
+    B: 5,
+    'G#m': 5,
+    'F#': 6,
+    'D#m': 6,
+    'C#': 7,
+    'A#m': 7,
+  }
+
+  return lookup[normalized] ?? DEFAULT_SHEET_OPTIONS.keyFifths
 }
 
 function buildLayoutPlan(score: Score, options: ScoreSheetOptions): Map<number, MeasureLayoutPlan> {
@@ -249,9 +296,10 @@ function findFullMeasureRestRuns(score: Score): Array<{ start: number, length: n
   const runs: Array<{ start: number, length: number }> = []
   let runStart: number | null = null
   let runLength = 0
+  const measureCapacityUnits = getMeasureCapacityUnits(score.metadata.beats, score.metadata.beatType)
 
   score.measures.forEach((measure, index) => {
-    if (isFullMeasureRest(measure)) {
+    if (isFullMeasureRest(measure, measureCapacityUnits)) {
       if (runStart === null) {
         runStart = index
       }
@@ -273,12 +321,12 @@ function findFullMeasureRestRuns(score: Score): Array<{ start: number, length: n
   return runs.filter((run) => run.length >= MIN_PAGE_TURN_REST_MEASURES)
 }
 
-function isFullMeasureRest(measure: Measure): boolean {
+function isFullMeasureRest(measure: Measure, measureCapacityUnits: number): boolean {
   const rhythmicEvents = measure.events.filter(isRhythmicEvent)
 
   return rhythmicEvents.length > 0
     && rhythmicEvents.every((event) => event.kind === 'rest')
-    && rhythmicEvents.reduce((sum, event) => sum + DURATION_UNITS[event.duration], 0) === FULL_MEASURE_UNITS
+    && rhythmicEvents.reduce((sum, event) => sum + DURATION_UNITS[event.duration], 0) === measureCapacityUnits
 }
 
 function hasSectionChange(measure: Measure | undefined): boolean {
@@ -418,8 +466,9 @@ function renderMeasure(
   const measureUnits = measure.events
     .filter(isRhythmicEvent)
     .reduce((sum, event) => sum + DURATION_UNITS[event.duration], 0)
-  const padding = options.padIncompleteMeasures && measureUnits < FULL_MEASURE_UNITS
-    ? renderRestSequence(FULL_MEASURE_UNITS - measureUnits)
+  const measureCapacityUnits = getMeasureCapacityUnits(options.beats, options.beatType)
+  const padding = options.padIncompleteMeasures && measureUnits < measureCapacityUnits
+    ? renderRestSequence(measureCapacityUnits - measureUnits)
     : ''
   const clef = getClefDefinition(options.clef)
   const attributes = isFirst
@@ -580,6 +629,14 @@ function renderDirectionEvent(event: DirectionEvent): string {
     return `      <direction placement="below">
         <direction-type>
           <words font-style="italic">${label}</words>
+        </direction-type>
+      </direction>`
+  }
+
+  if (event.directionKind === 'section') {
+    return `      <direction placement="above">
+        <direction-type>
+          <words font-weight="bold">${escapeXml(event.text)}</words>
         </direction-type>
       </direction>`
   }

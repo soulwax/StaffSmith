@@ -1,26 +1,28 @@
 import type { InputMode, ParseResult, Score } from '../model/types'
 import { parseChordInput } from './chordParser'
 import { parseNoteInput } from './noteParser'
-
-const TEMPO_PREFIX_RE = /^@tempo=(\d+)\s*/i
+import { prepareStaffScript } from './staffScript'
 
 export function parseScoreInput(mode: InputMode, input: string): ParseResult<Score> {
-  let processedInput = input
-  let tempoBpm: number | undefined
-
-  const tempoMatch = input.match(TEMPO_PREFIX_RE)
-  if (tempoMatch) {
-    const parsed = parseInt(tempoMatch[1] ?? '', 10)
-    if (Number.isFinite(parsed) && parsed >= 20 && parsed <= 300) {
-      tempoBpm = parsed
-    }
-    processedInput = input.slice(tempoMatch[0].length)
+  const staffScript = prepareStaffScript(input)
+  const activeMode = staffScript.mode ?? mode
+  const parserOptions = {
+    ...(staffScript.defaultDuration !== undefined ? { defaultDuration: staffScript.defaultDuration } : {}),
+    ...(staffScript.metadata.beats !== undefined ? { beats: staffScript.metadata.beats } : {}),
+    ...(staffScript.metadata.beatType !== undefined ? { beatType: staffScript.metadata.beatType } : {}),
   }
+  const result = activeMode === 'notes'
+    ? parseNoteInput(staffScript.input, parserOptions)
+    : parseChordInput(staffScript.input, parserOptions)
 
-  const result = mode === 'notes' ? parseNoteInput(processedInput) : parseChordInput(processedInput)
-
-  if (tempoBpm !== undefined) {
-    result.value.metadata.tempoBpm = tempoBpm
+  result.errors.unshift(...staffScript.errors)
+  result.warnings.unshift(...staffScript.warnings)
+  result.ok = result.errors.length === 0
+  result.value.metadata = {
+    ...result.value.metadata,
+    ...staffScript.metadata,
+    mode: activeMode,
+    totalEvents: result.value.metadata.totalEvents,
   }
 
   return result

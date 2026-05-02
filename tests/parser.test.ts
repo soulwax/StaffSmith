@@ -113,4 +113,56 @@ describe('StaffSmith parser', () => {
       harmonyKind: 'major-seventh',
     })
   })
+
+  it('parses StaffScript metadata, default duration, sections, motifs, and repeats', () => {
+    const result = parseScoreInput(
+      'notes',
+      '@version=0.1\n@title="Take 5 for the Flute"\n@composer="Konstantin Kling"\n@instrument=flute\n@tempo=120\n@time=5/4\n@key=Dm\n@dur=q\n\n@motif intro = ( D5, F5, A5 h )\n@fall = > G5, F5, E5, D5\n\nsection intro {\n  mp use intro | use fall, R q\n}\n\nx2 {\n  use intro | pause h, D5 h, R q\n}',
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.errors).toEqual([])
+    expect(result.value.metadata).toMatchObject({
+      sourceFormat: 'staffscript',
+      staffScriptVersion: '0.1',
+      title: 'Take 5 for the Flute',
+      composer: 'Konstantin Kling',
+      instrument: 'flute',
+      tempoBpm: 120,
+      beats: 5,
+      beatType: 4,
+      key: 'Dm',
+      defaultDuration: 'q',
+    })
+    expect(result.value.measures).toHaveLength(6)
+    expect(result.value.measures[0]?.events[0]).toMatchObject({
+      kind: 'direction',
+      directionKind: 'section',
+      text: 'intro',
+    })
+    expect(result.value.measures[0]?.events[4]).toMatchObject({
+      kind: 'note',
+      duration: 'h',
+    })
+  })
+
+  it('reports missing and recursive StaffScript motifs', () => {
+    const missing = parseScoreInput('notes', 'use missing')
+    expect(missing.ok).toBe(false)
+    expect(missing.errors[0]?.message).toContain('Unknown motif "missing"')
+
+    const recursive = parseScoreInput('notes', '@motif loop = use loop\nuse loop')
+    expect(recursive.ok).toBe(false)
+    expect(recursive.errors[0]?.message).toContain('expands recursively')
+  })
+
+  it('accepts the StaffScript v0.1 chord subset', () => {
+    const result = parseScoreInput(
+      'chords',
+      '@mode=chords\nC | Cm | Cmaj7 | Cmin7 | C7 | Cm7 | Cdim | Caug | Csus4 | Cadd9 | F#dim | Bbmaj7',
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.value.measures).toHaveLength(12)
+  })
 })

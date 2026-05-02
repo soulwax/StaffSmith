@@ -16,8 +16,13 @@ type ChordMeasureItem =
       event: Measure['events'][number]
     }
 
-export function parseChordInput(input: string): ParseResult<Score> {
-  const score = createEmptyScore('chords')
+export type ChordParserOptions = {
+  beats?: number
+  beatType?: number
+}
+
+export function parseChordInput(input: string, options: ChordParserOptions = {}): ParseResult<Score> {
+  const score = createEmptyScore('chords', options)
   const errors = []
   const warnings: string[] = []
   const tokens = tokenize(input, CHORD_TOKEN_PATTERN)

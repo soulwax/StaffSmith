@@ -64,11 +64,25 @@ export function parseDirectionToken(token: string, id: string): DirectionEvent |
   }
 
   if (normalized.startsWith('[') && normalized.endsWith(']') && normalized.length > 2) {
+    const expressionText = normalized.slice(1, -1).replaceAll('_', ' ')
+
+    if (/^section:/i.test(expressionText)) {
+      const sectionName = expressionText.replace(/^section:/i, '').trim()
+      if (sectionName) {
+        return {
+          id,
+          kind: 'direction',
+          directionKind: 'section',
+          text: sectionName,
+        }
+      }
+    }
+
     return {
       id,
       kind: 'direction',
       directionKind: 'expression',
-      text: normalized.slice(1, -1).replaceAll('_', ' '),
+      text: expressionText,
     }
   }
 

@@ -215,7 +215,7 @@ function getStudioInsightTags(analysis: ComposerAssistResult | null) {
 }
 
 function formatModeLabel(mode: InputMode) {
-  return mode === 'notes' ? 'Notes' : 'Chords'
+  return mode === 'notes' ? 'StaffScript Notes' : 'StaffScript Chords'
 }
 
 function formatProjectTimestamp(value: string) {
@@ -718,7 +718,7 @@ export function App() {
 
     setIsGeneratingNotes(true)
     setServerMessage(null)
-    setNoteGenerationMessage('Generating StaffSmith note syntax...')
+    setNoteGenerationMessage('Generating StaffScript note syntax...')
 
     try {
       const body = await fetchJson<{ result?: ComposerAssistResult }>('/api/composer-assist', {
@@ -728,7 +728,7 @@ export function App() {
           task: 'generate',
           mode: 'notes',
           input: state.input,
-          prompt: `Generate StaffSmith notes mode notation from this text. Use only documented StaffSmith notes syntax. First priority is strong note choice and intentional rests/pauses; markings are secondary. If the user asks for a full piece, complete composition, beginning-to-end composition, or long solo, do not return a tiny sketch: aim for at least 24 complete measures, use 48-96 measures when the prompt invites something expansive, and target 100-120 complete 4/4 measures when the prompt explicitly asks for around 100 measures or a five-minute piece. Treat phrases like "up to 8096 notes" as permission to be generous within the response budget, not as a reason to stay short. The result should feel professionally engraved: balanced 4- or 8-measure phrase groups, bracketed section labels, readable breath pauses, clean 4/4 beat grouping, and fast passages that sit inside the beat. Prefer compact complete 4/4 measures, insert | before a measure would overflow, and use explicit rests or pauses for missing beats. Supported durations are w, h, q, 8, 16, and 32. Use fast 16/32 material as featured freestyle segments, ornaments, pickups, transitions, and phrase peaks, not as unreadable filler. Use bracketed section labels such as [intro], [theme], [freestyle], [return], [finale], [coda], plus spaced slur parentheses, dynamics, hairpins, chromatic pitches, wider contours, and bracketed performance text when they make the music more vivid. If the request references a copyrighted song or jazz standard, write an original non-infringing variation inspired only by broad traits and do not quote or closely recreate the melody.\n\n${prompt}`,
+          prompt: `Generate StaffScript notes mode notation from this text. Use only documented StaffScript v0.1 syntax. First priority is strong note choice and intentional rests/pauses; markings are secondary. If the user asks for a full piece, complete composition, beginning-to-end composition, or long solo, do not return a tiny sketch: aim for at least 24 complete measures, use 48-96 measures when the prompt invites something expansive, and target 100-120 complete 4/4 measures when the prompt explicitly asks for around 100 measures or a five-minute piece. Treat phrases like "up to 8096 notes" as permission to be generous within the response budget, not as a reason to stay short. The result should feel professionally engraved: balanced 4- or 8-measure phrase groups, section blocks, readable breath pauses, clean beat grouping, and fast passages that sit inside the beat. Prefer compact complete measures, insert | before a measure would overflow, and use explicit rests or pauses for missing beats. Supported durations are w, h, q, 8, 16, and 32. Use fast 16/32 material as featured freestyle segments, ornaments, pickups, transitions, and phrase peaks, not as unreadable filler. Use section blocks such as section intro { ... }, motifs when repetition helps, plus spaced slur parentheses, dynamics, hairpins, chromatic pitches, wider contours, and bracketed performance text when they make the music more vivid. If the request references a copyrighted song or jazz standard, write an original non-infringing variation inspired only by broad traits and do not quote or closely recreate the melody.\n\n${prompt}`,
         }),
       }, 'Note generation failed.', GENERATION_API_TIMEOUT_MS)
 
@@ -799,7 +799,7 @@ export function App() {
       <header className="workspace-header">
         <div className="brand-lockup">
           <img className="brand-mark" src="/favicon.svg" alt="" aria-hidden="true" />
-          <h1>Staffsmith</h1>
+          <h1>StaffSmith</h1>
         </div>
         <div className="header-project-console" aria-label="Project console">
           <label className="visually-hidden" htmlFor="project-title">
@@ -858,7 +858,7 @@ export function App() {
               : <Computer size={15} aria-hidden="true" />}
             API
           </span>
-          <span title="Input mode">
+          <span title="StaffScript mode">
             <Music2 size={15} aria-hidden="true" />
             {state.mode === 'notes' ? 'Notes' : 'Chords'}
           </span>
@@ -1137,7 +1137,7 @@ export function App() {
               </ul>
             ) : (
               <p className="muted">
-                Parsed successfully. StaffSmith generated canonical MusicXML ready for preview and export.
+                Parsed successfully. StaffScript generated canonical MusicXML ready for preview and export.
               </p>
             )}
           </SectionCard>

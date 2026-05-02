@@ -1,17 +1,33 @@
 import { createEmptyScore } from '../model/createEmptyScore'
-import { isRhythmicEvent, type Measure, type NoteEvent, type ParseResult, type RestEvent, type Score } from '../model/types'
-import { FULL_MEASURE_UNITS, isDurationSymbol, sumMeasureUnits } from '../theory/duration'
+import {
+  isRhythmicEvent,
+  type DurationSymbol,
+  type Measure,
+  type NoteEvent,
+  type ParseResult,
+  type RestEvent,
+  type Score,
+} from '../model/types'
+import { getMeasureCapacityUnits, isDurationSymbol, sumMeasureUnits } from '../theory/duration'
 import { parseScientificPitch } from '../theory/pitch'
 import { parseDirectionToken } from './notation'
 import { createParseError, tokenize } from './shared'
 
 const NOTE_TOKEN_PATTERN = /\||,|\(|\)|\[[^\]]+\]|[<>]|[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|pause|w|h|q|8|16|32|\S+/gi
 
-export function parseNoteInput(input: string): ParseResult<Score> {
-  const score = createEmptyScore('notes')
+export type NoteParserOptions = {
+  defaultDuration?: DurationSymbol
+  beats?: number
+  beatType?: number
+}
+
+export function parseNoteInput(input: string, options: NoteParserOptions = {}): ParseResult<Score> {
+  const score = createEmptyScore('notes', options)
   const errors = []
   const warnings: string[] = []
   const tokens = tokenize(input, NOTE_TOKEN_PATTERN)
+  const defaultDuration = options.defaultDuration ?? 'q'
+  const measureCapacityUnits = getMeasureCapacityUnits(score.metadata.beats, score.metadata.beatType)
 
   if (tokens.length === 0) {
     errors.push(createParseError(input, 0, 'Enter at least one note event.'))
@@ -89,7 +105,7 @@ export function parseNoteInput(input: string): ParseResult<Score> {
 
     const isRestToken = /^rest$/i.test(token.value) || /^r$/i.test(token.value) || /^pause$/i.test(token.value)
     if (isRestToken) {
-      let duration: RestEvent['duration'] = 'q'
+      let duration: RestEvent['duration'] = defaultDuration
       const maybeDuration = tokens[tokenIndex + 1]
       if (maybeDuration && isDurationSymbol(maybeDuration.value)) {
         duration = maybeDuration.value
@@ -105,12 +121,12 @@ export function parseNoteInput(input: string): ParseResult<Score> {
       lastEventCanEndSlur = false
 
       const totalUnits = sumMeasureUnits(currentMeasureEvents.filter(isRhythmicEvent).map((event) => event.duration))
-      if (totalUnits > FULL_MEASURE_UNITS) {
+      if (totalUnits > measureCapacityUnits) {
         errors.push(
           createParseError(
             input,
             token.index,
-            'Measure exceeds 4/4. Add a bar line or shorten durations.',
+            `Measure exceeds ${score.metadata.beats}/${score.metadata.beatType}. Add a bar line or shorten durations.`,
             token.value,
           ),
         )
@@ -135,7 +151,7 @@ export function parseNoteInput(input: string): ParseResult<Score> {
       continue
     }
 
-    let duration: NoteEvent['duration'] = 'q'
+    let duration: NoteEvent['duration'] = defaultDuration
     const maybeDuration = tokens[tokenIndex + 1]
     if (maybeDuration && isDurationSymbol(maybeDuration.value)) {
       duration = maybeDuration.value
@@ -156,12 +172,12 @@ export function parseNoteInput(input: string): ParseResult<Score> {
     eventIndex += 1
 
     const totalUnits = sumMeasureUnits(currentMeasureEvents.filter(isRhythmicEvent).map((event) => event.duration))
-    if (totalUnits > FULL_MEASURE_UNITS) {
+    if (totalUnits > measureCapacityUnits) {
       errors.push(
         createParseError(
           input,
           token.index,
-          'Measure exceeds 4/4. Add a bar line or shorten durations.',
+          `Measure exceeds ${score.metadata.beats}/${score.metadata.beatType}. Add a bar line or shorten durations.`,
           token.value,
         ),
       )
@@ -175,7 +191,7 @@ export function parseNoteInput(input: string): ParseResult<Score> {
   }
 
   const incompleteMeasureCount = score.measures.filter(
-    (measure) => sumMeasureUnits(measure.events.filter(isRhythmicEvent).map((event) => event.duration)) < FULL_MEASURE_UNITS,
+    (measure) => sumMeasureUnits(measure.events.filter(isRhythmicEvent).map((event) => event.duration)) < measureCapacityUnits,
   ).length
 
   if (pendingSlurStart) {

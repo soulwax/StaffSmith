@@ -27,3 +27,9 @@ export function isDurationSymbol(value: string): value is DurationSymbol {
 export function sumMeasureUnits(durations: DurationSymbol[]) {
   return durations.reduce((sum, duration) => sum + DURATION_UNITS[duration], 0)
 }
+
+export function getMeasureCapacityUnits(beats: number, beatType: number) {
+  const capacity = FULL_MEASURE_UNITS * (beats / beatType)
+
+  return Number.isFinite(capacity) && capacity > 0 ? capacity : FULL_MEASURE_UNITS
+}

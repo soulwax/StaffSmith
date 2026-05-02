@@ -10,17 +10,38 @@ export type ExamplePreset = {
 
 export const EXAMPLES: ExamplePreset[] = [
   {
-    id: 'notes-woodwinds',
-    label: 'Single Notes',
+    id: 'basic-notes',
+    label: 'Basic Notes',
     mode: 'notes',
-    description: '32-bar D minor flute solo with theme, freestyle, return, middle, and cadenza sections.',
-    input: 'mp [airy flute] ( D5 q, F5 q, A5 h ) | < G5 q, A5 q, B5 q, A5 q | > G5 q, F5 q, E5 q, D5 q | pause h, D5 h | mf [theme] D5 q, F5 q, A5 q, C6 q | ( B5 8, A5 8, G5 q, F5 q, E5 q ) | < F5 8, G5 8, A5 8, B5 8, C6 q, A5 q | > G5 q, F5 q, E5 q, D5 q | mp [freestyle] pause 8, D5 32, E5 32, F5 16, G5 q, A5 q, D5 q | ( A5 16, B5 16, C6 8, A5 8, G5 q, F5 q ) pause 8 | F#5 32, G5 32, A5 16, pause 8, B5 8, A5 8, G5 q, E5 q | < D5 8, F5 8, A5 8, C6 8, B5 q, A5 q | mf [return] D5 q, F5 q, A5 h | G5 q, A5 q, B5 q, A5 q | > G5 q, F5 q, E5 q, D5 q | p [middle] R q, D5 q, F5 q, G5 q | ( A5 8, C6 8, B5 q, A5 q, G5 q ) | F5 16, G5 16, A5 8, pause 8, E5 8, D5 q, F5 q | < G5 q, A5 q, C6 h | > B5 q, A5 q, G5 q, F5 q | [freestyle] D5 32, E5 32, F5 16, A5 8, G5 8, F5 q, E5 q, pause 8 | ( D5 q, F5 q, A5 q, D6 q ) | mp D5 q, F5 q, A5 q, F5 q | p [coda] C6 h, A5 q, D5 q | mp [finale] pause q, D5 8, F5 8, A5 q, C6 q | D6 16, C6 16, A5 8, G5 8, F5 8, E5 8, D5 q, pause 8 | < F5 q, A5 q, C6 q, D6 q | > C6 q, A5 q, G5 q, F5 q | [cadenza-like] D5 32, E5 32, F5 16, G5 16, A5 16, B5 8, A5 8, G5 q, F5 q | pause h, A5 8, G5 8, F5 q | p ( E5 q, F5 q, D5 h ) | pp D5 w',
+    description: 'StaffScript notes with rests, slurs, dynamics, and bar lines.',
+    input: 'C4 q, E4 q, G4 h | C4 h, pause h | R w | mf [dolce] ( C4 8, D4 8, E4 q ), G4 q, A4 q',
   },
   {
-    id: 'chords-turnaround',
+    id: 'chords',
     label: 'Chords',
     mode: 'chords',
-    description: 'Lead-sheet harmony with dynamics and a hairpin.',
-    input: 'mf Cmaj7 | < Am7 | Dm7 G7 | p Cmaj7',
+    description: 'Lead-sheet harmony with supported StaffScript chord symbols.',
+    input: '@mode=chords\nmf Cmaj7 | < Am7 | Dm7 G7 | p Cmaj7 | C | Cm | Cmin7 | C7 | Cm7 | Cdim | Caug | Csus4 | Cadd9 | F#dim | Bbmaj7',
+  },
+  {
+    id: 'staffscript-take-5-flute',
+    label: 'StaffScript: Take 5 Flute Sketch',
+    mode: 'notes',
+    description: 'Metadata, 5/4 time, default duration, motifs, sections, repeats, dynamics, and expressions.',
+    input: '@version=0.1\n@title="Take 5 for the Flute"\n@instrument=flute\n@tempo=120\n@time=5/4\n@dur=q\n\n@motif intro = ( D5, F5, A5 h )\n@motif fall = > G5, F5, E5, D5\n@motif rise = < G5, A5, B5, A5\n\nsection intro {\n  mp [intro] use intro | use rise | use fall | pause h, D5 h, R q\n}\n\nsection theme {\n  mf [theme] D5, F5, A5, C6, D6 |\n  ( B5 8, A5 8, G5, F5, E5 ), R q |\n  < F5 8, G5 8, A5 8, B5 8, C6, A5, R q |\n  use fall, R q\n}\n\nsection coda {\n  p ( E5, F5, D5 h ), R q |\n  pp D5 w, R q\n}\n\nrepeat 2 {\n  use intro |\n  use theme\n}\n\nuse coda',
+  },
+  {
+    id: 'motifs-and-repeats',
+    label: 'Motifs and Repeats',
+    mode: 'notes',
+    description: 'Reusable StaffScript phrases expanded with repeat blocks.',
+    input: '@dur=8\n@motif call = ( D5, F5, A5 q )\n@answer = G5, F5, E5, D5 q\n\nx2 {\n  use call | use answer\n}\n\nrepeat 2 {\n  mp [echo] use call | p pause q, D5 q\n}',
+  },
+  {
+    id: 'sections-and-expressions',
+    label: 'Sections and Expressions',
+    mode: 'notes',
+    description: 'Formal sections with built-in and bracketed performance text.',
+    input: '@title="Sections and Expressions"\n@tempo=92\n@dur=q\n\nsection intro {\n  mp dolce D5, F5, A5 h\n}\n\nsection theme {\n  mf cantabile ( A5 8, B5 8, C6, B5, A5 ) | staccato G5, F5, E5, D5\n}\n\nsection coda {\n  rit. p [breathy] E5, F5, D5 h | pp D5 w\n}',
   },
 ]
