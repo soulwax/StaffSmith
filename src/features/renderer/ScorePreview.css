@@ -776,7 +776,8 @@
   }
 
   .score-page__footer {
-    margin-top: 3mm;
+    margin-top: auto;
+    padding-top: 3mm;
     color: #3f4850;
     font-size: 8pt;
   }

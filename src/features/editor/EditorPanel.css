@@ -1,6 +1,7 @@
 .composer-card {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
+  min-height: clamp(560px, 62vh, 820px);
 }
 
 .composer-card .section-card__content {
@@ -283,7 +284,7 @@
 .editor-textarea {
   width: 100%;
   flex: 1 1 auto;
-  min-height: 190px;
+  min-height: clamp(280px, 34vh, 520px);
   height: auto;
   resize: vertical;
   padding: 14px;
@@ -340,6 +341,10 @@
 }
 
 @media (max-width: 700px) {
+  .composer-card {
+    min-height: auto;
+  }
+
   .mode-toggle {
     max-width: none;
   }
@@ -380,6 +385,10 @@
 
   .helper-text {
     flex-basis: auto;
+  }
+
+  .editor-textarea {
+    min-height: 260px;
   }
 }
 

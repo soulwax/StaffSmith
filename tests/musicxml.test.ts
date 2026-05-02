@@ -44,8 +44,8 @@ describe('MusicXML export', () => {
     expect(xml).toContain('<measure number="7">\n      <print new-system="yes" />')
   })
 
-  it('targets twelve systems per page for the orchestral solo preset', () => {
-    const input = Array.from({ length: 73 }, () => 'C4 w').join(' | ')
+  it('targets thirteen systems per page for the orchestral solo preset', () => {
+    const input = Array.from({ length: 79 }, () => 'C4 w').join(' | ')
     const result = parseScoreInput('notes', input)
     expect(result.ok).toBe(true)
 
@@ -54,7 +54,7 @@ describe('MusicXML export', () => {
       staffLabel: '',
     })
 
-    expect(xml).toContain('<measure number="73">\n      <print new-page="yes" />')
+    expect(xml).toContain('<measure number="79">\n      <print new-page="yes" />')
   })
 
   it('uses preset-specific page breaks for standard and children layouts', () => {
@@ -71,7 +71,7 @@ describe('MusicXML export', () => {
       staffLabel: '',
     })
 
-    expect(standardXml).toContain('<measure number="17">\n      <print new-page="yes" />')
+    expect(standardXml).toContain('<measure number="25">\n      <print new-page="yes" />')
     expect(childrenXml).toContain('<measure number="13">\n      <print new-page="yes" />')
     expect(childrenXml).toContain('<measure number="25">\n      <print new-page="yes" />')
     expect(childrenXml).toContain('<measure number="37">\n      <print new-page="yes" />')
@@ -141,7 +141,7 @@ describe('MusicXML export', () => {
     expect(xml).toContain('<words font-weight="bold">intro</words>')
   })
 
-  it('serializes explicit rests, early page-turn breaks, and cue-sized notes for long silence', () => {
+  it('serializes explicit rests, capacity-aware page turns, and cue-sized notes for long silence', () => {
     const restRun = Array.from({ length: 13 }, () => 'R w').join(' | ')
     const opening = Array.from({ length: 12 }, () => 'C4 w').join(' | ')
     const result = parseScoreInput('notes', `${opening} | ${restRun} | D4 w`)
@@ -149,7 +149,8 @@ describe('MusicXML export', () => {
 
     const xml = scoreToMusicXml(result.value)
 
-    expect(xml).toContain('<measure number="13">\n      <print new-page="yes" />')
+    expect(xml).toContain('<measure number="25">\n      <print new-page="yes" />')
+    expect(xml).toContain('<measure number="13">\n      <print new-system="yes" />')
     expect(xml).toContain('<rest measure="yes" />')
     expect(xml).toContain('<cue />')
     expect(xml).toContain('<notehead font-size="cue">normal</notehead>')
@@ -163,7 +164,7 @@ describe('MusicXML export', () => {
 
     const xml = scoreToMusicXml(result.value)
 
-    expect(xml).toContain('<measure number="17">\n      <print new-page="yes" />')
-    expect(xml).not.toContain('<measure number="25">\n      <print new-page="yes" />')
+    expect(xml).toContain('<measure number="25">\n      <print new-page="yes" />')
+    expect(xml).not.toContain('<measure number="33">\n      <print new-page="yes" />')
   })
 })

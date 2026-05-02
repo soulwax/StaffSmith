@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runComposerAssist } from '../api/_lib/gemini'
 import { GEMINI_CONFIG } from '../api/_lib/gemini.config'
+import { parseScoreInput } from '../src/music/parser'
 import { STAFFSMITH_AI_SYNTAX_GUIDE } from '../src/music/parser/syntaxGuide'
 
 const originalGeminiKey = process.env.GEMINI_API_KEY
@@ -132,6 +133,37 @@ Extra commentary that should not break JSON parsing.`)
     expect(result.generatedInput).toContain('mp D5 q')
   })
 
+  it('accepts generated StaffScript headers and section blocks through the real parser', async () => {
+    mockGeminiJson({
+      summary: 'Structured StaffScript flute etude.',
+      keyCenter: 'D minor',
+      suggestedMode: 'notes',
+      generatedInput: [
+        '@version=0.1',
+        '@title="AI Etude"',
+        '@instrument=flute',
+        '@tempo=104',
+        '@time=4/4',
+        '@dur=q',
+        '',
+        'section intro { mp [airy flute] D5, F5, A5 h | < G5, A5, B5, A5 }',
+      ].join('\n'),
+      notes: ['Uses the richer StaffScript structure.'],
+    })
+
+    const result = await runComposerAssist({
+      task: 'generate',
+      mode: 'notes',
+      input: '',
+      prompt: 'Write a structured StaffScript flute sketch with a header and an intro section.',
+    })
+
+    expect(result.generatedInput).toContain('@version=0.1')
+    expect(result.generatedInput).toContain('section intro')
+    expect(result.generatedInput).not.toBe(GEMINI_CONFIG.fallbackNotation)
+    expect(parseScoreInput('notes', result.generatedInput).ok).toBe(true)
+  })
+
   it('expands explicit 100-measure requests when Gemini returns a shorter parseable idea', async () => {
     mockGeminiJson({
       summary: 'Short source idea for a requested long piece.',
@@ -204,7 +236,7 @@ Extra commentary that should not break JSON parsing.`)
     expect(countMeasures(result.generatedInput)).toBe(120)
   })
 
-  it('rejects a measure that overflows 4/4 before it reaches the editor', async () => {
+  it('repairs a measure that overflows 4/4 before it reaches the editor', async () => {
     mockGeminiJson({
       summary: 'Overfull last measure.',
       keyCenter: 'D minor',
@@ -221,10 +253,31 @@ Extra commentary that should not break JSON parsing.`)
       prompt: 'A flute solo for experts in the style of jethro tull jazz',
     })
 
-    // The overfull measure is rejected and falls back to DEFAULT_GENERATED_NOTATION
-    expect(result.generatedInput).toBe(GEMINI_CONFIG.fallbackNotation)
-    // Summary is still taken from the Gemini response since the HTTP call succeeded
+    expect(result.generatedInput).not.toBe(GEMINI_CONFIG.fallbackNotation)
+    expect(parseScoreInput('notes', result.generatedInput).ok).toBe(true)
+    expect(result.generatedInput).toContain('|')
     expect(result.summary).toBe('Overfull last measure.')
+  })
+
+  it('strips markdown fences and pads repaired generated measures', async () => {
+    mockGeminiJson({
+      summary: 'Fenced StaffScript sketch.',
+      keyCenter: 'D minor',
+      suggestedMode: 'notes',
+      generatedInput: '```staffscript\nmf D5 8, F5 8, A5 8, C6 8, D6 q, A5 8, F5 8, G5 h\n```',
+      notes: [],
+    })
+
+    const result = await runComposerAssist({
+      task: 'generate',
+      mode: 'notes',
+      input: '',
+      prompt: 'Return a short parseable StaffScript idea.',
+    })
+
+    expect(result.generatedInput).not.toContain('```')
+    expect(result.generatedInput).toContain('R h')
+    expect(parseScoreInput('notes', result.generatedInput).ok).toBe(true)
   })
 
   it('rejects unsupported generated durations before they reach the editor', async () => {

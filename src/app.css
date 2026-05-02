@@ -225,7 +225,7 @@
 }
 
 .workbench-column {
-  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-rows: minmax(560px, 1fr) auto;
   height: 100%;
   overflow: auto;
   padding-right: 2px;
@@ -863,6 +863,11 @@
     height: auto;
     min-height: auto;
     overflow: visible;
+  }
+
+  .workbench-column {
+    grid-template-rows: auto;
+    height: auto;
   }
 }
 

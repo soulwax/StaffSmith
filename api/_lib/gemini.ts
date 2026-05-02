@@ -1,13 +1,16 @@
 import type { ComposerAssistRequest, ComposerAssistResult, GeminiStatusResponse } from '../../src/lib/apiTypes.js'
 import { STAFFSMITH_AI_SYNTAX_GUIDE } from '../../src/music/parser/syntaxGuide.js'
-import type { InputMode } from '../../src/music/model/types.js'
+import type { DurationSymbol, InputMode } from '../../src/music/model/types.js'
+import { parseScoreInput } from '../../src/music/parser/index.js'
 import { getGeminiApiKey } from './env.js'
 import { GEMINI_CONFIG } from './gemini.config.js'
 import { fail } from './http.js'
 
-const DURATION_VALUES = new Set(['w', 'h', 'q', '8', '16', '32'])
-const DURATION_UNITS: Record<string, number> = { w: 32, h: 16, q: 8, '8': 4, '16': 2, '32': 1 }
+const DURATION_VALUES = new Set<DurationSymbol>(['w', 'h', 'q', '8', '16', '32'])
+const DURATION_UNITS: Record<DurationSymbol, number> = { w: 32, h: 16, q: 8, '8': 4, '16': 2, '32': 1 }
 const MAX_MEASURE_UNITS = 32
+const REST_FILL_DURATIONS: DurationSymbol[] = ['w', 'h', 'q', '8', '16', '32']
+const FLAT_NOTATION_TOKEN_PATTERN = /\[[^\]]+\]|\||,|\(|\)|[<>]|[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|pause|w|h|q|8|16|32|\S+/gi
 
 type LooseComposerAssistResult = Omit<Partial<ComposerAssistResult>, 'generatedInput' | 'notes'> & {
   generatedInput?: unknown
@@ -249,15 +252,16 @@ function coerceGeneratedInput(value: unknown, payload: ComposerAssistRequest, mo
   const requestedMeasureCount = payload.task === 'generate' ? getRequestedMeasureCount(payload.prompt) : null
 
   for (const candidate of [...candidates, ...fallback]) {
-    const normalized = candidate.trim()
+    const normalized = cleanGeneratedNotation(candidate)
     if (!normalized || normalized.includes('[object Object]')) {
       continue
     }
 
-    if (isLikelyParseableStaffSmithInput(mode, normalized)) {
+    const parseableCandidate = getParseableStaffScriptCandidate(mode, normalized)
+    if (parseableCandidate) {
       return requestedMeasureCount
-        ? expandNotationToMeasureCount(normalized, requestedMeasureCount)
-        : normalized
+        ? expandNotationToMeasureCount(parseableCandidate, requestedMeasureCount)
+        : parseableCandidate
     }
   }
 
@@ -324,6 +328,198 @@ function addLongFormSectionMarker(measure: string, measureIndex: number) {
   const marker = markers[Math.floor(measureIndex / 16) % markers.length] ?? '[return]'
 
   return `${marker} ${measure}`
+}
+
+function cleanGeneratedNotation(input: string) {
+  const trimmed = input.trim()
+  const fenced = trimmed.match(/^```(?:staffscript|staff|txt|text|notes?)?\s*([\s\S]*?)\s*```$/i)
+  const withoutFence = fenced?.[1] ?? trimmed
+
+  return withoutFence
+    .replace(/^\s*(?:StaffScript|generatedInput|notation)\s*:\s*/i, '')
+    .trim()
+}
+
+function getParseableStaffScriptCandidate(mode: InputMode, input: string): string | null {
+  if (isParseableStaffScriptInput(mode, input)) {
+    return maybeCompleteGeneratedMeasures(mode, input)
+  }
+
+  const repaired = repairGeneratedNotation(mode, input)
+  return repaired && isParseableStaffScriptInput(mode, repaired) ? repaired : null
+}
+
+function isParseableStaffScriptInput(mode: InputMode, input: string) {
+  return parseScoreInput(mode, input).ok
+}
+
+function maybeCompleteGeneratedMeasures(mode: InputMode, input: string) {
+  if (mode !== 'notes' || !usesDefaultFourFour(input)) {
+    return input
+  }
+
+  const parsed = parseScoreInput(mode, input)
+  const needsMeasurePadding = parsed.warnings.some((warning) => warning.includes('rhythmically incomplete'))
+  if (!needsMeasurePadding || !isFlatNoteNotation(input)) {
+    return input
+  }
+
+  const repaired = repairGeneratedNotation(mode, input)
+  return repaired && isParseableStaffScriptInput(mode, repaired) ? repaired : input
+}
+
+function repairGeneratedNotation(mode: InputMode, input: string): string | null {
+  if (mode !== 'notes' || !usesDefaultFourFour(input) || !isFlatNoteNotation(input)) {
+    return null
+  }
+
+  const { directives, body } = splitLeadingDirectives(input)
+  const tokens = body.match(FLAT_NOTATION_TOKEN_PATTERN) ?? []
+  if (tokens.length === 0) {
+    return null
+  }
+
+  const output: string[] = []
+  let measureUnits = 0
+  let repaired = false
+
+  const pushBar = () => {
+    if (output.at(-1) === '|') {
+      return
+    }
+
+    output.push('|')
+    measureUnits = 0
+  }
+
+  const pushRests = (remainingUnits: number) => {
+    for (const duration of REST_FILL_DURATIONS) {
+      const durationUnits = DURATION_UNITS[duration]
+      while (remainingUnits >= durationUnits) {
+        output.push('R', duration)
+        remainingUnits -= durationUnits
+        repaired = true
+      }
+    }
+  }
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index] ?? ''
+    if (!token) {
+      continue
+    }
+
+    if (token === '|') {
+      if (measureUnits > 0 && measureUnits < MAX_MEASURE_UNITS) {
+        pushRests(MAX_MEASURE_UNITS - measureUnits)
+      }
+      pushBar()
+      continue
+    }
+
+    if (token === ',' || token === '(' || token === ')' || isDirectionToken(token)) {
+      output.push(token)
+      continue
+    }
+
+    const isNote = /^[A-Ga-g](?:#|b)?\d+$/.test(token)
+    const isRest = /^r(?:est)?$/i.test(token) || /^pause$/i.test(token)
+    if (!isNote && !isRest) {
+      return null
+    }
+
+    const nextToken = tokens[index + 1]
+    const duration = nextToken && isGeneratedDuration(nextToken) ? nextToken : 'q'
+    const units = DURATION_UNITS[duration]
+
+    if (measureUnits > 0 && measureUnits + units > MAX_MEASURE_UNITS) {
+      pushBar()
+      repaired = true
+    }
+
+    output.push(token)
+    if (nextToken && isGeneratedDuration(nextToken)) {
+      output.push(nextToken)
+      index += 1
+    }
+    measureUnits += units
+
+    if (measureUnits === MAX_MEASURE_UNITS) {
+      pushBar()
+    }
+  }
+
+  if (measureUnits > 0 && measureUnits < MAX_MEASURE_UNITS) {
+    pushRests(MAX_MEASURE_UNITS - measureUnits)
+    pushBar()
+  }
+
+  const repairedBody = stringifyNotationTokens(output)
+  if (!repaired || !repairedBody) {
+    return null
+  }
+
+  return [directives.join('\n'), repairedBody].filter(Boolean).join('\n\n')
+}
+
+function splitLeadingDirectives(input: string) {
+  const directives: string[] = []
+  const bodyLines: string[] = []
+  let hasSeenBody = false
+
+  for (const line of input.split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (!hasSeenBody && (trimmed === '' || trimmed.startsWith('@'))) {
+      if (trimmed) {
+        directives.push(line)
+      }
+      continue
+    }
+
+    hasSeenBody = true
+    bodyLines.push(line)
+  }
+
+  return {
+    directives,
+    body: bodyLines.join('\n').trim(),
+  }
+}
+
+function usesDefaultFourFour(input: string) {
+  const timeMatch = input.match(/^@time\s*=\s*(.+)$/im)
+  return !timeMatch || timeMatch[1]?.trim() === '4/4'
+}
+
+function isFlatNoteNotation(input: string) {
+  const { body } = splitLeadingDirectives(input)
+  return !/\b(?:section|repeat|x\d+|use)\b|[{}]/i.test(body)
+}
+
+function stringifyNotationTokens(tokens: string[]) {
+  const compact = tokens.filter(Boolean)
+  let output = ''
+
+  for (const token of compact) {
+    if (token === ',') {
+      output = `${output.trimEnd()},`
+      continue
+    }
+
+    if (token === '|') {
+      output = `${output.trimEnd()} | `
+      continue
+    }
+
+    if (token === ')') {
+      output = `${output.trimEnd()} )`
+      continue
+    }
+
+    output += output && !output.endsWith(' ') ? ` ${token}` : token
+  }
+
+  return output.replace(/\s+\|$/g, '').trim()
 }
 
 function collectNotationCandidates(value: unknown): string[] {
@@ -501,7 +697,7 @@ function pitchToken(value: unknown): string | null {
 
 function durationToken(value: unknown) {
   const duration = numberOrText(value)
-  return duration && DURATION_VALUES.has(duration) ? duration : null
+  return duration && isGeneratedDuration(duration) ? duration : null
 }
 
 function arrayValue(value: unknown): unknown[] | null {
@@ -552,84 +748,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-function isLikelyParseableStaffSmithInput(mode: InputMode, input: string) {
-  const tokens = input.match(/\[[^\]]+\]|\||,|\(|\)|[^\s|,()]+/g) ?? []
-  if (tokens.length === 0) {
-    return false
-  }
-
-  if (mode === 'chords') {
-    return tokens.some((token) => token !== '|' && token !== ',' && !isDirectionToken(token))
-  }
-
-  let noteCount = 0
-  let rhythmCount = 0
-  let measureUnits = 0
-  let openSlurs = 0
-  let lastEventCanEndSlur = false
-  let pendingSlurStart = false
-
-  for (let index = 0; index < tokens.length; index += 1) {
-    const token = tokens[index]
-    if (!token) {
-      continue
-    }
-
-    if (token === '|') {
-      if (measureUnits > MAX_MEASURE_UNITS) {
-        return false
-      }
-      measureUnits = 0
-      continue
-    }
-
-    if (token === '(') {
-      openSlurs += 1
-      pendingSlurStart = true
-      continue
-    }
-
-    if (token === ')') {
-      openSlurs -= 1
-      if (openSlurs < 0 || !lastEventCanEndSlur) {
-        return false
-      }
-      continue
-    }
-
-    if (token === ',' || isDirectionToken(token)) {
-      continue
-    }
-
-    const isNote = /^[A-Ga-g](?:#|b)?\d+$/.test(token)
-    const isRest = /^r(?:est)?$/i.test(token) || /^pause$/i.test(token)
-    if (!isNote && !isRest) {
-      return false
-    }
-    if (isRest && pendingSlurStart) {
-      return false
-    }
-
-    if (isNote) {
-      noteCount += 1
-      pendingSlurStart = false
-    }
-    lastEventCanEndSlur = isNote
-    rhythmCount += 1
-    const nextToken = tokens[index + 1]
-    let durationKey = 'q'
-    if (nextToken && DURATION_VALUES.has(nextToken)) {
-      durationKey = nextToken
-      index += 1
-    }
-    measureUnits += DURATION_UNITS[durationKey] ?? 8
-  }
-
-  if (measureUnits > MAX_MEASURE_UNITS || openSlurs !== 0 || pendingSlurStart) {
-    return false
-  }
-
-  return rhythmCount > 0 && (noteCount > 0 || /(?:^|[\s|,])(?:r(?:est)?|pause)(?:\s|$)/i.test(input))
+function isGeneratedDuration(value: string): value is DurationSymbol {
+  return DURATION_VALUES.has(value as DurationSymbol)
 }
 
 function isDirectionToken(token: string) {
