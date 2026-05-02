@@ -126,10 +126,17 @@
   align-content: flex-start;
 }
 
+.builder-group--staffscript {
+  background:
+    linear-gradient(135deg, rgba(21, 81, 70, 0.08), rgba(31, 177, 196, 0.13)),
+    rgba(255, 255, 255, 0.72);
+}
+
 .builder-group--duration .builder-segmented button,
 .builder-group--accidental .builder-segmented button,
 .token-strip button,
-.progression-strip button {
+.progression-strip button,
+.staffscript-snippet-strip button {
   flex: 1 1 auto;
 }
 
@@ -178,10 +185,17 @@
 
 .builder-segmented,
 .token-strip,
-.progression-strip {
+.progression-strip,
+.staffscript-snippet-strip {
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
+}
+
+.staffscript-snippet-strip button {
+  border-color: rgba(21, 81, 70, 0.19);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(234, 251, 247, 0.94));
 }
 
 .pitch-grid,
@@ -382,7 +396,8 @@
 
   .builder-segmented button,
   .token-strip button,
-  .progression-strip button {
+  .progression-strip button,
+  .staffscript-snippet-strip button {
     flex: 1 1 82px;
   }
 }

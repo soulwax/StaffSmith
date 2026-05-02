@@ -1,3 +1,90 @@
+.syntax-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(190px, 0.8fr);
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid rgba(21, 81, 70, 0.16);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(21, 81, 70, 0.08), rgba(31, 177, 196, 0.12)),
+    rgba(255, 255, 252, 0.82);
+}
+
+.syntax-eyebrow {
+  margin: 0 0 4px;
+  color: #0f756f;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.syntax-hero h3 {
+  margin: 0 0 6px;
+  color: #182820;
+  font-size: 1.18rem;
+  line-height: 1.16;
+}
+
+.syntax-hero p {
+  margin: 0;
+  color: #4f5f58;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.syntax-hero__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.syntax-hero__chips span,
+.syntax-workflow__steps span {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1px solid rgba(25, 155, 140, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #28413b;
+  font-size: 0.74rem;
+  font-weight: 780;
+}
+
+.syntax-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.syntax-feature-card {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid rgba(54, 76, 62, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 252, 0.72);
+}
+
+.syntax-feature-card strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #22342d;
+  font-size: 0.88rem;
+}
+
+.syntax-feature-card p {
+  margin: 0 0 8px;
+  color: #627069;
+  font-size: 0.82rem;
+  line-height: 1.38;
+}
+
 .syntax-help {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -28,7 +115,9 @@
 }
 
 .syntax-help code,
-.syntax-examples code {
+.syntax-examples code,
+.syntax-feature-card code,
+.syntax-workflow code {
   display: inline-block;
   margin: 0 5px 6px 0;
   padding: 3px 6px;
@@ -37,6 +126,49 @@
   color: #182820;
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: 0.78rem;
+}
+
+.syntax-workflow {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(21, 81, 70, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 252, 0.7);
+}
+
+.syntax-workflow strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #22342d;
+  font-size: 0.9rem;
+}
+
+.syntax-workflow p {
+  margin: 0 0 10px;
+  color: #687363;
+  font-size: 0.84rem;
+  line-height: 1.42;
+}
+
+.syntax-workflow__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.syntax-workflow pre {
+  min-width: 0;
+  margin: 0;
+  overflow: auto;
+}
+
+.syntax-workflow code {
+  display: block;
+  margin: 0;
+  white-space: pre;
 }
 
 .syntax-examples {
@@ -52,7 +184,14 @@
 }
 
 @media (max-width: 700px) {
-  .syntax-help {
+  .syntax-hero,
+  .syntax-feature-grid,
+  .syntax-help,
+  .syntax-workflow {
     grid-template-columns: 1fr;
+  }
+
+  .syntax-hero__chips {
+    justify-content: flex-start;
   }
 }

@@ -8,9 +8,74 @@ import {
 } from '../../music/parser/syntaxGuide'
 import './SyntaxHelp.css'
 
+const STAFFSCRIPT_FEATURES = [
+  {
+    title: 'Plain text source',
+    copy: 'Readable .staff notation that stays easy to edit, diff, paste, and generate.',
+    example: 'mp [airy flute] D5 q, F5 q, A5 h',
+  },
+  {
+    title: 'Composition structure',
+    copy: 'Headers, sections, motifs, repeats, dynamics, and expression text live in the same script.',
+    example: 'section theme { use call | repeat 2 { D5 q } }',
+  },
+  {
+    title: 'Engraving pipeline',
+    copy: 'StaffScript normalizes into the Score model, then exports canonical MusicXML for rendering and print.',
+    example: 'StaffScript -> Score -> MusicXML',
+  },
+] as const
+
+const COMPOSER_STEPS = [
+  'Start with a header',
+  'Sketch a section',
+  'Save recurring ideas as motifs',
+  'Repeat or reuse phrases',
+  'Render and print the engraved score',
+] as const
+
+const STAFFSCRIPT_STARTER = `@version=0.1
+@title="Take Five - 1st Flute"
+@instrument=flute
+@tempo=120
+@time=4/4
+@key=Dm
+@dur=q
+
+mp [airy flute]
+@motif call = ( D5 q, F5 q, A5 h )
+section intro { use call | < G5 q, A5 q, B5 q, A5 q }`
+
 export function SyntaxHelp() {
   return (
     <SectionCard title="StaffScript Syntax">
+      <div className="syntax-hero">
+        <div>
+          <p className="syntax-eyebrow">StaffScript .staff</p>
+          <h3>Write music like text. Engrave it like a score.</h3>
+          <p>
+            StaffScript is StaffSmith's compact music language for turning rough musical ideas,
+            AI drafts, and lead-sheet sketches into clean browser-rendered notation.
+          </p>
+        </div>
+        <div className="syntax-hero__chips" aria-label="StaffScript strengths">
+          <span>Local-first</span>
+          <span>Typed Score model</span>
+          <span>MusicXML export</span>
+          <span>Print-ready</span>
+        </div>
+      </div>
+
+      <div className="syntax-feature-grid">
+        {STAFFSCRIPT_FEATURES.map((feature) => (
+          <div key={feature.title} className="syntax-feature-card">
+            <strong>{feature.title}</strong>
+            <p>{feature.copy}</p>
+            <code>{feature.example}</code>
+          </div>
+        ))}
+      </div>
+
       <div className="syntax-help">
         <div>
           <h3>Metadata</h3>
@@ -98,6 +163,23 @@ export function SyntaxHelp() {
           <code>|</code>
         </div>
       </div>
+
+      <div className="syntax-workflow">
+        <div>
+          <strong>StaffScript Composer workflow</strong>
+          <p>
+            Use the composer buttons to stamp common structures, then edit the text directly when
+            the phrase needs a human touch.
+          </p>
+          <div className="syntax-workflow__steps">
+            {COMPOSER_STEPS.map((step, index) => (
+              <span key={step}>{index + 1}. {step}</span>
+            ))}
+          </div>
+        </div>
+        <pre><code>{STAFFSCRIPT_STARTER}</code></pre>
+      </div>
+
       <div className="syntax-examples">
         <div>
           <strong>StaffScript notes</strong>

@@ -32,6 +32,7 @@ const DURATIONS: Array<{ label: string, value: DurationSymbol }> = [
 ]
 const DYNAMICS = ['pp', 'p', 'mp', 'mf', 'f', 'ff'] as const
 const EXPRESSIONS = ['dolce', 'legato', 'staccato', 'tenuto', 'cantabile', 'espressivo', 'rit.', 'accel.'] as const
+const REST_FILL_DURATIONS: DurationSymbol[] = ['w', 'h', 'q', '8', '16', '32']
 const STAFFSCRIPT_SNIPPETS = [
   { label: 'Header', value: '@version=0.1\n@title="Take Five - 1st Flute"\n@instrument=flute\n@tempo=120\n@time=4/4\n@key=Dm\n@dur=q\n\n' },
   { label: 'Section', value: 'section theme {\n  D5 q, F5 q, A5 h\n}' },
@@ -140,6 +141,26 @@ function makeSmartRhythmToken(input: string, token: string, duration: DurationSy
   return `${needsLeadingBar ? '| ' : ''}${token}${needsClosingBar ? ' |' : ''}`
 }
 
+function makeMeasureFillToken(input: string) {
+  const currentUnits = getCurrentMeasureUnits(input)
+  if (currentUnits <= 0 || currentUnits >= FULL_MEASURE_UNITS) {
+    return '|'
+  }
+
+  let remainingUnits = FULL_MEASURE_UNITS - currentUnits
+  const rests: string[] = []
+
+  for (const duration of REST_FILL_DURATIONS) {
+    const durationUnits = DURATION_UNITS[duration]
+    while (remainingUnits >= durationUnits) {
+      rests.push(`R ${duration}`)
+      remainingUnits -= durationUnits
+    }
+  }
+
+  return `${rests.join(', ')} |`
+}
+
 export function EditorPanel({
   examples,
   input,
@@ -228,6 +249,12 @@ export function EditorPanel({
 
   const insertRest = () => {
     insertToken(`R ${duration}`, 'notes', { duration })
+  }
+
+  const insertMeasureFill = () => {
+    const textarea = textareaRef.current
+    const source = textarea ? input.slice(0, textarea.selectionStart) : input
+    insertToken(makeMeasureFillToken(source), 'notes')
   }
 
   const insertChord = () => {
@@ -341,6 +368,7 @@ export function EditorPanel({
               <div className="builder-group builder-group--tools">
                 <span className="builder-label">Measure</span>
                 <button type="button" onClick={insertRest}>Pause</button>
+                <button type="button" onClick={insertMeasureFill}>Fill 4/4</button>
                 <button type="button" onClick={() => insertToken('|')}>Bar</button>
               </div>
             </div>
