@@ -79,6 +79,16 @@ const GENERATION_API_TIMEOUT_MS = 180_000
 const API_PREFLIGHT_TIMEOUT_MS = 3_000
 const GEMINI_STATUS_INTERVAL_MS = 60 * 60 * 1000
 
+function buildIdeaGenerationPrompt(mode: InputMode, prompt: string) {
+  const sharedBrief = 'Stay faithful to the requested music: preserve the requested mood, style traits, length, form, difficulty, and musical role. If an instrument is mentioned, optimize the result for that instrument with idiomatic range, breathing/resonance, articulation, and phrase lengths.'
+
+  if (mode === 'chords') {
+    return `Generate StaffScript chords mode notation from this text. The Chords tab is active, so generatedInput must be chord-mode StaffScript only: use @mode=chords when using headers, lead-sheet chord symbols such as C, Cm, Cmaj7, Am7, D7, F#dim, Bbmaj7, Caug, Csus, Csus2, Csus4, and Cadd9, and no note pitches, octave numbers, note durations, rests, or slur parentheses. Use only documented StaffScript v0.1 syntax. Prefer modern StaffScript: @version=0.1, @mode=chords, @key, @tempo, section blocks such as section intro { ... }, motifs or repeat blocks when repetition helps, dynamics, expressions, hairpins, and bracketed performance text. Keep each measure to four or fewer chord symbols. For long requests, build phrase-length progressions with clear sections, coherent harmonic rhythm, cadences, and returns instead of a tiny loop. ${sharedBrief} If the request references a copyrighted song or jazz standard, write an original non-infringing harmonic sketch inspired only by broad traits and do not closely recreate the source progression.\n\n${prompt}`
+  }
+
+  return `Generate StaffScript notes mode notation from this text. Use only documented StaffScript v0.1 syntax. Prefer modern StaffScript: @version=0.1, @mode=notes, @key, @tempo, @dur when useful, section blocks such as section intro { ... }, motifs when repetition helps, repeat blocks, spaced slur parentheses, dynamics, hairpins, chromatic pitches, wider contours, and bracketed performance text. First priority is strong note choice and intentional rests/pauses; markings are secondary. If the user asks for a full piece, complete composition, beginning-to-end composition, or long solo, do not return a tiny sketch: aim for at least 24 complete measures, use 48-96 measures when the prompt invites something expansive, and target 100-120 complete 4/4 measures when the prompt explicitly asks for around 100 measures or a five-minute piece. Treat phrases like "up to 8096 notes" as permission to be generous within the response budget, not as a reason to stay short. The result should feel professionally engraved: balanced 4- or 8-measure phrase groups, section blocks, readable breath pauses, clean beat grouping, and fast passages that sit inside the beat. Prefer compact complete measures, insert | before a measure would overflow, and use explicit rests or pauses for missing beats. Supported durations are w, h, q, 8, 16, and 32. Use fast 16/32 material as featured freestyle segments, ornaments, pickups, transitions, and phrase peaks, not as unreadable filler. ${sharedBrief} If the request references a copyrighted song or jazz standard, write an original non-infringing variation inspired only by broad traits and do not quote or closely recreate the melody.\n\n${prompt}`
+}
+
 type GeminiUiStatus = GeminiStatusResponse & {
   state: 'checking' | 'available' | 'unavailable'
 }
@@ -736,13 +746,16 @@ export function App() {
   const generateNotesFromText = async () => {
     const prompt = noteGenerationPrompt.trim()
     if (!prompt) {
-      setNoteGenerationMessage('Describe the notes you want first.')
+      setNoteGenerationMessage('Describe the music you want first.')
       return
     }
 
+    const generationMode = state.mode
+    const generationLabel = generationMode === 'chords' ? 'chord' : 'note'
+
     setIsGeneratingNotes(true)
     setServerMessage(null)
-    setNoteGenerationMessage('Generating StaffScript note syntax...')
+    setNoteGenerationMessage(`Generating StaffScript ${generationLabel} syntax...`)
 
     try {
       const body = await fetchJson<{ result?: ComposerAssistResult }>('/api/composer-assist', {
@@ -750,9 +763,9 @@ export function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           task: 'generate',
-          mode: 'notes',
+          mode: generationMode,
           input: state.input,
-          prompt: `Generate StaffScript notes mode notation from this text. Use only documented StaffScript v0.1 syntax. First priority is strong note choice and intentional rests/pauses; markings are secondary. If the user asks for a full piece, complete composition, beginning-to-end composition, or long solo, do not return a tiny sketch: aim for at least 24 complete measures, use 48-96 measures when the prompt invites something expansive, and target 100-120 complete 4/4 measures when the prompt explicitly asks for around 100 measures or a five-minute piece. Treat phrases like "up to 8096 notes" as permission to be generous within the response budget, not as a reason to stay short. The result should feel professionally engraved: balanced 4- or 8-measure phrase groups, section blocks, readable breath pauses, clean beat grouping, and fast passages that sit inside the beat. Prefer compact complete measures, insert | before a measure would overflow, and use explicit rests or pauses for missing beats. Supported durations are w, h, q, 8, 16, and 32. Use fast 16/32 material as featured freestyle segments, ornaments, pickups, transitions, and phrase peaks, not as unreadable filler. Use section blocks such as section intro { ... }, motifs when repetition helps, plus spaced slur parentheses, dynamics, hairpins, chromatic pitches, wider contours, and bracketed performance text when they make the music more vivid. If the request references a copyrighted song or jazz standard, write an original non-infringing variation inspired only by broad traits and do not quote or closely recreate the melody.\n\n${prompt}`,
+          prompt: buildIdeaGenerationPrompt(generationMode, prompt),
         }),
       }, 'Note generation failed.', GENERATION_API_TIMEOUT_MS)
 
@@ -760,9 +773,9 @@ export function App() {
         throw new Error('Note generation failed.')
       }
       setAnalysis(body.result)
-      updateDraft('notes', body.result.generatedInput)
-      setNoteGenerationMessage('Generated notes from text.')
-      setServerMessage('Generated notes from text.')
+      updateDraft(body.result.suggestedMode, body.result.generatedInput)
+      setNoteGenerationMessage(`Generated ${body.result.suggestedMode} from text.`)
+      setServerMessage(`Generated ${body.result.suggestedMode} from text.`)
     } catch (error) {
       setNoteGenerationMessage(getErrorMessage(error, 'Note generation failed.'))
     } finally {

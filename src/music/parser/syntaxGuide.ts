@@ -45,6 +45,9 @@ export const STAFFSMITH_AI_SYNTAX_GUIDE = `StaffScript v0.1 syntax guide:
 - StaffScript is StaffSmith's official readable text notation language. Preferred extension: .staff.
 - Optional metadata directives: @version=0.1, @title="Title", @composer="Name", @instrument=flute, @tempo=120, @time=4/4 or @time=5/4, @key=Dm, @mode=notes or @mode=chords, @dur=q.
 - @dur sets the default duration for following notes/rests. Explicit durations override it.
+- Prefer modern StaffScript v0.1 for generated pieces: use @mode, @key, @tempo, @dur where useful, formal section blocks, motifs, and repeat blocks instead of only flat bar-separated text.
+- Be faithful to the requested music: preserve the requested mood, style traits, length, form, difficulty, and role while keeping the result original and parseable.
+- If an instrument is mentioned, optimize for that instrument with idiomatic range, breathing/resonance needs, articulation, and phrase lengths.
 - Generation priority order: 1) clear notes and intentional rests/pauses, 2) correct 4/4 rhythm, 3) expressive color such as slurs, dynamics, hairpins, and bracketed performance text.
 - Notes and pauses must carry the composition. Do not rely on dynamics or words to compensate for weak note choices.
 - Full-piece requests should become real multi-section pieces, not tiny sketches. Prefer formal section blocks like section intro { ... }; bracketed section labels like [intro] remain valid.
@@ -75,6 +78,7 @@ export const STAFFSMITH_AI_SYNTAX_GUIDE = `StaffScript v0.1 syntax guide:
 - Repeat blocks: repeat 2 { D5 q, F5 q, A5 h } or x2 { D5 q, F5 q, A5 h }.
 - Exotic but supported color should use normal StaffSmith syntax: chromatic accidentals, wider octave shapes, 16/32-note figures, pauses, slurs, and bracketed text such as ${EXOTIC_EXPRESSION_EXAMPLES.join(', ')}.
 - Chords mode uses lead-sheet symbols with optional sharp/flat roots: C, Cm, Cmin7, Cmaj7, Am7, D7, F#dim, Bbmaj7, Caug, Csus, Csus2, Csus4, Cadd9.
+- If the active mode is chords, generate chord-mode StaffScript only, preferably with @mode=chords and section blocks; do not output note pitches, note durations, rests, or slur parentheses.
 - Chord mode supports up to four chord symbols per measure.
 - Chord mode also accepts dynamics, expressions, bracketed custom text, and hairpin tokens before chord symbols.
 - Common chord-builder patterns include ii V I: Dm7 | G7 | Cmaj7, I vi ii V: Cmaj7 | Am7 | Dm7 | G7, and minor i VI VII: Am | F | G | Am.

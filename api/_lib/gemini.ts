@@ -1,6 +1,7 @@
 import type { ComposerAssistRequest, ComposerAssistResult, GeminiStatusResponse } from '../../src/lib/apiTypes.js'
 import { STAFFSMITH_AI_SYNTAX_GUIDE } from '../../src/music/parser/syntaxGuide.js'
 import type { DurationSymbol, InputMode } from '../../src/music/model/types.js'
+import { parseScoreInput } from '../../src/music/parser/index.js'
 import { getGeminiApiKey } from './env.js'
 import { GEMINI_CONFIG } from './gemini.config.js'
 import { fail } from './http.js'
@@ -10,6 +11,8 @@ const DURATION_UNITS: Record<DurationSymbol, number> = { w: 32, h: 16, q: 8, '8'
 const MAX_MEASURE_UNITS = 32
 const REST_FILL_DURATIONS: DurationSymbol[] = ['w', 'h', 'q', '8', '16', '32']
 const FLAT_NOTATION_TOKEN_PATTERN = /\[[^\]]+\]|\||,|\(|\)|[<>]|[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|pause|w|h|q|8|16|32|\S+/gi
+const CHORD_NOTATION_TOKEN_PATTERN = /\[[^\]]+\]|\||,|[<>]|[^\s|,]+/g
+const CHORD_SYMBOL_PATTERN = /^[A-Ga-g](?:#|b)?(?:m|min|maj7|min7|m7|7|dim|aug|sus|sus2|sus4|add9)?$/
 
 type LooseComposerAssistResult = Omit<Partial<ComposerAssistResult>, 'generatedInput' | 'notes'> & {
   generatedInput?: unknown
@@ -78,17 +81,21 @@ export async function runComposerAssist(payload: ComposerAssistRequest): Promise
 
 function createFallbackAssistResult(payload: ComposerAssistRequest, statusCode?: number): ComposerAssistResult {
   const generatedInput = createFallbackNotation(payload)
+  const fallbackKind = payload.mode === 'chords' ? 'lead-sheet chord' : 'beginner flute'
+  const baseFallback = getBaseFallbackNotation(payload.mode)
   return {
     summary: statusCode
-      ? `Gemini generation returned HTTP ${statusCode}, so StaffSmith used a local beginner flute fallback.`
-      : 'Gemini generation was unavailable, so StaffSmith used a local beginner flute fallback.',
-    keyCenter: 'D minor',
-    suggestedMode: 'notes',
+      ? `Gemini generation returned HTTP ${statusCode}, so StaffSmith used a local ${fallbackKind} fallback.`
+      : `Gemini generation was unavailable, so StaffSmith used a local ${fallbackKind} fallback.`,
+    keyCenter: payload.mode === 'chords' ? 'C major' : 'D minor',
+    suggestedMode: payload.mode,
     generatedInput,
     notes: [
-      'Uses a beginner-friendly flute range.',
+      payload.mode === 'chords'
+        ? 'Uses supported lead-sheet chord symbols.'
+        : 'Uses a beginner-friendly flute range.',
       'Keeps StaffSmith syntax parseable while Gemini is unavailable.',
-      generatedInput !== GEMINI_CONFIG.fallbackNotation ? 'Expanded locally to honor the requested long-form measure count.' : '',
+      generatedInput !== baseFallback ? 'Expanded locally to honor the requested long-form measure count.' : '',
       payload.prompt ? 'Try Generate again later for a fresh AI variation.' : 'Add a prompt and try again later for a fresh AI variation.',
     ].filter(Boolean),
   }
@@ -210,6 +217,10 @@ export async function checkGeminiAvailability(): Promise<GeminiStatusResponse> {
 
 function buildPrompt(payload: ComposerAssistRequest) {
   const rules = GEMINI_CONFIG.generationRules.map((rule) => `- ${rule}`).join('\n')
+  const modeInstruction = payload.mode === 'chords'
+    ? 'The active tab is Chords. Generate chord-mode StaffScript only: lead-sheet chord symbols, @mode=chords when using headers, up to four chord symbols per measure, and no note pitches or note durations.'
+    : 'The active tab is Notes. Generate notes-mode StaffScript only: octave-numbered pitches, explicit durations when useful, rests/pauses, slurs, dynamics, expressions, and complete 4/4 measures.'
+
   return `${GEMINI_CONFIG.systemInstruction}
 
 ${STAFFSMITH_AI_SYNTAX_GUIDE}
@@ -219,6 +230,9 @@ ${rules}
 
 Task: ${payload.task}
 Current mode: ${payload.mode}
+Mode-specific instruction:
+${modeInstruction}
+
 Current input:
 ${payload.input || '(empty)'}
 
@@ -230,9 +244,9 @@ function normalizeAssistResult(
   result: LooseComposerAssistResult,
   payload: ComposerAssistRequest,
 ): ComposerAssistResult {
-  const suggestedMode = result.suggestedMode === 'chords' || result.suggestedMode === 'notes'
-    ? result.suggestedMode
-    : payload.mode
+  const suggestedMode = payload.task === 'generate'
+    ? payload.mode
+    : normalizeSuggestedMode(result.suggestedMode, payload.mode)
 
   return {
     summary: coerceText(result.summary, 'No summary returned.'),
@@ -241,6 +255,10 @@ function normalizeAssistResult(
     generatedInput: coerceGeneratedInput(result.generatedInput, payload, suggestedMode),
     notes: coerceNotes(result.notes),
   }
+}
+
+function normalizeSuggestedMode(value: unknown, fallback: InputMode) {
+  return value === 'chords' || value === 'notes' ? value : fallback
 }
 
 function coerceGeneratedInput(value: unknown, payload: ComposerAssistRequest, mode: InputMode) {
@@ -269,10 +287,15 @@ function coerceGeneratedInput(value: unknown, payload: ComposerAssistRequest, mo
 
 function createFallbackNotation(payload: ComposerAssistRequest) {
   const requestedMeasureCount = getRequestedMeasureCount(payload.prompt)
+  const fallbackNotation = getBaseFallbackNotation(payload.mode)
 
   return requestedMeasureCount
-    ? expandNotationToMeasureCount(GEMINI_CONFIG.fallbackNotation, requestedMeasureCount)
-    : GEMINI_CONFIG.fallbackNotation
+    ? expandNotationToMeasureCount(fallbackNotation, requestedMeasureCount)
+    : fallbackNotation
+}
+
+function getBaseFallbackNotation(mode: InputMode) {
+  return mode === 'chords' ? GEMINI_CONFIG.chordFallbackNotation : GEMINI_CONFIG.fallbackNotation
 }
 
 function getRequestedMeasureCount(prompt: string | undefined): number | null {
@@ -299,7 +322,8 @@ function getRequestedMeasureCount(prompt: string | undefined): number | null {
 }
 
 function expandNotationToMeasureCount(input: string, targetMeasureCount: number) {
-  const measures = splitMeasures(input)
+  const { directives, body } = splitLeadingDirectives(input)
+  const measures = splitMeasures(body)
   if (measures.length === 0 || measures.length >= targetMeasureCount) {
     return input
   }
@@ -312,7 +336,8 @@ function expandNotationToMeasureCount(input: string, targetMeasureCount: number)
       : measure)
   }
 
-  return expanded.join(' | ')
+  const expandedBody = expanded.join(' | ')
+  return [directives.join('\n'), expandedBody].filter(Boolean).join('\n\n')
 }
 
 function splitMeasures(input: string) {
@@ -349,7 +374,17 @@ function getParseableStaffScriptCandidate(mode: InputMode, input: string): strin
 }
 
 function isParseableStaffScriptInput(mode: InputMode, input: string) {
-  return isLikelyParseableStaffSmithInput(mode, input)
+  if (!parseScoreInput(mode, input).ok) {
+    return false
+  }
+
+  if (mode !== 'chords') {
+    return true
+  }
+
+  const { body } = splitLeadingDirectives(input)
+  const flattenedBody = flattenStaffScriptForValidation(body)
+  return flattenedBody ? hasLikelyChordInput(flattenedBody) : false
 }
 
 function maybeCompleteGeneratedMeasures(mode: InputMode, input: string) {
@@ -525,18 +560,6 @@ function hasIncompleteFlatNoteMeasure(input: string) {
   return Boolean(measureUnits?.some((units) => units > 0 && units < MAX_MEASURE_UNITS))
 }
 
-function isLikelyParseableStaffSmithInput(mode: InputMode, input: string) {
-  const { body } = splitLeadingDirectives(input)
-  const flattenedBody = flattenStaffScriptForValidation(body)
-  if (!flattenedBody) {
-    return false
-  }
-
-  return mode === 'chords'
-    ? hasLikelyChordInput(flattenedBody)
-    : Boolean(getFlatNoteMeasureUnits(flattenedBody))
-}
-
 function flattenStaffScriptForValidation(input: string): string | null {
   const motifs = new Map<string, string>()
   let body = input
@@ -575,10 +598,53 @@ function slugifySectionName(name: string) {
 }
 
 function hasLikelyChordInput(input: string) {
-  return input
-    .split(/\s+|\||,/)
-    .map((token) => token.trim())
-    .some((token) => token && !isDirectionToken(token))
+  const tokens = input.match(CHORD_NOTATION_TOKEN_PATTERN) ?? []
+  if (tokens.length === 0) {
+    return false
+  }
+
+  let sawChord = false
+  let chordCountInMeasure = 0
+
+  for (const token of tokens) {
+    if (!token || token === ',') {
+      continue
+    }
+
+    if (token === '|') {
+      chordCountInMeasure = 0
+      continue
+    }
+
+    if (isDirectionToken(token)) {
+      continue
+    }
+
+    if (isGeneratedChordSymbol(token)) {
+      chordCountInMeasure += 1
+      if (chordCountInMeasure > 4) {
+        return false
+      }
+
+      sawChord = true
+      continue
+    }
+
+    if (
+      token === '('
+      || token === ')'
+      || isGeneratedDuration(token)
+      || /^[A-Ga-g](?:#|b)?\d+$/.test(token)
+      || /^r(?:est)?$/i.test(token)
+      || /^pause$/i.test(token)
+    ) {
+      return false
+    }
+
+    return false
+  }
+
+  return sawChord
 }
 
 function getFlatNoteMeasureUnits(input: string): number[] | null {
@@ -897,6 +963,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isGeneratedDuration(value: string): value is DurationSymbol {
   return DURATION_VALUES.has(value as DurationSymbol)
+}
+
+function isGeneratedChordSymbol(value: string) {
+  return CHORD_SYMBOL_PATTERN.test(value)
 }
 
 function isDirectionToken(token: string) {

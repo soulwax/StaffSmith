@@ -38,11 +38,16 @@ export const GEMINI_CONFIG = {
 
   // Appended after the syntax guide. One rule per item — add or remove freely.
   generationRules: [
-    'highest priority for generatedInput: compelling notes and intentional rests/pauses; rhythm and silence must carry the idea before decorative markings',
+    'Prefer modern StaffScript v0.1 for generatedInput: metadata directives when helpful, @mode, @key, @tempo, @dur for notes, section blocks, motif definitions, and repeat blocks when they make the piece clearer',
+    'stay faithful to the requested music: preserve the requested mood, genre traits, length, role, difficulty, and musical function unless doing so would violate StaffSmith syntax or copyright-safety rules',
+    'if the user mentions an instrument, keep the generated music optimized for that instrument: respect idiomatic range, breathing or resonance, readable articulation, and playable phrase lengths',
+    'Current mode is notes: return suggestedMode "notes" and generatedInput as notes-mode StaffScript with pitches, durations, rests, slurs, dynamics, expressions, and hairpins',
+    'Current mode is chords: return suggestedMode "chords" and generatedInput as chord-mode StaffScript with @mode=chords or lead-sheet chord symbols only; do not output note pitches, octave numbers, note durations, rests, or slur parentheses',
+    'highest priority for notes-mode generatedInput: compelling notes and intentional rests/pauses; rhythm and silence must carry the idea before decorative markings',
+    'highest priority for chords-mode generatedInput: coherent harmonic rhythm, supported lead-sheet chord symbols, phrase-length progressions, and no more than four chord symbols per measure',
     'keep generatedInput directly parseable by StaffSmith',
     'generatedInput must be a single plain StaffSmith notation string, never an object, array, markdown block, or JSON structure',
     'do not return nested notes, measures, events, pitch objects, or token objects inside generatedInput',
-    'for natural-language note generation, prefer suggestedMode "notes"',
     'when the user asks for a full piece, complete composition, beginning-to-end composition, solo, or long music, generatedInput should normally be at least 24 measures and may be 48-96 measures when the prompt asks for something expansive',
     'when the user explicitly asks for around 100 measures, at least 100 measures, or a five-minute piece, target 100-120 complete 4/4 measures if the response budget allows',
     'if the user gives a very large allowance such as "up to 8096 notes", treat it as permission to be generous, not as a requirement to hit that exact count; write the longest coherent parseable piece the response budget allows',
@@ -94,6 +99,33 @@ export const GEMINI_CONFIG = {
     'p ( E5 q, F5 q, D5 h )',
     'pp D5 w',
   ].join(' | '),
+
+  chordFallbackNotation: [
+    '@version=0.1',
+    '@mode=chords',
+    '@title="Lead Sheet Sketch"',
+    '@tempo=112',
+    '@key=C',
+    '',
+    [
+      '[section:intro] mf Cmaj7',
+      'Am7',
+      'Dm7 G7',
+      'Cmaj7',
+      '[section:theme] < Fmaj7',
+      'Em7 A7',
+      'Dm7 G7',
+      'Cmaj7',
+      '[section:bridge] p Am7',
+      'D7',
+      'Gmaj7',
+      'G7',
+      '[section:return] mf Cmaj7',
+      'A7',
+      'Dm7 G7',
+      'Cmaj7',
+    ].join(' | '),
+  ].join('\n'),
 } as const
 
 export type GeminiTask = keyof typeof GEMINI_CONFIG.generation
