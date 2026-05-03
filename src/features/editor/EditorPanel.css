@@ -1,23 +1,26 @@
 .composer-card {
   display: grid;
-  grid-template-rows: auto auto;
-  min-height: clamp(1000px, 92vh, 1180px);
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
 }
 
 .composer-card .section-card__content {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
 }
 
 .mode-toggle {
   display: inline-grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
-  margin-bottom: 8px;
+  margin-bottom: clamp(0.35rem, 0.8dvh, 0.5rem);
   padding: 4px;
   width: 100%;
-  max-width: 220px;
+  max-width: min(100%, 14rem);
   border-radius: 8px;
   background: linear-gradient(135deg, rgba(255, 118, 83, 0.16), rgba(31, 177, 196, 0.18));
 }
@@ -55,10 +58,10 @@
 }
 
 .examples {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.25rem), 1fr));
   gap: 6px;
-  margin-bottom: 8px;
+  margin-bottom: clamp(0.35rem, 0.8dvh, 0.5rem);
 }
 
 .example-chip {
@@ -73,9 +76,9 @@
 
 .editor-builder {
   display: grid;
-  gap: 6px;
-  margin-bottom: 8px;
-  padding: 7px;
+  gap: clamp(0.25rem, 0.7dvh, 0.38rem);
+  margin-bottom: clamp(0.35rem, 0.8dvh, 0.5rem);
+  padding: clamp(0.35rem, 0.9vw, 0.45rem);
   border: 1px solid rgba(28, 126, 152, 0.18);
   border-radius: 8px;
   background:
@@ -96,15 +99,15 @@
 }
 
 .builder-row--note-console {
-  grid-template-columns: minmax(178px, 1.45fr) minmax(92px, 0.65fr) minmax(120px, 0.9fr) minmax(92px, 0.65fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.65fr) minmax(0, 0.9fr) minmax(0, 0.75fr);
 }
 
 .builder-row--chord-console {
-  grid-template-columns: minmax(230px, 1.45fr) minmax(168px, 1fr) minmax(92px, 0.5fr);
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 0.58fr);
 }
 
 .builder-row--expression-console {
-  grid-template-columns: minmax(150px, 0.8fr) minmax(260px, 1.4fr) minmax(90px, 0.5fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.45fr) minmax(0, 0.55fr);
 }
 
 .builder-group {
@@ -207,15 +210,15 @@
 }
 
 .pitch-grid {
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 3.2rem), 1fr));
 }
 
 .chord-root-grid {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 3rem), 1fr));
 }
 
 .quality-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 3.4rem), 1fr));
 }
 
 .editor-builder button {
@@ -284,7 +287,7 @@
 .editor-textarea {
   width: 100%;
   flex: 1 1 auto;
-  min-height: clamp(340px, 42vh, 620px);
+  min-height: clamp(10rem, 24dvh, 22rem);
   height: auto;
   resize: vertical;
   padding: 14px;
@@ -306,9 +309,9 @@
 .editor-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 0.5rem;
   align-items: center;
-  margin-top: 8px;
+  margin-top: clamp(0.35rem, 0.8dvh, 0.5rem);
 }
 
 .render-button {

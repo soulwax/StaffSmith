@@ -1,5 +1,11 @@
 .app-shell {
+  height: 100vh;
+  height: 100dvh;
   min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
   padding: 14px 16px 16px;
   color: #e9f7f1;
 }
@@ -196,10 +202,10 @@
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(360px, 0.66fr) minmax(0, 1.34fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 14px;
-  height: calc(100vh - 66px);
-  min-height: 620px;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
   position: relative;
 }
@@ -220,14 +226,15 @@
 .preview-column {
   display: grid;
   gap: 14px;
-  align-content: start;
+  align-content: stretch;
   min-width: 0;
+  min-height: 0;
 }
 
 .workbench-column {
-  grid-template-rows: auto auto;
+  grid-template-rows: minmax(0, 2fr) minmax(0, 1fr);
   height: 100%;
-  overflow: auto;
+  overflow: hidden;
   padding-right: 2px;
   scrollbar-gutter: stable;
 }
@@ -415,6 +422,13 @@
   gap: 0;
 }
 
+.ai-studio-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+}
+
 .ai-studio-card .section-card__header {
   padding: 8px 12px 0;
 }
@@ -424,13 +438,16 @@
 }
 
 .ai-studio-card .section-card__content {
-  padding: 7px 12px 9px;
+  min-height: 0;
+  overflow: auto;
+  padding: clamp(0.4rem, 0.8vw, 0.55rem) clamp(0.55rem, 1vw, 0.75rem) clamp(0.5rem, 1vw, 0.7rem);
+  scrollbar-width: thin;
 }
 
 .ai-studio-section {
   display: grid;
   gap: 5px;
-  padding: 7px 0;
+  padding: 6px 0;
   border-bottom: 1px solid rgba(28, 126, 152, 0.1);
 }
 
@@ -681,7 +698,7 @@
 .project-list--studio {
   gap: 5px;
   margin-top: 2px;
-  max-height: 84px;
+  max-height: min(7rem, 28dvh);
   overflow: auto;
   padding-right: 2px;
   scrollbar-width: thin;
@@ -836,7 +853,9 @@
 
 @media (max-width: 1100px) {
   .app-shell {
+    height: auto;
     padding: 14px;
+    overflow: visible;
   }
 
   .workspace-header {
