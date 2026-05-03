@@ -752,6 +752,7 @@ export function App() {
 
     const generationMode = state.mode
     const generationLabel = generationMode === 'chords' ? 'chord' : 'note'
+    const generationFailureMessage = generationMode === 'chords' ? 'Chord generation failed.' : 'Note generation failed.'
 
     setIsGeneratingNotes(true)
     setServerMessage(null)
@@ -767,17 +768,17 @@ export function App() {
           input: state.input,
           prompt: buildIdeaGenerationPrompt(generationMode, prompt),
         }),
-      }, 'Note generation failed.', GENERATION_API_TIMEOUT_MS)
+      }, generationFailureMessage, GENERATION_API_TIMEOUT_MS)
 
       if (!body.result) {
-        throw new Error('Note generation failed.')
+        throw new Error(generationFailureMessage)
       }
       setAnalysis(body.result)
       updateDraft(body.result.suggestedMode, body.result.generatedInput)
       setNoteGenerationMessage(`Generated ${body.result.suggestedMode} from text.`)
       setServerMessage(`Generated ${body.result.suggestedMode} from text.`)
     } catch (error) {
-      setNoteGenerationMessage(getErrorMessage(error, 'Note generation failed.'))
+      setNoteGenerationMessage(getErrorMessage(error, generationFailureMessage))
     } finally {
       setIsGeneratingNotes(false)
     }

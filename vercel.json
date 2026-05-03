@@ -4,7 +4,7 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm build",
   "outputDirectory": "dist",
-  "devCommand": "pnpm dev -- --host 0.0.0.0",
+  "devCommand": "pnpm dev --host 0.0.0.0",
   "functions": {
     "api/composer-assist.ts": {
       "maxDuration": 300

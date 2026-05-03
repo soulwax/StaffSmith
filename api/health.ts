@@ -1,6 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { requireEnv } from './_lib/env.js'
 import { handleError, methodNotAllowed, sendJson } from './_lib/http.js'
+
+declare const process: {
+  env: Partial<Record<'DATABASE_URL' | 'DATABASE_URL_UNPOOLED' | 'GEMINI_API_KEY', string>>
+}
 
 export default function handler(request: VercelRequest, response: VercelResponse) {
   try {
@@ -9,15 +12,12 @@ export default function handler(request: VercelRequest, response: VercelResponse
       return
     }
 
-    for (const name of ['GEMINI_API_KEY', 'DATABASE_URL', 'DATABASE_URL_UNPOOLED'] as const) {
-      requireEnv(name)
-    }
-
     sendJson(response, 200, {
       ok: true,
       services: {
-        gemini: 'configured',
-        database: 'configured',
+        gemini: process.env.GEMINI_API_KEY ? 'configured' : 'missing',
+        database: process.env.DATABASE_URL ? 'configured' : 'missing',
+        databaseUnpooled: process.env.DATABASE_URL_UNPOOLED ? 'configured' : 'missing',
       },
     })
   } catch (error) {
