@@ -1,5 +1,6 @@
 import type { DurationSymbol, InputMode, ParseError, Score } from '../model/types'
 import { isDurationSymbol } from '../theory/duration'
+import { parseClef, parseKeySignature, parseTimeSignature } from '../theory/signatures'
 import { createParseError } from './shared'
 
 type MotifDefinition = {
@@ -24,6 +25,7 @@ const METADATA_KEYS = new Set([
   'tempo',
   'time',
   'key',
+  'clef',
   'mode',
   'dur',
 ])
@@ -119,18 +121,32 @@ export function prepareStaffScript(input: string): StaffScriptDirectives {
 
     if (key === 'key') {
       metadata.key = value
+      const parsedKey = parseKeySignature(value)
+      if (parsedKey) {
+        metadata.keyFifths = parsedKey.fifths
+      } else {
+        warnings.push(`Unknown @key "${value}"; MusicXML will use no key signature.`)
+      }
+      continue
+    }
+
+    if (key === 'clef') {
+      const parsedClef = parseClef(value)
+      if (parsedClef) {
+        metadata.clef = parsedClef
+      } else {
+        errors.push(createParseError(input, lineStart, '@clef must be treble/violin, bass, alto, or tenor.', trimmed))
+      }
       continue
     }
 
     if (key === 'time') {
-      const time = value.match(/^(\d+)\/(\d+)$/)
-      const beats = Number.parseInt(time?.[1] ?? '', 10)
-      const beatType = Number.parseInt(time?.[2] ?? '', 10)
-      if (Number.isInteger(beats) && beats > 0 && Number.isInteger(beatType) && beatType > 0) {
-        metadata.beats = beats
-        metadata.beatType = beatType
+      const parsedTime = parseTimeSignature(value)
+      if (parsedTime) {
+        metadata.beats = parsedTime.beats
+        metadata.beatType = parsedTime.beatType
       } else {
-        errors.push(createParseError(input, lineStart, '@time must use a value like 4/4 or 5/4.', trimmed))
+        errors.push(createParseError(input, lineStart, '@time must use a value like 4/4, 6/8, common, or cut.', trimmed))
       }
       continue
     }

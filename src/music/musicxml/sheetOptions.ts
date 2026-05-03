@@ -1,4 +1,6 @@
-export type ClefOption = 'treble' | 'bass' | 'alto' | 'tenor'
+import type { StaffClef } from '../model/types'
+
+export type ClefOption = StaffClef
 
 export type SheetDensity = 'spacious' | 'standard' | 'compact'
 

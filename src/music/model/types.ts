@@ -2,6 +2,8 @@ export type InputMode = 'notes' | 'chords'
 
 export type DurationSymbol = 'w' | 'h' | 'q' | '8' | '16' | '32'
 
+export type StaffClef = 'treble' | 'bass' | 'alto' | 'tenor'
+
 export type MusicXmlNoteType = 'whole' | 'half' | 'quarter' | 'eighth' | '16th' | '32nd'
 
 export type HarmonyKind =
@@ -84,6 +86,8 @@ export interface Score {
     composer?: string
     instrument?: string
     key?: string
+    keyFifths?: number
+    clef?: StaffClef
     defaultDuration?: DurationSymbol
     tempoBpm?: number
     unknown?: Record<string, string>

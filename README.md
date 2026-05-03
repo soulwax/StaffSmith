@@ -90,8 +90,10 @@ Quick example:
 @version=0.1
 @title="Take 5 for the Flute"
 @instrument=flute
+@clef=treble
 @tempo=120
 @time=5/4
+@key=Dm
 @dur=q
 
 @motif intro = ( D5, F5, A5 h )
@@ -122,7 +124,7 @@ Accepted syntax:
 - durations: `w`, `h`, `q`, `8`, `16`, `32`
 - rests/pauses: `R`, `rest`, or `pause`, with optional duration such as `R w`, `rest q`, or `pause 8`
 - smooth slurs/bows: spaced parentheses around notes, for example `( C4 q, D4 q )`
-- the Composer board inserts barlines automatically when a note/rest would overflow a 4/4 measure or complete one
+- the Composer board inserts barlines automatically when a note/rest would overflow the active time signature or complete a measure
 - dynamics: `pp`, `p`, `mp`, `mf`, `f`, `ff`
 - expression words: `dolce`, `legato`, `staccato`, `tenuto`, `cantabile`, `espressivo`, `rit.`, `accel.`, `a-tempo`, `tempo`
 - custom expression text: `[like_this]`
@@ -140,7 +142,7 @@ Rules:
 - Fast values are intended for clean beat-grouped gestures, ornaments, flourishes, and serious orchestral-style short-note writing.
 - Measures support the active `@time` signature for overflow checks; the MVP is best exercised with simple signatures like `4/4` and `5/4`.
 - Full-measure rest runs are used by the MusicXML export for page-turn and long-silence cue placement.
-- Long generated note pieces are supported as multi-section 4/4 notation with bracketed labels such as `[intro]`, `[theme]`, `[freestyle]`, `[return]`, `[finale]`, and `[coda]`.
+- Long generated note pieces are supported as multi-section notation with bracketed labels such as `[intro]`, `[theme]`, `[freestyle]`, `[return]`, `[finale]`, and `[coda]`.
 - For professional readability, longer fast passages should be shaped into phrase groups with breath pauses and clean beat grouping rather than uninterrupted walls of short notes.
 
 ### Chords mode
@@ -194,11 +196,14 @@ StaffScript metadata directives include:
 - `@title="Title"`
 - `@composer="Composer"`
 - `@instrument=flute`
+- `@clef=treble`
 - `@tempo=120`
 - `@time=5/4`
 - `@key=Dm`
 - `@mode=notes` or `@mode=chords`
 - `@dur=q`
+
+The notation trinity is optional: omitted `@clef`, `@key`, and `@time` render as treble/violin clef, no key signature, and 4/4. `@clef` accepts treble/violin, bass, alto, and tenor. `@key` accepts all conventional key signatures by name or direct fifth counts from `-7` to `7`. `@time` accepts numeric meters such as `4/4`, `6/8`, `7/8`, and `12/8`, plus `common` and `cut`.
 
 Unknown metadata keys are preserved where reasonable and do not crash parsing.
 

@@ -12,6 +12,7 @@ import {
 } from '../model/types'
 import { DURATION_UNITS, MUSICXML_NOTE_TYPE, getMeasureCapacityUnits } from '../theory/duration'
 import { buildPitchClass } from '../theory/pitch'
+import { parseKeySignature } from '../theory/signatures'
 import {
   DEFAULT_SHEET_OPTIONS,
   PAGE_FORMATS,
@@ -99,7 +100,8 @@ export function scoreToMusicXml(score: Score, options: Partial<ScoreSheetOptions
     beats: score.metadata.beats,
     beatType: score.metadata.beatType,
     tempoBpm: score.metadata.tempoBpm ?? DEFAULT_SHEET_OPTIONS.tempoBpm,
-    ...(score.metadata.key ? { keyFifths: keyToFifths(score.metadata.key) } : {}),
+    clef: score.metadata.clef ?? DEFAULT_SHEET_OPTIONS.clef,
+    keyFifths: score.metadata.keyFifths ?? (score.metadata.key ? keyToFifths(score.metadata.key) : DEFAULT_SHEET_OPTIONS.keyFifths),
     ...options,
   })
   const layoutPlan = buildLayoutPlan(score, sheetOptions)
@@ -166,41 +168,7 @@ function resolveSheetOptions(options: Partial<ScoreSheetOptions>): ScoreSheetOpt
 }
 
 function keyToFifths(key: string): number {
-  const normalized = key.trim().replace(/min(?:or)?$/i, 'm')
-  const lookup: Record<string, number> = {
-    Cb: -7,
-    Abm: -7,
-    Gb: -6,
-    Ebm: -6,
-    Db: -5,
-    Bbm: -5,
-    Ab: -4,
-    Fm: -4,
-    Eb: -3,
-    Cm: -3,
-    Bb: -2,
-    Gm: -2,
-    F: -1,
-    Dm: -1,
-    C: 0,
-    Am: 0,
-    G: 1,
-    Em: 1,
-    D: 2,
-    Bm: 2,
-    A: 3,
-    'F#m': 3,
-    E: 4,
-    'C#m': 4,
-    B: 5,
-    'G#m': 5,
-    'F#': 6,
-    'D#m': 6,
-    'C#': 7,
-    'A#m': 7,
-  }
-
-  return lookup[normalized] ?? DEFAULT_SHEET_OPTIONS.keyFifths
+  return parseKeySignature(key)?.fifths ?? DEFAULT_SHEET_OPTIONS.keyFifths
 }
 
 function buildLayoutPlan(score: Score, options: ScoreSheetOptions): Map<number, MeasureLayoutPlan> {

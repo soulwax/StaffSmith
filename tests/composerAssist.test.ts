@@ -458,18 +458,25 @@ Extra commentary that should not break JSON parsing.`)
       'Csus2',
       'Csus4',
       'Caug',
+      '@clef',
+      '@key',
+      '@time',
     ]) {
       expect(STAFFSMITH_AI_SYNTAX_GUIDE).toContain(token)
     }
 
     expect(STAFFSMITH_AI_SYNTAX_GUIDE).toContain('( C4 q, D4 q, E4 h )')
+    expect(STAFFSMITH_AI_SYNTAX_GUIDE).toContain('treble/violin')
+    expect(STAFFSMITH_AI_SYNTAX_GUIDE).toContain('all conventional key signatures')
     expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('durations w/h/q/8/16/32')
+    expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('@clef')
+    expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('active or requested time signature')
     expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('Prefer modern StaffScript v0.1')
     expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('Current mode is chords')
     expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('faithful to the requested music')
     expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('optimized for that instrument')
     expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('at least 24 measures')
-    expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('100-120 complete 4/4 measures')
+    expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('100-120 complete measures')
     expect(GEMINI_CONFIG.generation.generate.maxOutputTokens).toBeGreaterThanOrEqual(32768)
     expect(GEMINI_CONFIG.generationRules.join('\n')).toContain('professionally engraved music')
   })

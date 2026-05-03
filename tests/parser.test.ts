@@ -146,6 +146,60 @@ describe('StaffSmith parser', () => {
     })
   })
 
+  it('parses optional clef, key signature, and time signature metadata', () => {
+    const result = parseScoreInput(
+      'notes',
+      '@clef=violin\n@key=B-flat minor\n@time=6/8\n@dur=q\n\nC4 q, E4 q, G4 q',
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.errors).toEqual([])
+    expect(result.value.metadata).toMatchObject({
+      clef: 'treble',
+      key: 'B-flat minor',
+      keyFifths: -5,
+      beats: 6,
+      beatType: 8,
+    })
+  })
+
+  it('accepts every conventional key signature by name and fifth count', () => {
+    const cases = [
+      ['Cb', -7],
+      ['Gb', -6],
+      ['Db', -5],
+      ['Ab', -4],
+      ['Eb', -3],
+      ['Bb', -2],
+      ['F', -1],
+      ['C', 0],
+      ['G', 1],
+      ['D', 2],
+      ['A', 3],
+      ['E', 4],
+      ['B', 5],
+      ['F#', 6],
+      ['C#', 7],
+      ['A minor', 0],
+      ['D-sharp minor', 6],
+      ['-3', -3],
+    ] as const
+
+    for (const [key, fifths] of cases) {
+      const result = parseScoreInput('notes', `@key=${key}\nC4 w`)
+      expect(result.ok).toBe(true)
+      expect(result.value.metadata.keyFifths).toBe(fifths)
+    }
+  })
+
+  it('reports unsupported StaffScript clefs and key signatures without crashing', () => {
+    const result = parseScoreInput('notes', '@clef=ukulele\n@key=H major\nC4 w')
+
+    expect(result.ok).toBe(false)
+    expect(result.errors[0]?.message).toContain('@clef must be')
+    expect(result.warnings[0]).toContain('Unknown @key')
+  })
+
   it('reports missing and recursive StaffScript motifs', () => {
     const missing = parseScoreInput('notes', 'use missing')
     expect(missing.ok).toBe(false)

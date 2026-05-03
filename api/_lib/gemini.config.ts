@@ -38,7 +38,8 @@ export const GEMINI_CONFIG = {
 
   // Appended after the syntax guide. One rule per item — add or remove freely.
   generationRules: [
-    'Prefer modern StaffScript v0.1 for generatedInput: metadata directives when helpful, @mode, @key, @tempo, @dur for notes, section blocks, motif definitions, and repeat blocks when they make the piece clearer',
+    'Prefer modern StaffScript v0.1 for generatedInput: metadata directives when helpful, @clef, @key, @time, @mode, @tempo, @dur for notes, section blocks, motif definitions, and repeat blocks when they make the piece clearer',
+    'use the StaffScript trinity when relevant: @clef for treble/violin, bass, alto, or tenor; @key for any conventional key signature or -7..7 fifth count; @time for the requested meter, otherwise omit it and StaffSmith defaults to treble clef, no key signature, and 4/4',
     'stay faithful to the requested music: preserve the requested mood, genre traits, length, role, difficulty, and musical function unless doing so would violate StaffSmith syntax or copyright-safety rules',
     'if the user mentions an instrument, keep the generated music optimized for that instrument: respect idiomatic range, breathing or resonance, readable articulation, and playable phrase lengths',
     'Current mode is notes: return suggestedMode "notes" and generatedInput as notes-mode StaffScript with pitches, durations, rests, slurs, dynamics, expressions, and hairpins',
@@ -49,13 +50,13 @@ export const GEMINI_CONFIG = {
     'generatedInput must be a single plain StaffSmith notation string, never an object, array, markdown block, or JSON structure',
     'do not return nested notes, measures, events, pitch objects, or token objects inside generatedInput',
     'when the user asks for a full piece, complete composition, beginning-to-end composition, solo, or long music, generatedInput should normally be at least 24 measures and may be 48-96 measures when the prompt asks for something expansive',
-    'when the user explicitly asks for around 100 measures, at least 100 measures, or a five-minute piece, target 100-120 complete 4/4 measures if the response budget allows',
+    'when the user explicitly asks for around 100 measures, at least 100 measures, or a five-minute piece, target 100-120 complete measures in the active or requested time signature if the response budget allows',
     'if the user gives a very large allowance such as "up to 8096 notes", treat it as permission to be generous, not as a requirement to hit that exact count; write the longest coherent parseable piece the response budget allows',
     'do not shrink a full-piece request into a three- or four-measure sketch unless the user explicitly asks for a short idea',
     'for long generatedInput, write professionally engraved music: balanced 4- or 8-measure phrase groups, clear section labels, readable breath pauses, and fast passages that sit cleanly inside the beat',
     'use section labels in bracketed expression text for longer note pieces, for example [intro], [theme], [freestyle], [return], [finale], and [coda]',
     'avoid pages of unbroken 32nd notes; use fast 16/32-note material as featured freestyle segments, pickups, ornaments, transitions, and phrase peaks',
-    'use the same smart composer assumptions as the UI: complete 4/4 measures, add | before an overflow, and use explicit rests or pauses for missing beats',
+    'use the same smart composer assumptions as the UI: complete measures in the active or requested time signature, add | before an overflow, and use explicit rests or pauses for missing beats',
     'use only documented StaffSmith tokens from the syntax guide: durations w/h/q/8/16/32, rests R/rest/pause, bars |, dynamics, expressions, hairpins, slurs, and supported lead-sheet chord symbols',
     'when musically sensible, actually use the richer syntax: 16/32-note figures, pauses, chromatic pitches, slurs, and bracketed performance text',
     'include dynamics, expression, hairpin tokens, and slur parentheses when the user asks for mood, articulation, smooth bowing, or intensity, but keep them secondary to note and pause choices',

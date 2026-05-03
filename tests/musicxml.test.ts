@@ -4,6 +4,19 @@ import { scoreToMusicXml } from '../src/music/musicxml/scoreToMusicXml'
 import { EXAMPLES } from '../src/features/editor/examples'
 
 describe('MusicXML export', () => {
+  it('defaults to treble clef, no key signature, and 4/4 when StaffScript omits the trinity', () => {
+    const result = parseScoreInput('notes', 'C4 w')
+    expect(result.ok).toBe(true)
+
+    const xml = scoreToMusicXml(result.value)
+
+    expect(xml).toContain('<fifths>0</fifths>')
+    expect(xml).toContain('<beats>4</beats>')
+    expect(xml).toContain('<beat-type>4</beat-type>')
+    expect(xml).toContain('<sign>G</sign>')
+    expect(xml).toContain('<line>2</line>')
+  })
+
   it('emits compact orchestral solo page settings, 30% smaller scaling, and no default staff label', () => {
     const result = parseScoreInput('notes', 'C4 q E4 q G4 h')
     expect(result.ok).toBe(true)
@@ -139,6 +152,22 @@ describe('MusicXML export', () => {
     expect(xml).toContain('<beat-type>4</beat-type>')
     expect(xml).toContain('<per-minute>120</per-minute>')
     expect(xml).toContain('<words font-weight="bold">intro</words>')
+  })
+
+  it('serializes StaffScript clef, key signature, and time signature directives', () => {
+    const result = parseScoreInput(
+      'notes',
+      '@clef=bass\n@key=F# minor\n@time=6/8\n@dur=q\n\nC3, E3, G3',
+    )
+    expect(result.ok).toBe(true)
+
+    const xml = scoreToMusicXml(result.value)
+
+    expect(xml).toContain('<fifths>3</fifths>')
+    expect(xml).toContain('<beats>6</beats>')
+    expect(xml).toContain('<beat-type>8</beat-type>')
+    expect(xml).toContain('<sign>F</sign>')
+    expect(xml).toContain('<line>4</line>')
   })
 
   it('serializes explicit rests, capacity-aware page turns, and cue-sized notes for long silence', () => {

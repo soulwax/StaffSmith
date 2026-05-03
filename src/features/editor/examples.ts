@@ -134,7 +134,7 @@ export const EXAMPLES: ExamplePreset[] = [
     label: 'StaffScript: Take 5 Flute Sketch',
     mode: 'notes',
     description: 'Metadata, 5/4 time, default duration, motifs, sections, repeats, dynamics, and expressions.',
-    input: '@version=0.1\n@title="Take 5 for the Flute"\n@instrument=flute\n@tempo=120\n@time=5/4\n@dur=q\n\n@motif intro = ( D5, F5, A5 h )\n@motif fall = > G5, F5, E5, D5\n@motif rise = < G5, A5, B5, A5\n\nsection intro {\n  mp [intro] use intro | use rise | use fall | pause h, D5 h, R q\n}\n\nsection theme {\n  mf [theme] D5, F5, A5, C6, D6 |\n  ( B5 8, A5 8, G5, F5, E5 ), R q |\n  < F5 8, G5 8, A5 8, B5 8, C6, A5, R q |\n  use fall, R q\n}\n\nsection coda {\n  p ( E5, F5, D5 h ), R q |\n  pp D5 w, R q\n}\n\nrepeat 2 {\n  use intro |\n  use theme\n}\n\nuse coda',
+    input: '@version=0.1\n@title="Take 5 for the Flute"\n@instrument=flute\n@clef=treble\n@tempo=120\n@time=5/4\n@key=Dm\n@dur=q\n\n@motif intro = ( D5, F5, A5 h )\n@motif fall = > G5, F5, E5, D5\n@motif rise = < G5, A5, B5, A5\n\nsection intro {\n  mp [intro] use intro | use rise | use fall | pause h, D5 h, R q\n}\n\nsection theme {\n  mf [theme] D5, F5, A5, C6, D6 |\n  ( B5 8, A5 8, G5, F5, E5 ), R q |\n  < F5 8, G5 8, A5 8, B5 8, C6, A5, R q |\n  use fall, R q\n}\n\nsection coda {\n  p ( E5, F5, D5 h ), R q |\n  pp D5 w, R q\n}\n\nrepeat 2 {\n  use intro |\n  use theme\n}\n\nuse coda',
   },
   {
     id: 'motifs-and-repeats',

@@ -37,6 +37,7 @@ const COMPOSER_STEPS = [
 const STAFFSCRIPT_STARTER = `@version=0.1
 @title="Take Five - 1st Flute"
 @instrument=flute
+@clef=treble
 @tempo=120
 @time=4/4
 @key=Dm
@@ -82,6 +83,8 @@ export function SyntaxHelp() {
           <p>Place optional directives before the music.</p>
           <code>@version=0.1</code>
           <code>@title="Sketch"</code>
+          <code>@clef=treble</code>
+          <code>@key=Dm</code>
           <code>@tempo=120</code>
           <code>@time=5/4</code>
           <code>@dur=q</code>

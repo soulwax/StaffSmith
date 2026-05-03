@@ -8,8 +8,10 @@ StaffScript is StaffSmith's official readable text notation language. It is desi
 @version=0.1
 @title="Take 5 for the Flute"
 @instrument=flute
+@clef=treble
 @tempo=120
 @time=5/4
+@key=Dm
 @dur=q
 
 @motif intro = ( D5, F5, A5 h )
@@ -33,6 +35,7 @@ Metadata directives may appear on their own lines before the music:
 @title="Title"
 @composer="Composer"
 @instrument=flute
+@clef=treble
 @tempo=120
 @time=5/4
 @key=Dm
@@ -40,9 +43,17 @@ Metadata directives may appear on their own lines before the music:
 @dur=q
 ```
 
-Supported keys are `version`, `title`, `composer`, `instrument`, `tempo`, `time`, `key`, `mode`, and `dur`. Unknown keys are preserved in score metadata where reasonable and do not crash parsing.
+Supported keys are `version`, `title`, `composer`, `instrument`, `clef`, `tempo`, `time`, `key`, `mode`, and `dur`. Unknown keys are preserved in score metadata where reasonable and do not crash parsing.
 
-`@tempo` accepts 20-300 BPM. `@time` accepts values like `4/4`, `5/4`, and `6/8`. `@mode` accepts `notes` or `chords`. `@dur` sets the default duration for notes and rests.
+The notation trinity is optional. If it is omitted, StaffSmith renders treble/violin clef, no key signature, and 4/4.
+
+`@clef` accepts `treble`, `violin`, `bass`, `alto`, and `tenor`.
+
+`@key` accepts all conventional key signatures by name, including `C`, `Dm`, `B-flat minor`, `F# major`, and direct fifth counts from `-7` to `7`. Values like `none`, `open`, and `atonal` render no key signature.
+
+`@time` accepts values like `4/4`, `5/4`, `6/8`, `7/8`, and `12/8`, plus `common` and `cut`.
+
+`@tempo` accepts 20-300 BPM. `@mode` accepts `notes` or `chords`. `@dur` sets the default duration for notes and rests.
 
 ## Notes, Rests, Durations
 

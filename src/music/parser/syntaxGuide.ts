@@ -43,27 +43,31 @@ export const EXOTIC_EXPRESSION_EXAMPLES = ['[flutter]', '[sul pont.]', '[snap pi
 export const STAFFSMITH_AI_SYNTAX_GUIDE = `StaffScript v0.1 syntax guide:
 - Return generatedInput as plain StaffScript notation only, never markdown.
 - StaffScript is StaffSmith's official readable text notation language. Preferred extension: .staff.
-- Optional metadata directives: @version=0.1, @title="Title", @composer="Name", @instrument=flute, @tempo=120, @time=4/4 or @time=5/4, @key=Dm, @mode=notes or @mode=chords, @dur=q.
+- Optional metadata directives: @version=0.1, @title="Title", @composer="Name", @instrument=flute, @clef=treble, @tempo=120, @time=4/4 or @time=5/4, @key=Dm, @mode=notes or @mode=chords, @dur=q.
 - @dur sets the default duration for following notes/rests. Explicit durations override it.
-- Prefer modern StaffScript v0.1 for generated pieces: use @mode, @key, @tempo, @dur where useful, formal section blocks, motifs, and repeat blocks instead of only flat bar-separated text.
+- The notation trinity is optional. If omitted, StaffSmith renders treble/violin clef, no key signature, and 4/4.
+- @clef accepts treble/violin, bass, alto, or tenor. Use the clef implied by the requested instrument when appropriate.
+- @key accepts all conventional key signatures by name, including C, Dm, B-flat minor, F# major, and direct fifth counts from -7 to 7.
+- @time accepts numeric meters such as 2/4, 3/4, 4/4, 5/4, 6/8, 7/8, 12/8, plus common and cut.
+- Prefer modern StaffScript v0.1 for generated pieces: use @clef, @key, @time, @mode, @tempo, @dur where useful, formal section blocks, motifs, and repeat blocks instead of only flat bar-separated text.
 - Be faithful to the requested music: preserve the requested mood, style traits, length, form, difficulty, and role while keeping the result original and parseable.
 - If an instrument is mentioned, optimize for that instrument with idiomatic range, breathing/resonance needs, articulation, and phrase lengths.
-- Generation priority order: 1) clear notes and intentional rests/pauses, 2) correct 4/4 rhythm, 3) expressive color such as slurs, dynamics, hairpins, and bracketed performance text.
+- Generation priority order: 1) clear notes and intentional rests/pauses, 2) correct rhythm in the active time signature, 3) expressive color such as slurs, dynamics, hairpins, and bracketed performance text.
 - Notes and pauses must carry the composition. Do not rely on dynamics or words to compensate for weak note choices.
 - Full-piece requests should become real multi-section pieces, not tiny sketches. Prefer formal section blocks like section intro { ... }; bracketed section labels like [intro] remain valid.
 - For a complete solo or beginning-to-end composition, aim for at least 24 measures unless the user asks for something short; 48-96 measures is acceptable when the prompt invites a long piece.
 - If the user says "up to" a very large note count, treat that as permission to write generously within the response budget.
-- Long output should still feel professionally engraved: clear 4- or 8-measure phrase groups, readable breath pauses, section changes, clean 4/4 beat grouping, and fast passages placed where a player can understand them.
+- Long output should still feel professionally engraved: clear 4- or 8-measure phrase groups, readable breath pauses, section changes, clean beat grouping in the active time signature, and fast passages placed where a player can understand them.
 - Avoid walls of unbroken short notes. Use 16/32-note writing for featured freestyle segments, ornaments, pickups, transitions, and climactic phrase peaks.
 - Notes mode uses pitch+octave and optional duration: C4 q, F#3 h, Bb5 8, G5 16, A5 32.
 - R, rest, or pause creates an explicit rest/pause and can take a duration: R w, rest q, pause 8.
 - Notes require octave numbers. Valid durations are w, h, q, 8, 16, 32. Omitted durations default to q.
 - Duration beat values: w=4 beats, h=2 beats, q=1 beat, 8=0.5 beats, 16=0.25 beats, 32=0.125 beats.
 - Use short values musically: 16 and 32 are for quick gestures, pickups, flourishes, ornaments, and nervous motion, not for random clutter.
-- Serious notation expectation: short durations should line up inside clean 4/4 beat groups; count every beat before returning generatedInput.
+- Serious notation expectation: short durations should line up inside clean beat groups for the active time signature; count every beat before returning generatedInput.
 - Slurs for smooth/bowed transitions use spaced parentheses around notes: ( C4 q, D4 q, E4 h ). Never attach slurs to rests.
 - Notes, rests, directions, and chord symbols may be separated by spaces or commas.
-- CRITICAL: Each measure between | bars must total EXACTLY 4 beats — never more, never less.
+- CRITICAL: Each measure between | bars must total the active time signature exactly — default 4/4 unless @time is present.
 - Use | as a real barline. Insert it immediately when the next note/rest would overflow 4 beats or when a measure is complete.
 - Do not leave a measure incomplete unless the user specifically asks for a pickup or sketch fragment.
 - Use explicit rests/pauses to complete silent beats instead of omitting rhythm: R q, pause h, R w.

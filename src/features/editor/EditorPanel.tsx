@@ -2,7 +2,8 @@ import { Minus, Music2, Play, Plus, SquareStack } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { SectionCard } from '../../components/SectionCard'
 import type { DurationSymbol, InputMode, ParseError } from '../../music/model/types'
-import { DURATION_UNITS, FULL_MEASURE_UNITS, isDurationSymbol } from '../../music/theory/duration'
+import { DURATION_UNITS, FULL_MEASURE_UNITS, getMeasureCapacityUnits, isDurationSymbol } from '../../music/theory/duration'
+import { parseTimeSignature } from '../../music/theory/signatures'
 import type { ExamplePreset } from './examples'
 import './EditorPanel.css'
 
@@ -34,7 +35,7 @@ const DYNAMICS = ['pp', 'p', 'mp', 'mf', 'f', 'ff'] as const
 const EXPRESSIONS = ['dolce', 'legato', 'staccato', 'tenuto', 'cantabile', 'espressivo', 'rit.', 'accel.'] as const
 const REST_FILL_DURATIONS: DurationSymbol[] = ['w', 'h', 'q', '8', '16', '32']
 const STAFFSCRIPT_SNIPPETS = [
-  { label: 'Header', value: '@version=0.1\n@title="Take Five - 1st Flute"\n@instrument=flute\n@tempo=120\n@time=4/4\n@key=Dm\n@dur=q\n\n' },
+  { label: 'Header', value: '@version=0.1\n@title="Take Five - 1st Flute"\n@instrument=flute\n@clef=treble\n@tempo=120\n@time=4/4\n@key=Dm\n@dur=q\n\n' },
   { label: 'Section', value: 'section theme {\n  D5 q, F5 q, A5 h\n}' },
   { label: 'Motif', value: '@motif call = ( D5 q, F5 q, A5 h )' },
   { label: 'Use motif', value: 'use call' },
@@ -61,6 +62,7 @@ const CHORD_PROGRESSIONS = [
 ] as const
 const RHYTHM_TOKEN_PATTERN = /,|\(|\)|[A-Ga-g](?:#|b)?\d+|[Rr](?:est)?|pause|w|h|q|8|16|32|\S+/gi
 const TEMPO_RE = /^@tempo=(\d+).*$/im
+const TIME_RE = /^@time=(.+)$/im
 
 function parseBpmFromInput(input: string): number | null {
   const match = input.match(TEMPO_RE)
@@ -131,23 +133,39 @@ function getCurrentMeasureUnits(input: string) {
   return units
 }
 
+function getActiveMeasureCapacityUnits(input: string) {
+  const timeMatch = input.match(TIME_RE)
+  const parsedTime = timeMatch?.[1] ? parseTimeSignature(timeMatch[1]) : null
+
+  return parsedTime ? getMeasureCapacityUnits(parsedTime.beats, parsedTime.beatType) : FULL_MEASURE_UNITS
+}
+
+function getActiveMeasureLabel(input: string) {
+  const timeMatch = input.match(TIME_RE)
+  const parsedTime = timeMatch?.[1] ? parseTimeSignature(timeMatch[1]) : null
+
+  return parsedTime ? `${parsedTime.beats}/${parsedTime.beatType}` : '4/4'
+}
+
 function makeSmartRhythmToken(input: string, token: string, duration: DurationSymbol, hasTrailingSource: boolean) {
   const currentUnits = getCurrentMeasureUnits(input)
+  const measureCapacityUnits = getActiveMeasureCapacityUnits(input)
   const tokenUnits = DURATION_UNITS[duration]
-  const needsLeadingBar = currentUnits > 0 && currentUnits + tokenUnits > FULL_MEASURE_UNITS
+  const needsLeadingBar = currentUnits > 0 && currentUnits + tokenUnits > measureCapacityUnits
   const nextUnits = needsLeadingBar ? tokenUnits : currentUnits + tokenUnits
-  const needsClosingBar = !hasTrailingSource && nextUnits === FULL_MEASURE_UNITS
+  const needsClosingBar = !hasTrailingSource && nextUnits === measureCapacityUnits
 
   return `${needsLeadingBar ? '| ' : ''}${token}${needsClosingBar ? ' |' : ''}`
 }
 
 function makeMeasureFillToken(input: string) {
   const currentUnits = getCurrentMeasureUnits(input)
-  if (currentUnits <= 0 || currentUnits >= FULL_MEASURE_UNITS) {
+  const measureCapacityUnits = getActiveMeasureCapacityUnits(input)
+  if (currentUnits <= 0 || currentUnits >= measureCapacityUnits) {
     return '|'
   }
 
-  let remainingUnits = FULL_MEASURE_UNITS - currentUnits
+  let remainingUnits = measureCapacityUnits - currentUnits
   const rests: string[] = []
 
   for (const duration of REST_FILL_DURATIONS) {
@@ -176,6 +194,7 @@ export function EditorPanel({
   const [accidental, setAccidental] = useState<(typeof ACCIDENTALS)[number]['value']>('')
   const [chordRoot, setChordRoot] = useState<(typeof CHORD_ROOTS)[number]>('C')
   const [chordQuality, setChordQuality] = useState<(typeof CHORD_QUALITIES)[number]['value']>('maj7')
+  const activeMeasureLabel = getActiveMeasureLabel(input)
 
   const insertToken = (token: string, nextMode = mode, smartRhythm?: { duration: DurationSymbol }) => {
     const textarea = textareaRef.current
@@ -368,7 +387,7 @@ export function EditorPanel({
               <div className="builder-group builder-group--tools">
                 <span className="builder-label">Measure</span>
                 <button type="button" onClick={insertRest}>Pause</button>
-                <button type="button" onClick={insertMeasureFill}>Fill 4/4</button>
+                <button type="button" onClick={insertMeasureFill}>Fill {activeMeasureLabel}</button>
                 <button type="button" onClick={() => insertToken('|')}>Bar</button>
               </div>
             </div>
