@@ -8,6 +8,7 @@
 .composer-card .section-card__content {
   display: flex;
   flex-direction: column;
+  gap: clamp(0.28rem, 0.65dvh, 0.45rem);
   min-height: 0;
   overflow: auto;
   scrollbar-width: thin;
@@ -16,11 +17,11 @@
 .mode-toggle {
   display: inline-grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
-  margin-bottom: clamp(0.35rem, 0.8dvh, 0.5rem);
-  padding: 4px;
+  gap: 3px;
+  margin-bottom: 0;
+  padding: 3px;
   width: 100%;
-  max-width: min(100%, 14rem);
+  max-width: min(100%, 12.5rem);
   border-radius: 8px;
   background: linear-gradient(135deg, rgba(255, 118, 83, 0.16), rgba(31, 177, 196, 0.18));
 }
@@ -42,12 +43,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   min-width: 0;
-  min-height: 32px;
-  padding: 7px 9px;
+  min-height: 26px;
+  padding: 4px 8px;
   background: transparent;
   color: #5b6972;
+  font-size: 0.82rem;
   font-weight: 600;
 }
 
@@ -58,27 +60,38 @@
 }
 
 .examples {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.25rem), 1fr));
-  gap: 6px;
-  margin-bottom: clamp(0.35rem, 0.8dvh, 0.5rem);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 0;
 }
 
 .example-chip {
+  flex: 0 1 auto;
   min-width: 0;
-  min-height: 30px;
-  padding: 6px 9px;
+  max-width: min(100%, 5.75rem);
+  min-height: 22px;
+  padding: 3px 7px;
   background: rgba(255, 255, 255, 0.94);
   color: #2c3c49;
   border: 1px solid rgba(28, 126, 152, 0.16);
+  overflow: hidden;
+  font-size: 0.68rem;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   box-shadow: 0 8px 18px rgba(36, 103, 122, 0.06);
 }
 
 .editor-builder {
   display: grid;
-  gap: clamp(0.25rem, 0.7dvh, 0.38rem);
-  margin-bottom: clamp(0.35rem, 0.8dvh, 0.5rem);
-  padding: clamp(0.35rem, 0.9vw, 0.45rem);
+  flex: 0 1 auto;
+  gap: clamp(0.18rem, 0.45dvh, 0.3rem);
+  margin-bottom: 0;
+  min-height: clamp(5.5rem, 12dvh, 12rem);
+  max-height: clamp(8.5rem, 24dvh, 18rem);
+  overflow: auto;
+  padding: clamp(0.28rem, 0.65vw, 0.38rem);
   border: 1px solid rgba(28, 126, 152, 0.18);
   border-radius: 8px;
   background:
@@ -87,11 +100,12 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.82),
     0 10px 22px rgba(36, 103, 122, 0.07);
+  scrollbar-width: thin;
 }
 
 .builder-row {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .builder-row--split {
@@ -113,9 +127,9 @@
 .builder-group {
   display: grid;
   align-content: start;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
-  padding: 5px;
+  padding: 4px;
   border: 1px solid rgba(28, 126, 152, 0.12);
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.66);
@@ -151,17 +165,17 @@
 .builder-group--octave strong,
 .builder-bpm {
   display: inline-grid;
-  min-width: 24px;
-  min-height: 24px;
+  min-width: 21px;
+  min-height: 21px;
   place-items: center;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.9);
   color: #172027;
-  font-size: 0.78rem;
+  font-size: 0.7rem;
 }
 
 .builder-bpm {
-  min-width: 34px;
+  min-width: 30px;
 }
 
 .builder-bpm--default {
@@ -170,9 +184,9 @@
 
 .builder-bpm-unit {
   width: 100%;
-  margin-top: 2px;
+  margin-top: 0;
   color: #40515e;
-  font-size: 0.58rem;
+  font-size: 0.52rem;
   font-weight: 800;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -181,7 +195,7 @@
 .builder-label {
   width: 100%;
   color: #40515e;
-  font-size: 0.6rem;
+  font-size: 0.54rem;
   font-weight: 800;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -193,7 +207,7 @@
 .staffscript-snippet-strip {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: 2px;
 }
 
 .staffscript-snippet-strip button {
@@ -206,7 +220,7 @@
 .chord-root-grid,
 .quality-grid {
   display: grid;
-  gap: 3px;
+  gap: 2px;
 }
 
 .pitch-grid {
@@ -223,14 +237,14 @@
 
 .editor-builder button {
   min-width: 0;
-  min-height: 24px;
-  padding: 3px 6px;
+  min-height: 21px;
+  padding: 2px 5px;
   border: 1px solid rgba(28, 126, 152, 0.17);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 252, 253, 0.92));
   color: #253541;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 0.64rem;
   font-weight: 750;
   white-space: nowrap;
 }
@@ -273,7 +287,7 @@
 
 .builder-icon-button {
   display: inline-grid;
-  width: 24px;
+  width: 21px;
   padding: 0;
   place-items: center;
 }
@@ -286,8 +300,8 @@
 
 .editor-textarea {
   width: 100%;
-  flex: 1 1 auto;
-  min-height: clamp(10rem, 24dvh, 22rem);
+  flex: 1 1 clamp(10rem, 34dvh, 26rem);
+  min-height: clamp(10rem, 24dvh, 26rem);
   height: auto;
   resize: vertical;
   padding: 14px;
@@ -309,19 +323,20 @@
 .editor-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.35rem;
   align-items: center;
-  margin-top: clamp(0.35rem, 0.8dvh, 0.5rem);
+  margin-top: 0;
 }
 
 .render-button {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  min-height: 36px;
-  padding: 8px 13px;
+  gap: 6px;
+  min-height: 30px;
+  padding: 6px 11px;
   background: linear-gradient(135deg, #d9552f 0%, #f2b64b 52%, #b7df36 100%);
   color: #161b10;
+  font-size: 0.84rem;
   font-weight: 700;
   box-shadow: 0 12px 26px rgba(162, 129, 36, 0.2);
 }
@@ -335,7 +350,7 @@
 .helper-text {
   margin: 0;
   color: #64737d;
-  font-size: 0.82rem;
+  font-size: 0.72rem;
   flex: 1 1 220px;
 }
 
